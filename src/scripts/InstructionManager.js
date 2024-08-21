@@ -27,9 +27,7 @@ export class InstructionManager {
 
   startSimulation() {
     this.currentInstructionIndex = 0;
-    this.positionCalculator.startInstruction(
-      this.instructions[this.currentInstructionIndex]
-    );
+    this.positionCalculator.startInstruction(this.instructions[0]);
   }
 
   update(deltaTime) {
