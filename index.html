@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Camera Movement Simulation</title>
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <div id="container">
+      <div id="navbar">
+        <button id="toggle-sidebar">☰</button>
+        <h1>Camera Movement Simulation</h1>
+      </div>
+      <div id="sidebar">
+        <div id="controls">
+          <button id="zoomInBtn">Zoom In (Subject 1)</button>
+          <button id="zoomOutBtn">Zoom Out (Subject 2)</button>
+          <button id="moveAroundBtn">Move Around (Subject 3)</button>
+        </div>
+      </div>
+      <div id="canvas-container"></div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="module" src="scripts/main.js"></script>
+    <script>
+      const sidebar = document.getElementById("sidebar");
+      const canvasContainer = document.getElementById("canvas-container");
+      const toggleBtn = document.getElementById("toggle-sidebar");
+
+      toggleBtn.addEventListener("click", () => {
+        sidebar.classList.toggle("closed");
+        canvasContainer.classList.toggle("full-width");
+      });
+    </script>
+  </body>
+</html>

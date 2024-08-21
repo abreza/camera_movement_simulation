@@ -1,0 +1,7 @@
+{
+  "name": "camera-simulation",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Morteza Abolghasemi <a.re.morteza@gmail.com>",
+  "license": "MIT"
+}
