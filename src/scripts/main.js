@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { Renderer } from "./Renderer.js";
 import { PositionCalculator } from "./PositionCalculator.js";
 import { InstructionManager } from "./InstructionManager.js";

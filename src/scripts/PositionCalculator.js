@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 export class PositionCalculator {
   constructor() {
     this.cameraPosition = new THREE.Vector3(0, 0, 10);

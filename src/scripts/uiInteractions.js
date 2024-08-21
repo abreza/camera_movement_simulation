@@ -1,7 +1,6 @@
 export function setupUIInteractions(instructionManager, startSimulation) {
   const addInstructionBtn = document.getElementById("addInstruction");
   const simulateBtn = document.getElementById("simulateBtn");
-  const instructionList = document.getElementById("instructionList");
   const toggleBtn = document.getElementById("toggle-sidebar");
 
   addInstructionBtn.addEventListener("click", () =>
@@ -61,7 +60,6 @@ function editInstruction(event, instructionManager) {
   document.getElementById("subjectSelect").value = subject;
   document.getElementById("duration").value = duration;
 
-  // Remove the instruction from the list
   instructionManager.deleteInstruction(index);
   updateInstructionList(instructionManager);
 }

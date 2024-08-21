@@ -4,28 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Camera Movement Simulation</title>
-    <link href="/dist/output.css" rel="stylesheet" />
+    <link href="/src/styles/input.css" rel="stylesheet" />
   </head>
   <body class="font-sans m-0">
-    <div class="flex flex-col">
+    <div class="flex flex-col h-screen">
       <div id="navbar-container"></div>
-      <div id="sidebar-container"></div>
+      <div class="flex flex-1 overflow-hidden">
+        <div id="sidebar-container" class="w-64 flex-shrink-0"></div>
+        <div id="canvas-container" class="flex-grow"></div>
+      </div>
       <div
-        id="canvas-container"
-        class="flex-grow h-[calc(100vh-60px)] ml-64 transition-margin duration-300 ease-in-out"
+        id="world-view-container"
+        class="fixed bottom-5 right-5 w-72 h-72 border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg"
       ></div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-      async function loadComponent(url, containerId) {
-        const response = await fetch(url);
-        const html = await response.text();
-        document.getElementById(containerId).innerHTML = html;
-      }
 
-      loadComponent("/components/navbar.html", "navbar-container");
-      loadComponent("/components/sidebar.html", "sidebar-container");
-    </script>
-    <script type="module" src="scripts/main.js"></script>
+    <script type="module" src="/src/scripts/WebsitePageRenderer.js"></script>
+    <script type="module" src="/src/scripts/main.js"></script>
   </body>
 </html>
