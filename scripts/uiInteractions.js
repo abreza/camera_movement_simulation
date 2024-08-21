@@ -76,5 +76,5 @@ function toggleSidebar() {
   const sidebar = document.getElementById("sidebar");
   const canvasContainer = document.getElementById("canvas-container");
   sidebar.classList.toggle("-translate-x-64");
-  canvasContainer.classList.toggle("ml-0");
+  canvasContainer.classList.toggle("ml-64");
 }
