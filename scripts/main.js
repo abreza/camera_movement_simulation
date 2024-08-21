@@ -1,85 +1,68 @@
 import { Renderer } from "./Renderer.js";
 import { PositionCalculator } from "./PositionCalculator.js";
+import { InstructionManager } from "./InstructionManager.js";
+import { setupUIInteractions } from "./uiInteractions.js";
 
-const positionCalculator = new PositionCalculator();
-const renderer = new Renderer();
+class App {
+  constructor() {
+    this.positionCalculator = new PositionCalculator();
+    this.renderer = new Renderer();
+    this.instructionManager = new InstructionManager(this.positionCalculator);
 
-positionCalculator.addSubject(
-  new THREE.Vector3(0, 0, 0),
-  new THREE.Vector3(1, 1, 1)
-);
-positionCalculator.addSubject(
-  new THREE.Vector3(3, 0, 0),
-  new THREE.Vector3(1, 1, 1)
-);
-positionCalculator.addSubject(
-  new THREE.Vector3(-3, 0, 0),
-  new THREE.Vector3(1, 1, 1)
-);
+    this.lastTime = 0;
+    this.isSimulating = false;
 
-let lastTime = 0;
-let isSimulating = false;
-let currentInstructionIndex = 0;
-let instructions = [];
+    this.setupInitialSubjects();
+    setupUIInteractions(this.instructionManager, () => this.startSimulation());
+  }
 
-function animate(currentTime) {
-  const deltaTime = currentTime - lastTime;
-  lastTime = currentTime;
+  setupInitialSubjects() {
+    this.positionCalculator.addSubject(
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(1, 1, 1)
+    );
+    this.positionCalculator.addSubject(
+      new THREE.Vector3(3, 0, 0),
+      new THREE.Vector3(1, 1, 1)
+    );
+    this.positionCalculator.addSubject(
+      new THREE.Vector3(-3, 0, 0),
+      new THREE.Vector3(1, 1, 1)
+    );
+  }
 
-  if (isSimulating) {
-    const currentInstruction = instructions[currentInstructionIndex];
-    if (currentInstruction) {
-      positionCalculator.updatePositions(deltaTime, currentInstruction);
+  animate = (currentTime) => {
+    const deltaTime = currentTime - this.lastTime;
+    this.lastTime = currentTime;
 
-      if (positionCalculator.isInstructionComplete()) {
-        currentInstructionIndex++;
-        if (currentInstructionIndex >= instructions.length) {
-          isSimulating = false;
-        } else {
-          positionCalculator.startInstruction(
-            instructions[currentInstructionIndex]
-          );
-        }
+    if (this.isSimulating) {
+      this.instructionManager.update(deltaTime);
+      if (this.instructionManager.isSimulationComplete()) {
+        this.isSimulating = false;
       }
+    }
+
+    const cameraPosition = this.positionCalculator.getCameraPosition();
+    const cameraLookAt = this.positionCalculator.getCameraLookAt();
+    const subjects = this.positionCalculator.getSubjects();
+
+    this.renderer.updateScene(cameraPosition, cameraLookAt, subjects);
+    this.renderer.render();
+
+    requestAnimationFrame(this.animate);
+  };
+
+  startSimulation() {
+    if (this.instructionManager.hasInstructions()) {
+      this.isSimulating = true;
+      this.instructionManager.startSimulation();
     }
   }
 
-  const cameraPosition = positionCalculator.getCameraPosition();
-  const cameraLookAt = positionCalculator.getCameraLookAt();
-  const subjects = positionCalculator.getSubjects();
-
-  renderer.updateScene(cameraPosition, cameraLookAt, subjects);
-  renderer.render();
-
-  requestAnimationFrame(animate);
-}
-
-requestAnimationFrame(animate);
-
-function addInstruction() {
-  const instructionType = document.getElementById("instructionType").value;
-  const subjectIndex = document.getElementById("subjectSelect").value;
-  const duration = parseInt(document.getElementById("duration").value);
-
-  const instruction = `${instructionType},${subjectIndex},${duration}`;
-  instructions.push(instruction);
-
-  const listItem = document.createElement("li");
-  listItem.textContent = `${instructionType} Subject ${subjectIndex} (${duration}ms)`;
-  document.getElementById("instructionList").appendChild(listItem);
-}
-
-function startSimulation() {
-  if (instructions.length > 0) {
-    isSimulating = true;
-    currentInstructionIndex = 0;
-    positionCalculator.startInstruction(instructions[currentInstructionIndex]);
+  run() {
+    requestAnimationFrame(this.animate);
   }
 }
 
-document
-  .getElementById("addInstruction")
-  .addEventListener("click", addInstruction);
-document
-  .getElementById("simulateBtn")
-  .addEventListener("click", startSimulation);
+const app = new App();
+app.run();
