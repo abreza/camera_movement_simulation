@@ -1,13 +1,27 @@
-export function setupUIInteractions(instructionManager, startSimulation) {
+export function setupUIInteractions(
+  instructionManager,
+  startSimulation,
+  downloadJSON
+) {
   const addInstructionBtn = document.getElementById("addInstruction");
   const simulateBtn = document.getElementById("simulateBtn");
+  const downloadBtn = document.getElementById("downloadBtn");
   const toggleBtn = document.getElementById("toggle-sidebar");
+  const frameCountInput = document.getElementById("frameCount");
 
   addInstructionBtn.addEventListener("click", () =>
     addInstruction(instructionManager)
   );
   simulateBtn.addEventListener("click", startSimulation);
+  downloadBtn.addEventListener("click", downloadJSON);
   toggleBtn.addEventListener("click", toggleSidebar);
+
+  frameCountInput.addEventListener("input", () => {
+    const value = parseInt(frameCountInput.value);
+    if (value < 1) {
+      frameCountInput.value = 1;
+    }
+  });
 
   updateInstructionList(instructionManager);
 }

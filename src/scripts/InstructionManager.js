@@ -3,18 +3,22 @@ export class InstructionManager {
     this.positionCalculator = positionCalculator;
     this.instructions = [];
     this.currentInstructionIndex = 0;
+    this.totalDuration = 0;
   }
 
   addInstruction(instruction) {
     this.instructions.push(instruction);
+    this.calculateTotalDuration();
   }
 
   editInstruction(index, instruction) {
     this.instructions[index] = instruction;
+    this.calculateTotalDuration();
   }
 
   deleteInstruction(index) {
     this.instructions.splice(index, 1);
+    this.calculateTotalDuration();
   }
 
   getInstructions() {
@@ -30,20 +34,40 @@ export class InstructionManager {
     this.positionCalculator.startInstruction(this.instructions[0]);
   }
 
-  update(deltaTime) {
-    const currentInstruction = this.instructions[this.currentInstructionIndex];
-    if (currentInstruction) {
-      this.positionCalculator.updatePositions(deltaTime, currentInstruction);
+  calculateTotalDuration() {
+    this.totalDuration = this.instructions.reduce((total, instruction) => {
+      const [, , duration] = instruction.split(",");
+      return total + parseInt(duration);
+    }, 0);
+  }
 
-      if (this.positionCalculator.isInstructionComplete()) {
-        this.currentInstructionIndex++;
-        if (this.currentInstructionIndex < this.instructions.length) {
-          this.positionCalculator.startInstruction(
-            this.instructions[this.currentInstructionIndex]
-          );
-        }
+  updateToProgress(progress) {
+    const targetTime = progress * this.totalDuration;
+    let currentTime = 0;
+    let instructionIndex = 0;
+
+    while (instructionIndex < this.instructions.length) {
+      const [action, subjectIndex, duration] =
+        this.instructions[instructionIndex].split(",");
+      const instructionDuration = parseInt(duration);
+
+      if (currentTime + instructionDuration > targetTime) {
+        const instructionProgress =
+          (targetTime - currentTime) / instructionDuration;
+        this.positionCalculator.startInstruction(
+          this.instructions[instructionIndex]
+        );
+        this.positionCalculator.updatePositions(
+          instructionDuration * instructionProgress
+        );
+        break;
       }
+
+      currentTime += instructionDuration;
+      instructionIndex++;
     }
+
+    this.currentInstructionIndex = instructionIndex;
   }
 
   isSimulationComplete() {
