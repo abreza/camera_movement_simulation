@@ -12,8 +12,8 @@ export class PositionCalculator {
     this.subjects.push({ position: position.clone(), size: size.clone() });
   }
 
-  executeInstruction(instruction) {
-    const [action, subjectIndex] = instruction.split(",");
+  startInstruction(instruction) {
+    const [action, subjectIndex, duration] = instruction.split(",");
     const subject = this.subjects[parseInt(subjectIndex) - 1];
 
     if (!subject) {
@@ -28,6 +28,7 @@ export class PositionCalculator {
       startLookAt: this.cameraLookAt.clone(),
     };
     this.instructionProgress = 0;
+    this.instructionDuration = parseInt(duration);
   }
 
   updatePositions(deltaTime) {
@@ -74,11 +75,11 @@ export class PositionCalculator {
         endLookAt,
         this.instructionProgress
       );
-
-      if (this.instructionProgress === 1) {
-        this.currentInstruction = null;
-      }
     }
+  }
+
+  isInstructionComplete() {
+    return this.instructionProgress >= 1;
   }
 
   getCameraPosition() {

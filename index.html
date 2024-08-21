@@ -4,22 +4,73 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Camera Movement Simulation</title>
-    <link rel="stylesheet" href="styles/main.css" />
+    <link href="/dist/output.css" rel="stylesheet" />
   </head>
-  <body>
-    <div id="container">
-      <div id="navbar">
-        <button id="toggle-sidebar">☰</button>
-        <h1>Camera Movement Simulation</h1>
-      </div>
-      <div id="sidebar">
-        <div id="controls">
-          <button id="zoomInBtn">Zoom In (Subject 1)</button>
-          <button id="zoomOutBtn">Zoom Out (Subject 2)</button>
-          <button id="moveAroundBtn">Move Around (Subject 3)</button>
+  <body class="font-sans m-0">
+    <div class="flex flex-col">
+      <nav
+        class="fixed top-0 left-0 right-0 w-full bg-gray-800 text-white p-4 flex justify-between items-center z-50"
+      >
+        <button
+          id="toggle-sidebar"
+          class="bg-transparent text-white border-none text-2xl cursor-pointer w-10 h-5 leading-3"
+        >
+          ☰
+        </button>
+        <h1 class="text-2xl m-0">Camera Movement Simulation</h1>
+      </nav>
+      <div
+        id="sidebar"
+        class="w-64 h-screen bg-gray-800 fixed left-0 top-0 pt-16 transition-transform duration-300 ease-in-out z-40"
+      >
+        <div class="p-5">
+          <h2 class="text-white mb-4">Instructions</h2>
+          <ol id="instructionList" class="text-white mb-4"></ol>
+          <div class="space-y-2">
+            <select
+              id="instructionType"
+              class="w-full p-2 bg-gray-700 text-white rounded"
+            >
+              <option value="zoomIn">Zoom In</option>
+              <option value="zoomOut">Zoom Out</option>
+              <option value="moveAround">Move Around</option>
+            </select>
+            <select
+              id="subjectSelect"
+              class="w-full p-2 bg-gray-700 text-white rounded"
+            >
+              <option value="1">Subject 1</option>
+              <option value="2">Subject 2</option>
+              <option value="3">Subject 3</option>
+            </select>
+            <input
+              type="number"
+              id="duration"
+              placeholder="Duration (ms)"
+              min="100"
+              step="100"
+              value="2000"
+              class="w-full p-2 bg-gray-700 text-white rounded"
+            />
+            <button
+              id="addInstruction"
+              class="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Add Instruction
+            </button>
+          </div>
+          <button
+            id="simulateBtn"
+            class="w-full p-2 mt-4 bg-green-500 text-white rounded hover:bg-green-600"
+          >
+            Simulate
+          </button>
         </div>
       </div>
-      <div id="canvas-container"></div>
+      <div
+        id="canvas-container"
+        class="flex-grow h-[calc(100vh-60px)] ml-64 transition-margin duration-300 ease-in-out"
+      ></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script type="module" src="scripts/main.js"></script>
@@ -29,8 +80,8 @@
       const toggleBtn = document.getElementById("toggle-sidebar");
 
       toggleBtn.addEventListener("click", () => {
-        sidebar.classList.toggle("closed");
-        canvasContainer.classList.toggle("full-width");
+        sidebar.classList.toggle("-translate-x-64");
+        canvasContainer.classList.toggle("ml-0");
       });
     </script>
   </body>
