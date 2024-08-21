@@ -1,5 +1,17 @@
 import { defineConfig } from "vite";
+import { resolve } from "path";
 
 export default defineConfig({
-  assetsInclude: ["**/*.html"],
+  root: "./",
+  build: {
+    outDir: "dist",
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, "index.html"),
+      },
+    },
+  },
+  server: {
+    open: "/index.html",
+  },
 });
