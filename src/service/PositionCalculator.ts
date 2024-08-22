@@ -1,14 +1,16 @@
 import {
   CameraFrame,
-  Instruction,
-  InstructionType,
+  CinematographyInstruction,
+  CameraAngle,
+  ShotType,
+  CameraMovement,
   Subject,
 } from "@/types/simulation";
 import * as THREE from "three";
 
 export function calculateCameraPositions(
   subjects: Subject[],
-  instructions: Instruction[],
+  instructions: CinematographyInstruction[],
   initialPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 10),
   initialLookAt: THREE.Vector3 = new THREE.Vector3(0, 0, 0)
 ): CameraFrame[] {
@@ -17,14 +19,16 @@ export function calculateCameraPositions(
   let currentLookAt = initialLookAt.clone();
 
   for (const instruction of instructions) {
-    const startPosition = currentPosition.clone();
-    const startLookAt = currentLookAt.clone();
-    const endPosition = calculateEndPosition(
-      subjects,
-      instruction,
-      startPosition
-    );
-    const endLookAt = subjects[instruction.subjectIndex].position.clone();
+    const startPosition =
+      instruction.startPosition?.clone() || currentPosition.clone();
+    const startLookAt =
+      instruction.startLookAt?.clone() || currentLookAt.clone();
+    const endPosition =
+      instruction.endPosition?.clone() ||
+      calculateEndPosition(subjects, instruction, startPosition);
+    const endLookAt =
+      instruction.endLookAt?.clone() ||
+      subjects[instruction.subjectIndex].position.clone();
 
     for (let frame = 0; frame < instruction.frameCount; frame++) {
       const progress = frame / (instruction.frameCount - 1);
@@ -50,30 +54,72 @@ export function calculateCameraPositions(
 
 function calculateEndPosition(
   subjects: Subject[],
-  instruction: Instruction,
+  instruction: CinematographyInstruction,
   startPosition: THREE.Vector3
 ): THREE.Vector3 {
   const subjectPosition = subjects[instruction.subjectIndex].position;
+  const subjectSize = subjects[instruction.subjectIndex].size;
 
-  switch (instruction.type) {
-    case InstructionType.zoomIn:
-      return subjectPosition.clone().add(new THREE.Vector3(0, 0, 2));
-    case InstructionType.zoomOut:
-      return subjectPosition.clone().add(new THREE.Vector3(0, 0, 10));
-    case InstructionType.moveAround:
-      return calculateMoveAroundPosition(subjectPosition, startPosition, 1);
+  switch (instruction.cameraMovement) {
+    case CameraMovement.Dolly:
+      return subjectPosition
+        .clone()
+        .add(new THREE.Vector3(0, 0, -subjectSize.z));
+    case CameraMovement.Truck:
+      return startPosition.clone().add(new THREE.Vector3(subjectSize.x, 0, 0));
+    case CameraMovement.Pedestal:
+      return startPosition.clone().add(new THREE.Vector3(0, subjectSize.y, 0));
+    case CameraMovement.ArcShot:
+      return calculateArcShotPosition(subjectPosition, startPosition, 0.25);
     default:
-      throw new Error(`Unknown action: ${instruction.type}`);
+      return calculatePositionBasedOnShotType(
+        instruction.shotType,
+        subjectPosition,
+        subjectSize
+      );
   }
 }
 
-function calculateMoveAroundPosition(
+function calculatePositionBasedOnShotType(
+  shotType: ShotType | undefined,
+  subjectPosition: THREE.Vector3,
+  subjectSize: THREE.Vector3
+): THREE.Vector3 {
+  switch (shotType) {
+    case ShotType.ExtremeCloseUp:
+      return subjectPosition
+        .clone()
+        .add(new THREE.Vector3(0, 0, subjectSize.z * 0.1));
+    case ShotType.CloseUp:
+      return subjectPosition
+        .clone()
+        .add(new THREE.Vector3(0, 0, subjectSize.z * 0.5));
+    case ShotType.MediumShot:
+      return subjectPosition
+        .clone()
+        .add(new THREE.Vector3(0, 0, subjectSize.z * 2));
+    case ShotType.LongShot:
+      return subjectPosition
+        .clone()
+        .add(new THREE.Vector3(0, 0, subjectSize.z * 5));
+    case ShotType.ExtremeLongShot:
+      return subjectPosition
+        .clone()
+        .add(new THREE.Vector3(0, 0, subjectSize.z * 10));
+    default:
+      return subjectPosition
+        .clone()
+        .add(new THREE.Vector3(0, 0, subjectSize.z * 3));
+  }
+}
+
+function calculateArcShotPosition(
   subjectPosition: THREE.Vector3,
   startPosition: THREE.Vector3,
   progress: number
 ): THREE.Vector3 {
   const radius = startPosition.distanceTo(subjectPosition);
-  const angle = (Math.PI / 2) * progress;
+  const angle = Math.PI * 2 * progress;
   return new THREE.Vector3(
     subjectPosition.x + radius * Math.cos(angle),
     startPosition.y,

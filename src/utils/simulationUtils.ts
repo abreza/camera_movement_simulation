@@ -1,9 +1,13 @@
-import { Subject, Instruction, CameraFrame } from "@/types/simulation";
+import {
+  Subject,
+  CinematographyInstruction,
+  CameraFrame,
+} from "@/types/simulation";
 import * as THREE from "three";
 
 interface SimulationData {
   subjects: Subject[];
-  instructions: Instruction[];
+  instructions: CinematographyInstruction[];
   cameraFrames: CameraFrame[];
 }
 

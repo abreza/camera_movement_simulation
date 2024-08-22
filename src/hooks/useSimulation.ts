@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { handleDownloadSimulationData } from "@/utils/simulationUtils";
-import { Instruction, Subject, CameraFrame } from "@/types/simulation";
+import {
+  CinematographyInstruction,
+  Subject,
+  CameraFrame,
+} from "@/types/simulation";
 import * as THREE from "three";
 import { Renderer } from "@/service/Renderer";
 import { calculateCameraPositions } from "@/service/PositionCalculator";
@@ -11,7 +15,9 @@ const useSimulation = () => {
   const worldViewRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<Renderer | null>(null);
 
-  const [instructions, setInstructions] = useState<Instruction[]>([]);
+  const [instructions, setInstructions] = useState<CinematographyInstruction[]>(
+    []
+  );
   const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
   const [cameraFrames, setCameraFrames] = useState<CameraFrame[]>([]);
   const [isRendering, setIsRendering] = useState(false);
@@ -32,11 +38,14 @@ const useSimulation = () => {
     };
   }, []);
 
-  const handleAddInstruction = (instruction: Instruction) => {
+  const handleAddInstruction = (instruction: CinematographyInstruction) => {
     setInstructions((prevInstructions) => [...prevInstructions, instruction]);
   };
 
-  const handleEditInstruction = (index: number, instruction: Instruction) => {
+  const handleEditInstruction = (
+    index: number,
+    instruction: CinematographyInstruction
+  ) => {
     setInstructions((prevInstructions) => {
       const newInstructions = [...prevInstructions];
       newInstructions[index] = instruction;
