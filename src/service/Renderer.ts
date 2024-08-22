@@ -7,6 +7,8 @@ interface Subject {
 }
 
 export class Renderer {
+  private cameraViewElement: HTMLDivElement;
+  private worldViewElement: HTMLDivElement;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
   private renderer: THREE.WebGLRenderer;
@@ -19,7 +21,12 @@ export class Renderer {
   private cameraHelper: THREE.CameraHelper | null;
   private resizeHandler: () => void;
 
-  constructor() {
+  constructor(
+    cameraViewElement: HTMLDivElement,
+    worldViewElement: HTMLDivElement
+  ) {
+    this.cameraViewElement = cameraViewElement;
+    this.worldViewElement = worldViewElement;
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(
       75,
@@ -29,24 +36,14 @@ export class Renderer {
     );
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    const canvasContainer = document.getElementById("canvas-container");
-    if (canvasContainer) {
-      canvasContainer.appendChild(this.renderer.domElement);
-    } else {
-      console.error("Canvas container not found");
-    }
+    this.cameraViewElement.appendChild(this.renderer.domElement);
 
     // World view setup
     this.worldScene = new THREE.Scene();
     this.worldCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
     this.worldRenderer = new THREE.WebGLRenderer();
     this.worldRenderer.setSize(288, 288);
-    const worldViewContainer = document.getElementById("world-view-container");
-    if (worldViewContainer) {
-      worldViewContainer.appendChild(this.worldRenderer.domElement);
-    } else {
-      console.error("World view container not found");
-    }
+    this.worldViewElement.appendChild(this.worldRenderer.domElement);
 
     this.worldControls = new OrbitControls(
       this.worldCamera,
@@ -153,21 +150,8 @@ export class Renderer {
     this.renderer.dispose();
     this.worldRenderer.dispose();
 
-    // Remove canvases from DOM and clear containers
-    const canvasContainer = document.getElementById("canvas-container");
-    const worldViewContainer = document.getElementById("world-view-container");
-
-    if (canvasContainer) {
-      while (canvasContainer.firstChild) {
-        canvasContainer.removeChild(canvasContainer.firstChild);
-      }
-    }
-
-    if (worldViewContainer) {
-      while (worldViewContainer.firstChild) {
-        worldViewContainer.removeChild(worldViewContainer.firstChild);
-      }
-    }
+    this.cameraViewElement.innerHTML = "";
+    this.worldViewElement.innerHTML = "";
 
     // Dispose of controls
     this.worldControls.dispose();

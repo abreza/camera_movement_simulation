@@ -1,121 +1,82 @@
+import {
+  CameraFrame,
+  Instruction,
+  InstructionType,
+  Subject,
+} from "@/types/simulation";
 import * as THREE from "three";
 
-interface Subject {
-  position: THREE.Vector3;
-  size: THREE.Vector3;
-}
+export function calculateCameraPositions(
+  subjects: Subject[],
+  instructions: Instruction[],
+  initialPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 10),
+  initialLookAt: THREE.Vector3 = new THREE.Vector3(0, 0, 0)
+): CameraFrame[] {
+  const frames: CameraFrame[] = [];
+  let currentPosition = initialPosition.clone();
+  let currentLookAt = initialLookAt.clone();
 
-interface Instruction {
-  action: string;
-  subject: Subject;
-  startPosition: THREE.Vector3;
-  startLookAt: THREE.Vector3;
-}
+  for (const instruction of instructions) {
+    const startPosition = currentPosition.clone();
+    const startLookAt = currentLookAt.clone();
+    const endPosition = calculateEndPosition(
+      subjects,
+      instruction,
+      startPosition
+    );
+    const endLookAt = subjects[instruction.subjectIndex].position.clone();
 
-export class PositionCalculator {
-  private cameraPosition: THREE.Vector3;
-  private cameraLookAt: THREE.Vector3;
-  private subjects: Subject[];
-  private currentInstruction: Instruction | null;
-  private instructionProgress: number;
-  private instructionDuration: number;
-
-  constructor() {
-    this.cameraPosition = new THREE.Vector3(0, 0, 10);
-    this.cameraLookAt = new THREE.Vector3(0, 0, 0);
-    this.subjects = [];
-    this.currentInstruction = null;
-    this.instructionProgress = 0;
-    this.instructionDuration = 2000;
-  }
-
-  addSubject(position: THREE.Vector3, size: THREE.Vector3): void {
-    this.subjects.push({ position: position.clone(), size: size.clone() });
-  }
-
-  startInstruction(instruction: string): void {
-    const [action, subjectIndex, duration] = instruction.split(",");
-    const subject = this.subjects[parseInt(subjectIndex, 10) - 1];
-
-    if (!subject) {
-      console.error("Subject not found");
-      return;
-    }
-
-    this.currentInstruction = {
-      action: action.trim().toLowerCase(),
-      subject,
-      startPosition: this.cameraPosition.clone(),
-      startLookAt: this.cameraLookAt.clone(),
-    };
-    this.instructionProgress = 0;
-    this.instructionDuration = parseInt(duration, 10);
-  }
-
-  updatePositions(deltaTime: number): void {
-    if (this.currentInstruction) {
-      this.instructionProgress += deltaTime / this.instructionDuration;
-      this.instructionProgress = Math.min(this.instructionProgress, 1);
-
-      const { action, subject, startPosition, startLookAt } =
-        this.currentInstruction;
-      const subjectPosition = subject.position;
-
-      let endPosition: THREE.Vector3;
-      let endLookAt: THREE.Vector3;
-
-      switch (action) {
-        case "zoomin":
-          endPosition = subjectPosition.clone().add(new THREE.Vector3(0, 0, 2));
-          endLookAt = subjectPosition;
-          break;
-        case "zoomout":
-          endPosition = subjectPosition
-            .clone()
-            .add(new THREE.Vector3(0, 0, 10));
-          endLookAt = subjectPosition;
-          break;
-        case "movearound":
-          const radius = startPosition.distanceTo(subjectPosition);
-          const angle = (Math.PI / 2) * this.instructionProgress;
-          endPosition = new THREE.Vector3(
-            subjectPosition.x + radius * Math.cos(angle),
-            startPosition.y,
-            subjectPosition.z + radius * Math.sin(angle)
-          );
-          endLookAt = subjectPosition;
-          break;
-        default:
-          console.error("Unknown action:", action);
-          return;
-      }
-
-      this.cameraPosition.lerpVectors(
+    for (let frame = 0; frame < instruction.frameCount; frame++) {
+      const progress = frame / (instruction.frameCount - 1);
+      const position = new THREE.Vector3().lerpVectors(
         startPosition,
         endPosition,
-        this.instructionProgress
+        progress
       );
-      this.cameraLookAt.lerpVectors(
+      const lookAt = new THREE.Vector3().lerpVectors(
         startLookAt,
         endLookAt,
-        this.instructionProgress
+        progress
       );
+      frames.push({ position, lookAt });
     }
+
+    currentPosition = endPosition;
+    currentLookAt = endLookAt;
   }
 
-  isInstructionComplete(): boolean {
-    return this.instructionProgress >= 1;
-  }
+  return frames;
+}
 
-  getCameraPosition(): THREE.Vector3 {
-    return this.cameraPosition;
-  }
+function calculateEndPosition(
+  subjects: Subject[],
+  instruction: Instruction,
+  startPosition: THREE.Vector3
+): THREE.Vector3 {
+  const subjectPosition = subjects[instruction.subjectIndex].position;
 
-  getCameraLookAt(): THREE.Vector3 {
-    return this.cameraLookAt;
+  switch (instruction.type) {
+    case InstructionType.zoomIn:
+      return subjectPosition.clone().add(new THREE.Vector3(0, 0, 2));
+    case InstructionType.zoomOut:
+      return subjectPosition.clone().add(new THREE.Vector3(0, 0, 10));
+    case InstructionType.moveAround:
+      return calculateMoveAroundPosition(subjectPosition, startPosition, 1);
+    default:
+      throw new Error(`Unknown action: ${instruction.type}`);
   }
+}
 
-  getSubjects(): Subject[] {
-    return this.subjects;
-  }
+function calculateMoveAroundPosition(
+  subjectPosition: THREE.Vector3,
+  startPosition: THREE.Vector3,
+  progress: number
+): THREE.Vector3 {
+  const radius = startPosition.distanceTo(subjectPosition);
+  const angle = (Math.PI / 2) * progress;
+  return new THREE.Vector3(
+    subjectPosition.x + radius * Math.cos(angle),
+    startPosition.y,
+    subjectPosition.z + radius * Math.sin(angle)
+  );
 }
