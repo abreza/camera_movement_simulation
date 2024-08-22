@@ -1,47 +1,54 @@
+import { PositionCalculator } from "./PositionCalculator";
+
 export class InstructionManager {
-  constructor(positionCalculator) {
+  private positionCalculator: PositionCalculator;
+  private instructions: string[];
+  private currentInstructionIndex: number;
+  private totalDuration: number;
+
+  constructor(positionCalculator: PositionCalculator) {
     this.positionCalculator = positionCalculator;
     this.instructions = [];
     this.currentInstructionIndex = 0;
     this.totalDuration = 0;
   }
 
-  addInstruction(instruction) {
+  addInstruction(instruction: string): void {
     this.instructions.push(instruction);
     this.calculateTotalDuration();
   }
 
-  editInstruction(index, instruction) {
+  editInstruction(index: number, instruction: string): void {
     this.instructions[index] = instruction;
     this.calculateTotalDuration();
   }
 
-  deleteInstruction(index) {
+  deleteInstruction(index: number): void {
     this.instructions.splice(index, 1);
     this.calculateTotalDuration();
   }
 
-  getInstructions() {
+  getInstructions(): string[] {
     return this.instructions;
   }
 
-  hasInstructions() {
+  hasInstructions(): boolean {
     return this.instructions.length > 0;
   }
 
-  startSimulation() {
+  startSimulation(): void {
     this.currentInstructionIndex = 0;
     this.positionCalculator.startInstruction(this.instructions[0]);
   }
 
-  calculateTotalDuration() {
+  private calculateTotalDuration(): void {
     this.totalDuration = this.instructions.reduce((total, instruction) => {
       const [, , duration] = instruction.split(",");
-      return total + parseInt(duration);
+      return total + parseInt(duration, 10);
     }, 0);
   }
 
-  updateToProgress(progress) {
+  updateToProgress(progress: number): void {
     const targetTime = progress * this.totalDuration;
     let currentTime = 0;
     let instructionIndex = 0;
@@ -49,7 +56,7 @@ export class InstructionManager {
     while (instructionIndex < this.instructions.length) {
       const [action, subjectIndex, duration] =
         this.instructions[instructionIndex].split(",");
-      const instructionDuration = parseInt(duration);
+      const instructionDuration = parseInt(duration, 10);
 
       if (currentTime + instructionDuration > targetTime) {
         const instructionProgress =
@@ -70,7 +77,7 @@ export class InstructionManager {
     this.currentInstructionIndex = instructionIndex;
   }
 
-  isSimulationComplete() {
+  isSimulationComplete(): boolean {
     return this.currentInstructionIndex >= this.instructions.length;
   }
 }
