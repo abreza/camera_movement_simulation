@@ -43,6 +43,12 @@ export enum CameraMovement {
   DroneShot = "droneShot",
 }
 
+export interface Subject {
+  position: THREE.Vector3;
+  size: THREE.Vector3;
+  rotation: THREE.Euler;
+}
+
 export interface CinematographyInstruction {
   cameraAngle?: CameraAngle;
   shotType?: ShotType;
@@ -53,14 +59,43 @@ export interface CinematographyInstruction {
   endPosition?: THREE.Vector3;
   startLookAt?: THREE.Vector3;
   endLookAt?: THREE.Vector3;
+  startFocalLength?: number;
+  endFocalLength?: number;
+  startRotation?: THREE.Euler;
+  endRotation?: THREE.Euler;
+  easeFunction?: (t: number) => number;
 }
 
 export interface CameraFrame {
   position: THREE.Vector3;
   lookAt: THREE.Vector3;
+  focalLength: number;
+  rotation: THREE.Euler;
 }
 
-export interface Subject {
-  position: THREE.Vector3;
-  size: THREE.Vector3;
+export interface Scene {
+  subjects: Subject[];
+  cameraInstructions: CinematographyInstruction[];
+}
+
+export interface CameraSettings {
+  nearClippingPlane: number;
+  farClippingPlane: number;
+  aspectRatio: number;
+  initialFocalLength: number;
+}
+
+export type EasingFunction = (t: number) => number;
+
+export interface SimulationOptions {
+  fps: number;
+  duration: number;
+  cameraSettings: CameraSettings;
+  defaultEasing: EasingFunction;
+}
+
+export interface SimulationResult {
+  frames: CameraFrame[];
+  duration: number;
+  frameCount: number;
 }

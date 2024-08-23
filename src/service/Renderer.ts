@@ -69,10 +69,14 @@ export class Renderer {
   updateScene(
     cameraPosition: THREE.Vector3,
     cameraLookAt: THREE.Vector3,
+    focalLength: number,
     subjects: Subject[]
   ): void {
     this.camera.position.copy(cameraPosition);
     this.camera.lookAt(cameraLookAt);
+    this.camera.setFocalLength(focalLength);
+
+    this.camera.updateMatrixWorld();
 
     while (this.subjectMeshes.length < subjects.length) {
       const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -105,7 +109,6 @@ export class Renderer {
       }
     });
 
-    // Add camera representation to world view
     if (!this.cameraHelper) {
       this.cameraHelper = new THREE.CameraHelper(this.camera);
       this.worldScene.add(this.cameraHelper);

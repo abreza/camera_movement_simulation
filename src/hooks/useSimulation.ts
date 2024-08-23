@@ -78,21 +78,41 @@ const useSimulation = () => {
 
   useEffect(() => {
     if (!rendererRef.current) return;
+
+    const initialPosition = new THREE.Vector3(0, 0, 10);
+    const initialLookAt = new THREE.Vector3(0, 0, 0);
+    const initialFocalLength = 50;
+
     rendererRef.current.updateScene(
-      new THREE.Vector3(0, 0, 10),
-      new THREE.Vector3(0, 0, 0),
+      initialPosition,
+      initialLookAt,
+      initialFocalLength,
       subjects
     );
     rendererRef.current.render();
-    setCameraFrames([]);
+
+    const frames = calculateCameraPositions(
+      subjects,
+      instructions,
+      initialPosition,
+      initialLookAt,
+      initialFocalLength
+    );
+    setCameraFrames(frames);
     setCurrentFrame(0);
-  }, [subjects]);
+  }, [subjects, instructions]);
 
   const renderSimulationData = () => {
-    if (!isRendering || !rendererRef.current) return;
+    if (!isRendering || !rendererRef.current || cameraFrames.length === 0)
+      return;
 
     const frame = cameraFrames[currentFrame];
-    rendererRef.current.updateScene(frame.position, frame.lookAt, subjects);
+    rendererRef.current.updateScene(
+      frame.position,
+      frame.lookAt,
+      frame.focalLength,
+      subjects
+    );
     rendererRef.current.render();
 
     setCurrentFrame((prevFrame) => {
