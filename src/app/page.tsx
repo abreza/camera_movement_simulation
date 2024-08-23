@@ -1,11 +1,10 @@
 "use client";
 
 import { FC, useState } from "react";
-import { Box } from "@mui/material";
+import { Box, Slider, TextField, Button, Stack } from "@mui/material";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import useSimulation from "@/hooks/useSimulation";
-import { INITIAL_SUBJECTS } from "./constants";
 
 const CameraMovementSimulation: FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -18,7 +17,19 @@ const CameraMovementSimulation: FC = () => {
     handleAddInstruction,
     renderSimulationData,
     downloadSimulationData,
+    isRendering,
+    setIsRendering,
+    currentFrame,
+    cameraFrames,
+    fps,
+    setFps,
+    setCurrentFrame,
   } = useSimulation();
+
+  const handleSliderChange = (_: Event, value: number | number[]) => {
+    setIsRendering(false);
+    setCurrentFrame(value as number);
+  };
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
@@ -32,9 +43,7 @@ const CameraMovementSimulation: FC = () => {
         renderSimulationData={renderSimulationData}
         downloadSimulationData={downloadSimulationData}
       />
-      <Box component="main" sx={{ flexGrow: 1 }}>
-        <Box ref={cameraViewRef} sx={{ height: "calc(100vh - 64px)" }}></Box>
-      </Box>
+      <Box ref={cameraViewRef} sx={{ height: "calc(100vh - 200px)" }}></Box>
       <Box
         ref={worldViewRef}
         sx={{
@@ -49,6 +58,44 @@ const CameraMovementSimulation: FC = () => {
           boxShadow: 3,
         }}
       ></Box>
+      {cameraFrames.length > 1 && (
+        <Stack
+          sx={{
+            position: "fixed",
+            top: 100,
+            width: "100%",
+            p: 3,
+          }}
+          direction="row"
+          alignItems="center"
+          spacing={2}
+        >
+          <TextField
+            type="number"
+            label="FPS"
+            value={fps}
+            onChange={(e) => setFps(Number(e.target.value))}
+            inputProps={{ min: 1, max: 60 }}
+            sx={{ width: 100, color: "white", "& input": { color: "white" } }}
+            size="small"
+            color="primary"
+          />
+          <Slider
+            value={currentFrame}
+            onChange={handleSliderChange}
+            min={0}
+            max={cameraFrames.length - 1}
+            valueLabelDisplay="auto"
+            sx={{ flexGrow: 1 }}
+          />
+          <Button
+            variant="contained"
+            onClick={() => setIsRendering(!isRendering)}
+          >
+            {isRendering ? "Pause" : "Play"}
+          </Button>
+        </Stack>
+      )}
     </Box>
   );
 };

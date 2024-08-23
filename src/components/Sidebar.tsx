@@ -165,7 +165,10 @@ const Sidebar: React.FC<SidebarProps> = ({
             <Button
               variant="contained"
               color="warning"
-              onClick={renderSimulationData}
+              onClick={() => {
+                onClose();
+                renderSimulationData();
+              }}
               sx={{ flexGrow: 1 }}
             >
               Render

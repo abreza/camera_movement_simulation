@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { handleDownloadSimulationData } from "@/utils/simulationUtils";
 import {
   CinematographyInstruction,
@@ -19,9 +19,17 @@ const useSimulation = () => {
     []
   );
   const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
-  const [cameraFrames, setCameraFrames] = useState<CameraFrame[]>([]);
+  const [cameraFrames, setCameraFrames] = useState<CameraFrame[]>([
+    {
+      position: new THREE.Vector3(0, 0, 10),
+      lookAt: new THREE.Vector3(0, 0, 0),
+      focalLength: 50,
+      rotation: new THREE.Euler(0, 0, 0),
+    },
+  ]);
   const [isRendering, setIsRendering] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [fps, setFps] = useState(30);
 
   useEffect(() => {
     if (cameraViewRef.current && worldViewRef.current) {
@@ -66,31 +74,7 @@ const useSimulation = () => {
   const simulate = () => {
     const initialPosition = new THREE.Vector3(0, 0, 10);
     const initialLookAt = new THREE.Vector3(0, 0, 0);
-    const frames = calculateCameraPositions(
-      subjects,
-      instructions,
-      initialPosition,
-      initialLookAt
-    );
-    setCameraFrames(frames);
-    setCurrentFrame(0);
-  };
-
-  useEffect(() => {
-    if (!rendererRef.current) return;
-
-    const initialPosition = new THREE.Vector3(0, 0, 10);
-    const initialLookAt = new THREE.Vector3(0, 0, 0);
     const initialFocalLength = 50;
-
-    rendererRef.current.updateScene(
-      initialPosition,
-      initialLookAt,
-      initialFocalLength,
-      subjects
-    );
-    rendererRef.current.render();
-
     const frames = calculateCameraPositions(
       subjects,
       instructions,
@@ -99,13 +83,15 @@ const useSimulation = () => {
       initialFocalLength
     );
     setCameraFrames(frames);
-    setCurrentFrame(0);
-  }, [subjects, instructions]);
+  };
 
   const renderSimulationData = () => {
-    if (!isRendering || !rendererRef.current || cameraFrames.length === 0)
-      return;
+    simulate();
+    setIsRendering(true);
+  };
 
+  const render = useCallback(() => {
+    if (!rendererRef.current) return;
     const frame = cameraFrames[currentFrame];
     rendererRef.current.updateScene(
       frame.position,
@@ -114,23 +100,29 @@ const useSimulation = () => {
       subjects
     );
     rendererRef.current.render();
-
-    setCurrentFrame((prevFrame) => {
-      if (prevFrame < cameraFrames.length - 1) {
-        return prevFrame + 1;
-      } else {
-        setIsRendering(false);
-        return 0;
-      }
-    });
-  };
+  }, [cameraFrames, currentFrame, subjects]);
 
   useEffect(() => {
-    if (isRendering) {
-      const animationId = requestAnimationFrame(renderSimulationData);
-      return () => cancelAnimationFrame(animationId);
-    }
-  }, [isRendering, currentFrame]);
+    const renderInterval = setInterval(() => {
+      render();
+    }, 10);
+    const frameCountInterval = setInterval(() => {
+      if (isRendering) {
+        setCurrentFrame((prevFrame) => {
+          if (prevFrame < cameraFrames.length - 1) {
+            return prevFrame + 1;
+          } else {
+            return 0;
+          }
+        });
+      }
+    }, 1000 / fps);
+
+    return () => {
+      clearInterval(renderInterval);
+      clearInterval(frameCountInterval);
+    };
+  }, [render, isRendering, fps, cameraFrames.length]);
 
   const downloadSimulationData = () => {
     simulate();
@@ -151,11 +143,15 @@ const useSimulation = () => {
     handleEditInstruction,
     handleDeleteInstruction,
     addSubject,
-    renderSimulationData: () => {
-      simulate();
-      setIsRendering(true);
-    },
+    renderSimulationData,
     downloadSimulationData,
+    isRendering,
+    setIsRendering,
+    currentFrame,
+    cameraFrames,
+    fps,
+    setFps,
+    setCurrentFrame,
   };
 };
 
