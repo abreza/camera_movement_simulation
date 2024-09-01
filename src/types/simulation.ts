@@ -1,5 +1,23 @@
 import * as THREE from "three";
 
+export enum ObjectClass {
+  Chair = "chair",
+  Table = "table",
+  Laptop = "laptop",
+  Book = "book",
+  Tree = "tree",
+}
+export const colors = [
+  "red",
+  "blue",
+  "green",
+  "yellow",
+  "purple",
+  "black",
+] as const;
+
+export type Color = (typeof colors)[number];
+
 export enum CameraAngle {
   EyeLevel = "eyeLevel",
   LowAngle = "lowAngle",
@@ -47,6 +65,8 @@ export interface Subject {
   position: THREE.Vector3;
   size: THREE.Vector3;
   rotation: THREE.Euler;
+  objectClass: ObjectClass;
+  color: Color;
 }
 
 export interface CinematographyInstruction {

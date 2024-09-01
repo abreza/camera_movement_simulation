@@ -43,9 +43,9 @@ const CameraMovementSimulation: FC = () => {
         renderSimulationData={renderSimulationData}
         downloadSimulationData={downloadSimulationData}
       />
-      <Box ref={cameraViewRef} sx={{ height: "calc(100vh - 200px)" }}></Box>
+      <Box ref={worldViewRef} sx={{ height: "calc(100vh - 200px)" }}></Box>
       <Box
-        ref={worldViewRef}
+        ref={cameraViewRef}
         sx={{
           position: "fixed",
           bottom: 20,
@@ -76,7 +76,7 @@ const CameraMovementSimulation: FC = () => {
             value={fps}
             onChange={(e) => setFps(Number(e.target.value))}
             inputProps={{ min: 1, max: 60 }}
-            sx={{ width: 100, color: "white", "& input": { color: "white" } }}
+            sx={{ width: 100 }}
             size="small"
             color="primary"
           />

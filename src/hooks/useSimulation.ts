@@ -6,9 +6,9 @@ import {
   CameraFrame,
 } from "@/types/simulation";
 import * as THREE from "three";
-import { Renderer } from "@/service/Renderer";
-import { calculateCameraPositions } from "@/service/PositionCalculator";
-import { INITIAL_SUBJECTS } from "@/app/constants";
+import { Renderer } from "@/service/rendering/Renderer";
+import { INITIAL_SUBJECTS } from "./constants";
+import { calculateCameraPositions } from "@/service/camera-movement/calculateCameraPositions";
 
 const useSimulation = () => {
   const cameraViewRef = useRef<HTMLDivElement>(null);
@@ -21,7 +21,7 @@ const useSimulation = () => {
   const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
   const [cameraFrames, setCameraFrames] = useState<CameraFrame[]>([
     {
-      position: new THREE.Vector3(0, 0, 10),
+      position: new THREE.Vector3(5, 5, 15),
       lookAt: new THREE.Vector3(0, 0, 0),
       focalLength: 50,
       rotation: new THREE.Euler(0, 0, 0),
