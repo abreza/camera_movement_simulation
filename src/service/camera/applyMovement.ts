@@ -1,6 +1,15 @@
 import { Vector3, Euler, MathUtils } from "three";
 import { CameraMovement, Subject } from "@/types/simulation";
-import { lerpEuler } from "./utils";
+import {
+  lerpVector3,
+  lerpEuler,
+  getSubjectCenter,
+  applyShake,
+  calculateArcPosition,
+  applyOscillation,
+  getMovementFunction,
+  lookAt,
+} from "./utils";
 
 export function applyCameraMovement(
   framePosition: Vector3,
@@ -20,63 +29,48 @@ export function applyCameraMovement(
   let newAngle = frameAngle.clone();
   let newFocalLength = frameFocalLength;
 
-  const subjectCenter = new Vector3().addVectors(
-    subject.position,
-    new Vector3(0, subject.size.y / 2, 0)
-  );
+  const subjectCenter = getSubjectCenter(subject);
+  const movementFn = getMovementFunction(movement);
 
   switch (movement) {
     case CameraMovement.Pan:
-      newAngle.y = MathUtils.lerp(currentAngle.y, targetAngle.y, easedT);
-      break;
-
     case CameraMovement.Tilt:
-      newAngle.x = MathUtils.lerp(currentAngle.x, targetAngle.x, easedT);
+      newAngle[movement === CameraMovement.Pan ? "y" : "x"] = movementFn(
+        currentAngle[movement === CameraMovement.Pan ? "y" : "x"],
+        targetAngle[movement === CameraMovement.Pan ? "y" : "x"],
+        easedT
+      );
       break;
 
     case CameraMovement.Dolly:
-      newPosition.lerpVectors(currentPosition, targetPosition, easedT);
-      break;
-
     case CameraMovement.Truck:
-      newPosition.x = MathUtils.lerp(
-        currentPosition.x,
-        targetPosition.x,
-        easedT
-      );
-      break;
-
     case CameraMovement.Pedestal:
-      newPosition.y = MathUtils.lerp(
-        currentPosition.y,
-        targetPosition.y,
-        easedT
-      );
+      newPosition = lerpVector3(currentPosition, targetPosition, easedT);
       break;
 
     case CameraMovement.CraneJib:
-      newPosition.lerpVectors(currentPosition, targetPosition, easedT);
-      newAngle = lerpEuler(currentAngle, targetAngle, easedT);
+      const result = movementFn(
+        { position: currentPosition, angle: currentAngle },
+        { position: targetPosition, angle: targetAngle },
+        easedT
+      );
+      newPosition = result.position;
+      newAngle = result.angle;
       break;
 
     case CameraMovement.Handheld:
-      const shake = new Vector3(
-        (Math.random() - 0.5) * 0.05,
-        (Math.random() - 0.5) * 0.05,
-        (Math.random() - 0.5) * 0.05
-      );
-      newPosition.add(shake);
-      newAngle.x += (Math.random() - 0.5) * 0.02;
-      newAngle.y += (Math.random() - 0.5) * 0.02;
+      const shakeResult = applyShake(newPosition, newAngle);
+      newPosition = shakeResult.position;
+      newAngle = shakeResult.angle;
       break;
 
     case CameraMovement.Steadicam:
-      newPosition.lerpVectors(currentPosition, targetPosition, easedT * 0.1);
+      newPosition = lerpVector3(currentPosition, targetPosition, easedT * 0.1);
       newAngle = lerpEuler(currentAngle, targetAngle, easedT * 0.1);
       break;
 
     case CameraMovement.Zoom:
-      newFocalLength = MathUtils.lerp(
+      newFocalLength = movementFn(
         currentFocalLength,
         targetFocalLength,
         easedT
@@ -84,37 +78,58 @@ export function applyCameraMovement(
       break;
 
     case CameraMovement.TrackingShot:
-      newPosition.lerpVectors(currentPosition, targetPosition, easedT);
-      newAngle = new Euler().setFromVector3(
-        new Vector3().subVectors(subjectCenter, newPosition).normalize()
-      );
+      newPosition = lerpVector3(currentPosition, targetPosition, easedT);
+      newAngle = lookAt(newPosition, subjectCenter);
       break;
 
     case CameraMovement.WhipPan:
-      const whipEasedT =
-        easedT < 0.5
-          ? 16 * easedT * easedT * easedT * easedT * easedT
-          : 1 - Math.pow(-2 * easedT + 2, 5) / 2;
-      newAngle.y = MathUtils.lerp(currentAngle.y, targetAngle.y, whipEasedT);
+      newAngle.y = movementFn(currentAngle.y, targetAngle.y, easedT);
       break;
 
     case CameraMovement.ArcShot:
-      const radius = currentPosition.distanceTo(subjectCenter);
-      const angle = MathUtils.lerp(0, Math.PI / 2, easedT);
-      newPosition.x = subjectCenter.x + radius * Math.cos(angle);
-      newPosition.z = subjectCenter.z + radius * Math.sin(angle);
-      newAngle = new Euler().setFromVector3(
-        new Vector3().subVectors(subjectCenter, newPosition).normalize()
+      const initialRadius = currentPosition.distanceTo(subjectCenter);
+      const targetRadius = targetPosition.distanceTo(subjectCenter);
+      const initialArcAngle = Math.atan2(
+        currentPosition.z - subjectCenter.z,
+        currentPosition.x - subjectCenter.x
       );
+      const targetArcAngle = Math.atan2(
+        targetPosition.z - subjectCenter.z,
+        targetPosition.x - subjectCenter.x
+      );
+
+      const currentRadius = MathUtils.lerp(initialRadius, targetRadius, easedT);
+      const currentArcAngle = MathUtils.lerp(
+        initialArcAngle,
+        targetArcAngle,
+        easedT
+      );
+      const currentHeight = MathUtils.lerp(
+        currentPosition.y,
+        targetPosition.y,
+        easedT
+      );
+
+      newPosition = calculateArcPosition(
+        subjectCenter,
+        currentRadius,
+        currentArcAngle,
+        currentHeight
+      );
+      newAngle = lookAt(newPosition, subjectCenter);
       break;
 
     case CameraMovement.DroneShot:
-      newPosition.lerpVectors(currentPosition, targetPosition, easedT);
-      const oscillation = Math.sin(easedT * Math.PI * 2) * 0.1;
-      newPosition.y += oscillation;
-      newAngle = new Euler().setFromVector3(
-        new Vector3().subVectors(subjectCenter, newPosition).normalize()
+      newPosition = lerpVector3(currentPosition, targetPosition, easedT);
+      const totalDistance = currentPosition.distanceTo(targetPosition);
+      const oscillationDirection = new Vector3(1, 1, 1);
+      newPosition = applyOscillation(
+        newPosition,
+        oscillationDirection,
+        easedT,
+        totalDistance
       );
+      newAngle = lookAt(newPosition, subjectCenter);
       break;
 
     default:
