@@ -42,7 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   downloadSimulationData,
 }) => {
   const [cameraAngle, setCameraAngle] = useState<CameraAngle>(
-    CameraAngle.EyeLevel
+    CameraAngle.LowAngle
   );
   const [shotType, setShotType] = useState<ShotType>(ShotType.MediumShot);
   const [cameraMovement, setCameraMovement] = useState<CameraMovement>(

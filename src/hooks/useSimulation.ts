@@ -7,8 +7,8 @@ import {
 } from "@/types/simulation";
 import * as THREE from "three";
 import { Renderer } from "@/service/rendering/Renderer";
-import { INITIAL_SUBJECTS } from "./constants";
-import { calculateCameraPositions } from "@/service/camera-movement/calculateCameraPositions";
+import { INITIAL_SUBJECTS } from "../lib/constants";
+import { calculateCameraPositions } from "@/service/camera/calculatePositions";
 
 const useSimulation = () => {
   const cameraViewRef = useRef<HTMLDivElement>(null);
@@ -71,16 +71,11 @@ const useSimulation = () => {
   };
 
   const simulate = () => {
-    const initialPosition = new THREE.Vector3(0, 0, 10);
-    const initialAngle = new THREE.Euler(0, 0, 0);
-    const initialFocalLength = 50;
-    const frames = calculateCameraPositions(
-      subjects,
-      instructions,
-      initialPosition,
-      initialAngle,
-      initialFocalLength
-    );
+    const frames = calculateCameraPositions(subjects, instructions, {
+      position: new THREE.Vector3(0, 0, 10),
+      angle: new THREE.Euler(0, 0, 0),
+      focalLength: 50,
+    });
     setCameraFrames(frames);
   };
 

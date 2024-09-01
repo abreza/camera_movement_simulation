@@ -20,7 +20,6 @@ export const colors = [
 export type Color = (typeof colors)[number];
 
 export enum CameraAngle {
-  EyeLevel = "eyeLevel",
   LowAngle = "lowAngle",
   HighAngle = "highAngle",
   DutchAngle = "dutchAngle",
@@ -71,9 +70,9 @@ export interface Subject {
 }
 
 export interface CinematographyInstruction {
-  cameraAngle?: CameraAngle;
-  shotType?: ShotType;
-  cameraMovement?: CameraMovement;
+  cameraAngle: CameraAngle;
+  shotType: ShotType;
+  cameraMovement: CameraMovement;
   subjectIndex: number;
   frameCount: number;
   startPosition?: THREE.Vector3;
@@ -103,13 +102,11 @@ export interface CameraSettings {
   initialFocalLength: number;
 }
 
-export type EasingFunction = (t: number) => number;
-
 export interface SimulationOptions {
   fps: number;
   duration: number;
   cameraSettings: CameraSettings;
-  defaultEasing: EasingFunction;
+  defaultEasing: (t: number) => number;
 }
 
 export interface SimulationResult {
