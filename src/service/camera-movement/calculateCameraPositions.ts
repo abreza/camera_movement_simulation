@@ -11,23 +11,21 @@ export function calculateCameraPositions(
   subjects: Subject[],
   instructions: CinematographyInstruction[],
   initialPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 10),
-  initialLookAt: THREE.Vector3 = new THREE.Vector3(0, 0, 0),
+  initialAngle: THREE.Euler = new THREE.Euler(0, 0, 0),
   initialFocalLength: number = 50
 ): CameraFrame[] {
   const frames: CameraFrame[] = [];
   let currentPosition = initialPosition.clone();
-  let currentLookAt = initialLookAt.clone();
+  let currentAngle = initialAngle.clone();
   let currentFocalLength = initialFocalLength;
-  let currentRotation = new THREE.Euler();
 
   for (const instruction of instructions) {
     const subject = subjects[instruction.subjectIndex];
     const { startFrame, endFrame } = calculateKeyframes(
       instruction,
       currentPosition,
-      currentLookAt,
+      currentAngle,
       currentFocalLength,
-      currentRotation,
       subject
     );
 
@@ -40,31 +38,27 @@ export function calculateCameraPositions(
         endFrame.position,
         easedProgress
       );
-      const lookAt = new THREE.Vector3().lerpVectors(
-        startFrame.lookAt,
-        endFrame.lookAt,
-        easedProgress
+
+      const angle = new THREE.Euler().setFromQuaternion(
+        new THREE.Quaternion().slerpQuaternions(
+          new THREE.Quaternion().setFromEuler(startFrame.angle),
+          new THREE.Quaternion().setFromEuler(endFrame.angle),
+          easedProgress
+        )
       );
+
       const focalLength = THREE.MathUtils.lerp(
         startFrame.focalLength,
         endFrame.focalLength,
         easedProgress
       );
-      const rotation = new THREE.Euler().setFromQuaternion(
-        new THREE.Quaternion().slerpQuaternions(
-          new THREE.Quaternion().setFromEuler(startFrame.rotation),
-          new THREE.Quaternion().setFromEuler(endFrame.rotation),
-          easedProgress
-        )
-      );
 
-      frames.push({ position, lookAt, focalLength, rotation });
+      frames.push({ position, angle, focalLength });
     }
 
     currentPosition = endFrame.position;
-    currentLookAt = endFrame.lookAt;
+    currentAngle = endFrame.angle;
     currentFocalLength = endFrame.focalLength;
-    currentRotation = endFrame.rotation;
   }
 
   return frames;

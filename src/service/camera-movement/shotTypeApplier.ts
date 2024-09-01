@@ -5,7 +5,7 @@ export function applyShotType(
   shotType: ShotType | undefined,
   subject: Subject,
   endPosition: THREE.Vector3,
-  endLookAt: THREE.Vector3,
+  endAngle: THREE.Euler,
   endFocalLength: number
 ) {
   const subjectPosition = subject.position;
@@ -51,9 +51,13 @@ export function applyShotType(
       endPosition
         .copy(subjectPosition)
         .add(new THREE.Vector3(subjectSize.x * 1.5, 0, subjectSize.z * 2));
-      endLookAt
-        .copy(subjectPosition)
-        .add(new THREE.Vector3(subjectSize.x * 0.5, 0, 0));
+      updateAngleToLookAt(
+        endAngle,
+        endPosition,
+        subjectPosition
+          .clone()
+          .add(new THREE.Vector3(subjectSize.x * 0.5, 0, 0))
+      );
       endFocalLength = 50;
       break;
 
@@ -61,7 +65,7 @@ export function applyShotType(
       endPosition
         .copy(subjectPosition)
         .add(new THREE.Vector3(0, subjectSize.y * 0.5, subjectSize.z * 3));
-      endLookAt.copy(subjectPosition);
+      updateAngleToLookAt(endAngle, endPosition, subjectPosition);
       endFocalLength = 35;
       break;
 
@@ -74,14 +78,27 @@ export function applyShotType(
       endPosition.add(
         new THREE.Vector3(subjectSize.x * 2, subjectSize.y, subjectSize.z)
       );
-      endLookAt.copy(subjectPosition);
+      updateAngleToLookAt(endAngle, endPosition, subjectPosition);
       endFocalLength = 50;
       break;
 
     case ShotType.EstablishingShot:
       endPosition.lerpVectors(endPosition, subjectPosition, 0.05);
-      endLookAt.copy(subjectPosition);
+      updateAngleToLookAt(endAngle, endPosition, subjectPosition);
       endFocalLength = 24;
       break;
   }
+}
+
+function updateAngleToLookAt(
+  angle: THREE.Euler,
+  from: THREE.Vector3,
+  to: THREE.Vector3
+) {
+  const direction = to.clone().sub(from).normalize();
+  const quaternion = new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 0, -1),
+    direction
+  );
+  angle.setFromQuaternion(quaternion);
 }

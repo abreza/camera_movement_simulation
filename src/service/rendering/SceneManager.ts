@@ -119,11 +119,11 @@ export class SceneManager {
 
   updateCamera(
     position: THREE.Vector3,
-    lookAt: THREE.Vector3,
+    angle: THREE.Euler,
     focalLength: number
   ): void {
     this.camera.position.copy(position);
-    this.camera.lookAt(lookAt);
+    this.camera.rotation.copy(angle);
     this.camera.setFocalLength(focalLength);
     this.camera.updateMatrixWorld();
 

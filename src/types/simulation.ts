@@ -7,6 +7,7 @@ export enum ObjectClass {
   Book = "book",
   Tree = "tree",
 }
+
 export const colors = [
   "red",
   "blue",
@@ -77,20 +78,17 @@ export interface CinematographyInstruction {
   frameCount: number;
   startPosition?: THREE.Vector3;
   endPosition?: THREE.Vector3;
-  startLookAt?: THREE.Vector3;
-  endLookAt?: THREE.Vector3;
+  startAngle?: THREE.Euler;
+  endAngle?: THREE.Euler;
   startFocalLength?: number;
   endFocalLength?: number;
-  startRotation?: THREE.Euler;
-  endRotation?: THREE.Euler;
   easeFunction?: (t: number) => number;
 }
 
 export interface CameraFrame {
   position: THREE.Vector3;
-  lookAt: THREE.Vector3;
+  angle: THREE.Euler;
   focalLength: number;
-  rotation: THREE.Euler;
 }
 
 export interface Scene {

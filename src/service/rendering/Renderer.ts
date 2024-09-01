@@ -34,11 +34,11 @@ export class Renderer {
 
   updateScene(
     cameraPosition: THREE.Vector3,
-    cameraLookAt: THREE.Vector3,
+    cameraAngle: THREE.Euler,
     focalLength: number,
     subjects: Subject[]
   ): void {
-    this.sceneManager.updateCamera(cameraPosition, cameraLookAt, focalLength);
+    this.sceneManager.updateCamera(cameraPosition, cameraAngle, focalLength);
     this.sceneManager.updateSubjects(subjects, this.subjectMeshCreator);
   }
 

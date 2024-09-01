@@ -22,9 +22,8 @@ const useSimulation = () => {
   const [cameraFrames, setCameraFrames] = useState<CameraFrame[]>([
     {
       position: new THREE.Vector3(5, 5, 15),
-      lookAt: new THREE.Vector3(0, 0, 0),
+      angle: new THREE.Euler(0, 0, 0),
       focalLength: 50,
-      rotation: new THREE.Euler(0, 0, 0),
     },
   ]);
   const [isRendering, setIsRendering] = useState(false);
@@ -73,13 +72,13 @@ const useSimulation = () => {
 
   const simulate = () => {
     const initialPosition = new THREE.Vector3(0, 0, 10);
-    const initialLookAt = new THREE.Vector3(0, 0, 0);
+    const initialAngle = new THREE.Euler(0, 0, 0);
     const initialFocalLength = 50;
     const frames = calculateCameraPositions(
       subjects,
       instructions,
       initialPosition,
-      initialLookAt,
+      initialAngle,
       initialFocalLength
     );
     setCameraFrames(frames);
@@ -95,7 +94,7 @@ const useSimulation = () => {
     const frame = cameraFrames[currentFrame];
     rendererRef.current.updateScene(
       frame.position,
-      frame.lookAt,
+      frame.angle,
       frame.focalLength,
       subjects
     );

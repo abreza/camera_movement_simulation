@@ -11,63 +11,53 @@ import { applyShotType } from "./shotTypeApplier";
 export function calculateKeyframes(
   instruction: CinematographyInstruction,
   currentPosition: THREE.Vector3,
-  currentLookAt: THREE.Vector3,
+  currentAngle: THREE.Euler,
   currentFocalLength: number,
-  currentRotation: THREE.Euler,
   subject: Subject
 ): {
-  startFrame: CameraFrame & { rotation: THREE.Euler };
-  endFrame: CameraFrame & { rotation: THREE.Euler };
+  startFrame: CameraFrame;
+  endFrame: CameraFrame;
 } {
   const startPosition =
     instruction.startPosition?.clone() || currentPosition.clone();
-  const startLookAt = instruction.startLookAt?.clone() || currentLookAt.clone();
+  const startAngle = instruction.startAngle?.clone() || currentAngle.clone();
   const startFocalLength = instruction.startFocalLength || currentFocalLength;
-  const startRotation = currentRotation.clone();
 
   let endPosition = instruction.endPosition?.clone() || startPosition.clone();
-  let endLookAt = instruction.endLookAt?.clone() || subject.position.clone();
+  let endAngle = instruction.endAngle?.clone() || startAngle.clone();
   let endFocalLength = instruction.endFocalLength || startFocalLength;
-  let endRotation = startRotation.clone();
 
   applyMovement(
     instruction,
     subject,
     startPosition,
-    startLookAt,
+    startAngle,
     endPosition,
-    endLookAt,
-    endRotation,
+    endAngle,
     startFocalLength,
     endFocalLength
   );
-  applyCameraAngle(
-    instruction.cameraAngle,
-    subject,
-    endPosition,
-    endLookAt,
-    endRotation
-  );
+
+  applyCameraAngle(instruction.cameraAngle, subject, endPosition, endAngle);
+
   applyShotType(
     instruction.shotType,
     subject,
     endPosition,
-    endLookAt,
+    endAngle,
     endFocalLength
   );
 
   return {
     startFrame: {
       position: startPosition,
-      lookAt: startLookAt,
+      angle: startAngle,
       focalLength: startFocalLength,
-      rotation: startRotation,
     },
     endFrame: {
       position: endPosition,
-      lookAt: endLookAt,
+      angle: endAngle,
       focalLength: endFocalLength,
-      rotation: endRotation,
     },
   };
 }
