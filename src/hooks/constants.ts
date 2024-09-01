@@ -52,7 +52,7 @@ function createRandomSubject(): Subject {
   );
 
   // Calculate the y position to place the object on the floor
-  const yPosition = randomSize.y / 4;
+  const yPosition = 0;
 
   return {
     position: new THREE.Vector3(
@@ -61,11 +61,7 @@ function createRandomSubject(): Subject {
       Math.random() * 10 - 5
     ),
     size: randomSize,
-    rotation: new THREE.Euler(
-      (Math.random() * Math.PI) / 6 - Math.PI / 12,
-      (Math.random() * Math.PI) / 2 - Math.PI / 4,
-      (Math.random() * Math.PI) / 6 - Math.PI / 12
-    ),
+    rotation: new THREE.Euler(0, 0, 0),
     objectClass,
     color,
   };

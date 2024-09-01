@@ -42,7 +42,7 @@ export class SceneManager {
   }
 
   private setupMainScene(cameraViewElement: HTMLDivElement): void {
-    this.renderer.setSize(288, 288);
+    this.renderer.setSize(window.innerWidth / 5, window.innerHeight / 5);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     cameraViewElement.appendChild(this.renderer.domElement);
