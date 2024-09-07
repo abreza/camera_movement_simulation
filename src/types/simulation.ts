@@ -8,57 +8,126 @@ export enum ObjectClass {
   Tree = "tree",
 }
 
-export const colors = [
-  "red",
-  "blue",
-  "green",
-  "yellow",
-  "purple",
-  "black",
-] as const;
-
-export type Color = (typeof colors)[number];
-
 export enum CameraAngle {
   LowAngle = "lowAngle",
+  MediumAngle = "mediumAngle",
   HighAngle = "highAngle",
-  DutchAngle = "dutchAngle",
   BirdsEyeView = "birdsEyeView",
-  WormsEyeView = "wormsEyeView",
-  OverTheShoulder = "overTheShoulder",
-  PointOfView = "pointOfView",
+
+  // Other
+  // EyeLevel = "eyeLevel",
+  // DutchAngle = "dutchAngle",
+  // WormsEyeView = "wormsEyeView",
+  // OverTheShoulder = "overTheShoulder",
+  // PointOfView = "pointOfView",
 }
 
 export enum ShotType {
-  ExtremeCloseUp = "extremeCloseUp",
   CloseUp = "closeUp",
-  MediumCloseUp = "mediumCloseUp",
   MediumShot = "mediumShot",
-  MediumLongShot = "mediumLongShot",
-  FullShot = "fullShot",
   LongShot = "longShot",
-  ExtremeLongShot = "extremeLongShot",
-  TwoShot = "twoShot",
-  GroupShot = "groupShot",
-  InsertShot = "insertShot",
-  Cutaway = "cutaway",
-  EstablishingShot = "establishingShot",
+
+  // Other
+  // ExtremeCloseUp = "extremeCloseUp",
+  // MediumCloseUp = "mediumCloseUp",
+  // MediumLongShot = "mediumLongShot",
+  // FullShot = "fullShot",
+  // ExtremeLongShot = "extremeLongShot",
+  // TwoShot = "twoShot",
+  // GroupShot = "groupShot",
+  // InsertShot = "insertShot",
+  // Cutaway = "cutaway",
+  // EstablishingShot = "establishingShot",
 }
 
 export enum CameraMovement {
-  Pan = "pan",
-  Tilt = "tilt",
-  Dolly = "dolly",
-  Truck = "truck",
-  Pedestal = "pedestal",
-  CraneJib = "craneJib",
-  Handheld = "handheld",
-  Steadicam = "steadicam",
-  Zoom = "zoom",
-  TrackingShot = "trackingShot",
-  WhipPan = "whipPan",
-  ArcShot = "arcShot",
-  DroneShot = "droneShot",
+  PanLeft = "panLeft",
+  PanRight = "panRight",
+
+  TiltUp = "tiltUp",
+  TiltDown = "tiltDown",
+
+  DollyIn = "dollyIn",
+  DollyOut = "dollyOut",
+
+  TruckLeft = "truckLeft",
+  TruckRight = "truckRight",
+
+  PedestalUp = "pedestalUp",
+  PedestalDown = "pedestalDown",
+
+  FullZoomIn = "fullZoomIn",
+  FullZoomOut = "fullZoomOut",
+  HalfZoomIn = "halfZoomIn",
+  HalfZoomOut = "halfZoomOut",
+  ShortZoomIn = "shortZoomIn",
+  ShortZoomOut = "shortZoomOut",
+
+  ShortArcShotLeft = "shortArcShotLeft",
+  ShortArcShotRight = "shortArcShotRight",
+  HalfArcShotLeft = "halfArcShotLeft",
+  HalfArcShotRight = "halfArcShotRight",
+  FullArcShotLeft = "fullArcShotLeft",
+  FullArcShotRight = "fullArcShotRight",
+
+  PanAndTilt = "panAndTilt",
+  DollyAndPan = "dollyAndPan",
+  ZoomAndTruck = "zoomAndTruck",
+
+  // Other
+  // CraneJib = "craneJib",
+  // Handheld = "handheld",
+  // Steadicam = "steadicam",
+  // TrackingShot = "trackingShot",
+  // WhipPan = "whipPan",
+  // DroneShot = "droneShot",
+  // Shake = "shake",
+  // RollingShutter = "rollingShutter",
+}
+
+export enum MovementEasing {
+  Linear = "linear",
+
+  // Ease In (slow start)
+  EaseInQuad = "easeInQuad",
+  EaseInCubic = "easeInCubic",
+  EaseInQuart = "easeInQuart",
+  EaseInQuint = "easeInQuint",
+
+  // Ease Out (slow end)
+  EaseOutQuad = "easeOutQuad",
+  EaseOutCubic = "easeOutCubic",
+  EaseOutQuart = "easeOutQuart",
+  EaseOutQuint = "easeOutQuint",
+
+  // Ease In Out (slow start and end)
+  EaseInOutQuad = "easeInOutQuad",
+  EaseInOutCubic = "easeInOutCubic",
+  EaseInOutQuart = "easeInOutQuart",
+  EaseInOutQuint = "easeInOutQuint",
+
+  // Additional easing functions
+  EaseInSine = "easeInSine",
+  EaseOutSine = "easeOutSine",
+  EaseInOutSine = "easeInOutSine",
+
+  EaseInExpo = "easeInExpo",
+  EaseOutExpo = "easeOutExpo",
+  EaseInOutExpo = "easeInOutExpo",
+
+  EaseInCirc = "easeInCirc",
+  EaseOutCirc = "easeOutCirc",
+  EaseInOutCirc = "easeInOutCirc",
+
+  // Bounce
+  EaseInBounce = "easeInBounce",
+  EaseOutBounce = "easeOutBounce",
+  EaseInOutBounce = "easeInOutBounce",
+
+  // Elastic
+  EaseInElastic = "easeInElastic",
+  EaseOutElastic = "easeOutElastic",
+  EaseInOutElastic = "easeInOutElastic",
 }
 
 export interface Subject {
@@ -66,51 +135,21 @@ export interface Subject {
   size: THREE.Vector3;
   rotation: THREE.Euler;
   objectClass: ObjectClass;
-  color: Color;
 }
 
 export interface CinematographyInstruction {
-  cameraAngle: CameraAngle;
-  shotType: ShotType;
   cameraMovement: CameraMovement;
-  subjectIndex: number;
+  movementEasing: MovementEasing;
   frameCount: number;
-  startPosition?: THREE.Vector3;
-  endPosition?: THREE.Vector3;
-  startAngle?: THREE.Euler;
-  endAngle?: THREE.Euler;
-  startFocalLength?: number;
-  endFocalLength?: number;
-  easeFunction?: (t: number) => number;
+  initialCameraAngle?: CameraAngle;
+  initialShotType?: ShotType;
+  subjectIndex?: number;
+  // startCamera?: Partial<CameraFrame>;
+  // endCamera?: Partial<CameraFrame>;
 }
 
 export interface CameraFrame {
   position: THREE.Vector3;
   angle: THREE.Euler;
   focalLength: number;
-}
-
-export interface Scene {
-  subjects: Subject[];
-  cameraInstructions: CinematographyInstruction[];
-}
-
-export interface CameraSettings {
-  nearClippingPlane: number;
-  farClippingPlane: number;
-  aspectRatio: number;
-  initialFocalLength: number;
-}
-
-export interface SimulationOptions {
-  fps: number;
-  duration: number;
-  cameraSettings: CameraSettings;
-  defaultEasing: (t: number) => number;
-}
-
-export interface SimulationResult {
-  frames: CameraFrame[];
-  duration: number;
-  frameCount: number;
 }

@@ -19,6 +19,7 @@ import {
   CameraAngle,
   ShotType,
   CameraMovement,
+  MovementEasing,
 } from "@/types/simulation";
 import { Download } from "@mui/icons-material";
 
@@ -41,23 +42,31 @@ const Sidebar: React.FC<SidebarProps> = ({
   renderSimulationData,
   downloadSimulationData,
 }) => {
-  const [cameraAngle, setCameraAngle] = useState<CameraAngle>(
-    CameraAngle.LowAngle
-  );
-  const [shotType, setShotType] = useState<ShotType>(ShotType.MediumShot);
   const [cameraMovement, setCameraMovement] = useState<CameraMovement>(
-    CameraMovement.Pan
+    CameraMovement.ShortZoomIn
   );
-  const [selectedSubjectIndex, setSelectedSubjectIndex] = useState(0);
   const [frameCount, setFrameCount] = useState<number>(100);
+  const [initialCameraAngle, setInitialCameraAngle] = useState<
+    CameraAngle | undefined
+  >(CameraAngle.LowAngle);
+  const [initialShotType, setInitialShotType] = useState<ShotType | undefined>(
+    ShotType.MediumShot
+  );
+  const [movementEasing, setMovementEasing] = useState<MovementEasing>(
+    MovementEasing.Linear
+  );
+  const [selectedSubjectIndex, setSelectedSubjectIndex] = useState<
+    number | undefined
+  >(0);
 
   const handleAddInstruction = () => {
     onAddInstruction({
-      cameraAngle,
-      shotType,
       cameraMovement,
-      subjectIndex: selectedSubjectIndex,
       frameCount,
+      initialCameraAngle,
+      initialShotType,
+      movementEasing,
+      subjectIndex: selectedSubjectIndex,
     });
   };
 
@@ -83,38 +92,20 @@ const Sidebar: React.FC<SidebarProps> = ({
           {instructions.map((instruction, index) => (
             <ListItem key={index}>
               <ListItemText
-                primary={`${instruction.cameraAngle} - ${instruction.shotType} - ${instruction.cameraMovement}`}
-                secondary={`Subject ${instruction.subjectIndex + 1}, Frames: ${
-                  instruction.frameCount
+                primary={`${instruction.cameraMovement} - ${
+                  instruction.initialCameraAngle || "N/A"
+                } - ${instruction.initialShotType || "N/A"}`}
+                secondary={`Subject ${
+                  instruction.subjectIndex !== undefined
+                    ? instruction.subjectIndex + 1
+                    : "N/A"
+                }, Frames: ${instruction.frameCount}, Easing: ${
+                  instruction.movementEasing
                 }`}
               />
             </ListItem>
           ))}
         </List>
-        <Select
-          value={cameraAngle}
-          onChange={(e) => setCameraAngle(e.target.value as CameraAngle)}
-          fullWidth
-          sx={{ mb: 2 }}
-        >
-          {Object.values(CameraAngle).map((angle) => (
-            <MenuItem key={angle} value={angle}>
-              {angle}
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
-          value={shotType}
-          onChange={(e) => setShotType(e.target.value as ShotType)}
-          fullWidth
-          sx={{ mb: 2 }}
-        >
-          {Object.values(ShotType).map((type) => (
-            <MenuItem key={type} value={type}>
-              {type}
-            </MenuItem>
-          ))}
-        </Select>
         <Select
           value={cameraMovement}
           onChange={(e) => setCameraMovement(e.target.value as CameraMovement)}
@@ -128,11 +119,54 @@ const Sidebar: React.FC<SidebarProps> = ({
           ))}
         </Select>
         <Select
-          value={selectedSubjectIndex}
-          onChange={(e) => setSelectedSubjectIndex(+e.target.value)}
+          value={initialCameraAngle}
+          onChange={(e) => setInitialCameraAngle(e.target.value as CameraAngle)}
           fullWidth
           sx={{ mb: 2 }}
         >
+          <MenuItem value={undefined}>No initial camera angle</MenuItem>
+          {Object.values(CameraAngle).map((angle) => (
+            <MenuItem key={angle} value={angle}>
+              {angle}
+            </MenuItem>
+          ))}
+        </Select>
+        <Select
+          value={initialShotType}
+          onChange={(e) => setInitialShotType(e.target.value as ShotType)}
+          fullWidth
+          sx={{ mb: 2 }}
+        >
+          <MenuItem value={undefined}>No initial shot type</MenuItem>
+          {Object.values(ShotType).map((type) => (
+            <MenuItem key={type} value={type}>
+              {type}
+            </MenuItem>
+          ))}
+        </Select>
+        <Select
+          value={movementEasing}
+          onChange={(e) => setMovementEasing(e.target.value as MovementEasing)}
+          fullWidth
+          sx={{ mb: 2 }}
+        >
+          {Object.values(MovementEasing).map((easing) => (
+            <MenuItem key={easing} value={easing}>
+              {easing}
+            </MenuItem>
+          ))}
+        </Select>
+        <Select
+          value={selectedSubjectIndex}
+          onChange={(e) =>
+            setSelectedSubjectIndex(
+              e.target.value === "undefined" ? undefined : +e.target.value
+            )
+          }
+          fullWidth
+          sx={{ mb: 2 }}
+        >
+          <MenuItem value="undefined">No subject</MenuItem>
           {subjects.map((_, index) => (
             <MenuItem key={index} value={index}>{`Subject ${
               index + 1

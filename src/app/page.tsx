@@ -56,6 +56,7 @@ const CameraMovementSimulation: FC = () => {
           borderRadius: 2,
           overflow: "hidden",
           boxShadow: 3,
+          display: cameraFrames.length > 1 ? "block" : "none",
         }}
       ></Box>
       {cameraFrames.length > 1 && (

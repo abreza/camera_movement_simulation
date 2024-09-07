@@ -1,69 +1,57 @@
 import {
-  CameraAngle,
   CameraFrame,
   CinematographyInstruction,
   Subject,
 } from "@/types/simulation";
-import { applyTransitions } from "./applyTransitions";
-import { processInstruction } from "./processInstructions";
-import { getSubjectCenter, lookAt } from "./utils";
-import { calculateTargetPosition } from "./calculateTarget";
-
-const TRANSITION_FRAMES = 20;
+import { calculateEaseValue } from "./calculateEasing";
+import { getInitialCameraPositionAndAngle } from "./getInitialCameraPositionAndAngle";
+import { applyCameraMovement } from "./applyCameraMovement";
 
 export function calculateCameraPositions(
   subjects: Subject[],
   instructions: CinematographyInstruction[],
   initialCamera: CameraFrame
 ): CameraFrame[] {
-  let frames: CameraFrame[] = [];
-  let currentPosition = initialCamera.position.clone();
-  let currentAngle = initialCamera.angle.clone();
-  let currentFocalLength = initialCamera.focalLength;
+  let cameraFrames: CameraFrame[] = [initialCamera];
+  let currentCamera = initialCamera;
 
   for (const instruction of instructions) {
-    const subject = subjects[instruction.subjectIndex];
-    let { position: targetPosition, focalLength: targetFocalLength } =
-      calculateTargetPosition(
+    let subject: Subject | undefined;
+    if (instruction.subjectIndex !== undefined) {
+      subject = subjects[instruction.subjectIndex];
+    }
+    const startCamera = { ...currentCamera };
+
+    if (
+      subject &&
+      instruction.initialCameraAngle &&
+      instruction.initialShotType
+    ) {
+      const initialSetup = getInitialCameraPositionAndAngle(
         subject,
-        instruction.cameraAngle,
-        instruction.shotType,
-        instruction.endFocalLength || currentFocalLength
+        instruction.initialCameraAngle,
+        instruction.initialShotType
       );
-
-    if (instruction.endPosition)
-      targetPosition = instruction.endPosition.clone();
-    if (instruction.startPosition)
-      currentPosition = instruction.startPosition.clone();
-    if (instruction.startFocalLength)
-      currentFocalLength = instruction.startFocalLength;
-
-    const subjectCenter = getSubjectCenter(subject);
-    const targetAngle = lookAt(targetPosition, subjectCenter);
-
-    if (instruction.cameraAngle === CameraAngle.DutchAngle) {
-      targetAngle.z = Math.PI / 12;
+      startCamera.position = initialSetup.position;
+      startCamera.angle = initialSetup.angle;
     }
 
-    frames = frames.concat(
-      processInstruction(
-        instruction,
-        currentPosition,
-        targetPosition,
-        currentAngle,
-        targetAngle,
-        currentFocalLength,
-        targetFocalLength,
-        subject
-      )
-    );
+    for (let frame = 0; frame < instruction.frameCount; frame++) {
+      const easeValue = calculateEaseValue(
+        frame / (instruction.frameCount - 1),
+        instruction.movementEasing
+      );
 
-    if (frames.length) {
-      currentPosition = frames[frames.length - 1].position;
-      currentAngle = frames[frames.length - 1].angle;
-      currentFocalLength = frames[frames.length - 1].focalLength;
+      currentCamera = applyCameraMovement(
+        startCamera,
+        instruction.cameraMovement,
+        easeValue,
+        subject
+      );
+
+      cameraFrames.push(currentCamera);
     }
   }
 
-  return applyTransitions(frames, instructions, TRANSITION_FRAMES);
+  return cameraFrames;
 }

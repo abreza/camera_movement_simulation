@@ -1,4 +1,4 @@
-import { colors, ObjectClass, Subject } from "@/types/simulation";
+import { ObjectClass, Subject } from "@/types/simulation";
 import * as THREE from "three";
 
 export const objectSizes: Record<
@@ -43,7 +43,6 @@ function getNormalDistributionValue(mean: number, std: number): number {
 
 function createRandomSubject(): Subject {
   const objectClass = getRandomElement(Object.values(ObjectClass));
-  const color = getRandomElement(colors);
   const size = objectSizes[objectClass];
   const randomSize = new THREE.Vector3(
     getNormalDistributionValue(size.mean.x, size.std.x),
@@ -63,7 +62,6 @@ function createRandomSubject(): Subject {
     size: randomSize,
     rotation: new THREE.Euler(0, 0, 0),
     objectClass,
-    color,
   };
 }
 
