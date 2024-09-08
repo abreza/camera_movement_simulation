@@ -1,22 +1,18 @@
 import React, { FC, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  Button,
-  Stepper,
-  Step,
-  StepLabel,
-  Stack,
-} from "@mui/material";
+import { Dialog, DialogContent, DialogTitle } from "@mui/material";
 import { Transition } from "./Transition";
-import { SubjectGeneration } from "./SubjectGeneration";
-import { InstructionManagement } from "./InstructionManagement";
+import { InitialOptions } from "./InitialOptions";
+import { SimulationSteps } from "./simulation/SimulationSteps";
+import { GeneratorOptions } from "./dataset/GeneratorOptions";
 import {
   CinematographyInstruction,
   ObjectClass,
   Subject,
 } from "@/types/simulation";
+import {
+  generateRandomDataset,
+  GenerateRandomDatasetOptions,
+} from "@/service/dataset/generator";
 
 interface SettingsProps {
   open: boolean;
@@ -49,17 +45,24 @@ export const Settings: FC<SettingsProps> = ({
   renderSimulationData,
   downloadSimulationData,
 }) => {
-  const [activeStep, setActiveStep] = useState(0);
+  const [activeStep, setActiveStep] = useState(-1);
+  const [showSimulationSteps, setShowSimulationSteps] = useState(false);
+  const [showGeneratorOptions, setShowGeneratorOptions] = useState(false);
 
-  const handleNext = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+  const handleGenerateRandomDataset = () => {
+    setShowGeneratorOptions(true);
   };
 
-  const handleBack = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep - 1);
+  const handleGenerateDataset = (options: GenerateRandomDatasetOptions) => {
+    generateRandomDataset(options);
+    setShowGeneratorOptions(false);
+    onClose();
   };
 
-  const steps = ["Generate Subjects", "Manage Instructions"];
+  const handleRenderSimulation = () => {
+    setShowSimulationSteps(true);
+    setActiveStep(0);
+  };
 
   return (
     <Dialog
@@ -78,47 +81,35 @@ export const Settings: FC<SettingsProps> = ({
       maxWidth="xs"
       fullWidth
     >
-      <DialogTitle>Settings</DialogTitle>
+      <DialogTitle>Cinematic Camera Movement</DialogTitle>
       <DialogContent>
-        <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 2 }}>
-          {steps.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
-        {activeStep === 0 ? (
-          <SubjectGeneration
-            onGenerateSubjects={onGenerateSubjects}
-            handleNext={handleNext}
+        {activeStep === -1 && !showGeneratorOptions && (
+          <InitialOptions
+            onGenerateRandomDataset={handleGenerateRandomDataset}
+            onRenderSimulation={handleRenderSimulation}
           />
-        ) : (
-          <InstructionManagement
+        )}
+        {showGeneratorOptions && (
+          <GeneratorOptions
+            onGenerate={handleGenerateDataset}
+            onClose={() => setShowGeneratorOptions(false)}
+          />
+        )}
+        {showSimulationSteps && (
+          <SimulationSteps
+            activeStep={activeStep}
+            setActiveStep={setActiveStep}
             subjects={subjects}
             instructions={instructions}
             onAddInstruction={onAddInstruction}
             onEditInstruction={onEditInstruction}
             onDeleteInstruction={onDeleteInstruction}
-            onClose={onClose}
+            onGenerateSubjects={onGenerateSubjects}
             renderSimulationData={renderSimulationData}
             downloadSimulationData={downloadSimulationData}
+            onClose={onClose}
           />
         )}
-        <Stack
-          direction="row"
-          spacing={2}
-          justifyContent="space-between"
-          sx={{ mt: 1 }}
-        >
-          <Button onClick={handleBack} disabled={activeStep === 0}>
-            Back
-          </Button>
-          {activeStep === 0 && (
-            <Button onClick={handleNext} disabled={subjects.length === 0}>
-              Next
-            </Button>
-          )}
-        </Stack>
       </DialogContent>
     </Dialog>
   );

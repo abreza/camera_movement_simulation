@@ -4,7 +4,7 @@ import { FC, useState } from "react";
 import { Box, Slider, TextField, Button, Stack, Fab } from "@mui/material";
 import useSimulation from "@/hooks/useSimulation";
 import { Settings as SettingsIcon } from "@mui/icons-material";
-import { Settings } from "@/components/layout/Settings";
+import { Settings } from "@/components/layout/settings/Settings";
 import { generateSubjects } from "@/service/subjects/generateSubjects";
 import { ObjectClass, Subject } from "@/types/simulation";
 
