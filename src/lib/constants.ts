@@ -1,4 +1,5 @@
-import { ObjectClass, Subject } from "@/types/simulation";
+import { ObjectClass } from "@/types/simulation";
+
 import * as THREE from "three";
 
 export const objectSizes: Record<
@@ -26,48 +27,5 @@ export const objectSizes: Record<
     std: new THREE.Vector3(0.05, 0.05, 0.1),
   },
 };
-
-function getRandomElement<T>(array: readonly T[]): T {
-  return array[Math.floor(Math.random() * array.length)];
-}
-
-function getNormalDistributionValue(mean: number, std: number): number {
-  let u = 0,
-    v = 0;
-  while (u === 0) u = Math.random();
-  while (v === 0) v = Math.random();
-  return (
-    mean + std * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v)
-  );
-}
-
-function createRandomSubject(): Subject {
-  const objectClass = getRandomElement(Object.values(ObjectClass));
-  const size = objectSizes[objectClass];
-  const randomSize = new THREE.Vector3(
-    getNormalDistributionValue(size.mean.x, size.std.x),
-    getNormalDistributionValue(size.mean.y, size.std.y),
-    getNormalDistributionValue(size.mean.z, size.std.z)
-  );
-
-  // Calculate the y position to place the object on the floor
-  const yPosition = 0;
-
-  return {
-    position: new THREE.Vector3(
-      Math.random() * 10 - 5,
-      yPosition,
-      Math.random() * 10 - 5
-    ),
-    size: randomSize,
-    rotation: new THREE.Euler(0, 0, 0),
-    objectClass,
-  };
-}
-
-export const INITIAL_SUBJECTS: Subject[] = Array.from(
-  { length: 20 },
-  createRandomSubject
-);
 
 export const DEFAULT_FRAME_COUNT = 60;

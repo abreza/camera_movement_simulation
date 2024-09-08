@@ -37,3 +37,17 @@ export const handleDownloadSimulationData = (
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 };
+
+export function getRandomElement<T>(array: readonly T[]): T {
+  return array[Math.floor(Math.random() * array.length)];
+}
+
+export function getNormalDistributionValue(mean: number, std: number): number {
+  let u = 0,
+    v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return (
+    mean + std * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v)
+  );
+}

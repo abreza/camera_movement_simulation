@@ -7,8 +7,8 @@ import {
 } from "@/types/simulation";
 import * as THREE from "three";
 import { Renderer } from "@/service/rendering/Renderer";
-import { INITIAL_SUBJECTS } from "../lib/constants";
 import { calculateCameraPositions } from "@/service/camera/calculatePositions";
+import { generateSubjects } from "@/service/subjects/generateSubjects";
 
 const useSimulation = () => {
   const cameraViewRef = useRef<HTMLDivElement>(null);
@@ -18,7 +18,7 @@ const useSimulation = () => {
   const [instructions, setInstructions] = useState<CinematographyInstruction[]>(
     []
   );
-  const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
+  const [subjects, setSubjects] = useState<Subject[]>(generateSubjects());
   const [cameraFrames, setCameraFrames] = useState<CameraFrame[]>([
     {
       position: new THREE.Vector3(5, 5, 15),
