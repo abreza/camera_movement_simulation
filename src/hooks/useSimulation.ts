@@ -8,9 +8,8 @@ import {
 import * as THREE from "three";
 import { Renderer } from "@/service/rendering/Renderer";
 import { calculateCameraPositions } from "@/service/camera/calculatePositions";
-import { generateSubjects } from "@/service/subjects/generateSubjects";
 
-const useSimulation = () => {
+const useSimulation = (initSubjects: Subject[]) => {
   const cameraViewRef = useRef<HTMLDivElement>(null);
   const worldViewRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<Renderer | null>(null);
@@ -18,7 +17,7 @@ const useSimulation = () => {
   const [instructions, setInstructions] = useState<CinematographyInstruction[]>(
     []
   );
-  const [subjects, setSubjects] = useState<Subject[]>(generateSubjects());
+  const [subjects, setSubjects] = useState<Subject[]>(initSubjects);
   const [cameraFrames, setCameraFrames] = useState<CameraFrame[]>([
     {
       position: new THREE.Vector3(5, 5, 15),
@@ -29,6 +28,10 @@ const useSimulation = () => {
   const [isRendering, setIsRendering] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [fps, setFps] = useState(30);
+
+  useEffect(() => {
+    setSubjects(initSubjects);
+  }, [initSubjects]);
 
   useEffect(() => {
     if (cameraViewRef.current && worldViewRef.current) {

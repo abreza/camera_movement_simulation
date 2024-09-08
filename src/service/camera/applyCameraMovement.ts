@@ -87,7 +87,7 @@ export function applyCameraMovement(
           Math.cos(angle) * radius
         );
         result.position.copy(newPosition.add(subject.position));
-        result.angle.y = -angle;
+        result.angle.y = angle;
       }
       break;
     case CameraMovement.PanAndTilt:

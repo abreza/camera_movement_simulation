@@ -5,15 +5,17 @@ import { Box, Slider, TextField, Button, Stack, Fab } from "@mui/material";
 import useSimulation from "@/hooks/useSimulation";
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { Settings } from "@/components/layout/Settings";
+import { generateSubjects } from "@/service/subjects/generateSubjects";
+import { ObjectClass, Subject } from "@/types/simulation";
 
 const CameraMovementSimulation: FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
 
   const {
     cameraViewRef,
     worldViewRef,
     instructions,
-    subjects,
     handleAddInstruction,
     handleEditInstruction,
     handleDeleteInstruction,
@@ -26,7 +28,15 @@ const CameraMovementSimulation: FC = () => {
     fps,
     setFps,
     setCurrentFrame,
-  } = useSimulation();
+  } = useSimulation(subjects);
+
+  const handleGenerateSubjects = (
+    count: number,
+    probabilityFactors: Record<ObjectClass, number>
+  ) => {
+    const newSubjects = generateSubjects(count, probabilityFactors);
+    setSubjects(newSubjects);
+  };
 
   const handleSliderChange = (_: Event, value: number | number[]) => {
     setIsRendering(false);
@@ -43,6 +53,7 @@ const CameraMovementSimulation: FC = () => {
         onAddInstruction={handleAddInstruction}
         onEditInstruction={handleEditInstruction}
         onDeleteInstruction={handleDeleteInstruction}
+        onGenerateSubjects={handleGenerateSubjects}
         renderSimulationData={renderSimulationData}
         downloadSimulationData={downloadSimulationData}
       />
