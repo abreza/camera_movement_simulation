@@ -1,44 +1,62 @@
-import React, { useState } from "react";
+import { FC, forwardRef, ReactElement, Ref, useState } from "react";
 import {
-  Drawer,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
   List,
   ListItem,
   ListItemText,
-  Select,
   MenuItem,
-  TextField,
-  Button,
-  Box,
-  Typography,
-  IconButton,
+  Select,
+  Slide,
   Stack,
+  TextField,
 } from "@mui/material";
+import { TransitionProps } from "@mui/material/transitions";
 import {
-  Subject,
-  CinematographyInstruction,
   CameraAngle,
-  ShotType,
   CameraMovement,
+  CinematographyInstruction,
   MovementEasing,
+  ShotType,
+  Subject,
 } from "@/types/simulation";
-import { Download } from "@mui/icons-material";
+import { Download, Edit, Delete } from "@mui/icons-material";
 
-interface SidebarProps {
+const Transition = forwardRef(function Transition(
+  props: TransitionProps & {
+    children: ReactElement;
+  },
+  ref: Ref<unknown>
+) {
+  return <Slide direction="right" ref={ref} {...props} />;
+});
+
+interface SettingsProps {
   open: boolean;
   subjects: Subject[];
   instructions: CinematographyInstruction[];
   onClose: () => void;
   onAddInstruction: (instruction: CinematographyInstruction) => void;
+  onEditInstruction: (
+    index: number,
+    instruction: CinematographyInstruction
+  ) => void;
+  onDeleteInstruction: (index: number) => void;
   renderSimulationData: () => void;
   downloadSimulationData: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({
+export const Settings: FC<SettingsProps> = ({
   open,
   subjects,
   instructions,
   onClose,
   onAddInstruction,
+  onEditInstruction,
+  onDeleteInstruction,
   renderSimulationData,
   downloadSimulationData,
 }) => {
@@ -58,36 +76,64 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [selectedSubjectIndex, setSelectedSubjectIndex] = useState<
     number | undefined
   >(0);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  const handleAddInstruction = () => {
-    onAddInstruction({
+  const handleAddOrUpdateInstruction = () => {
+    const instruction: CinematographyInstruction = {
       cameraMovement,
       frameCount,
       initialCameraAngle,
       initialShotType,
       movementEasing,
       subjectIndex: selectedSubjectIndex,
-    });
+    };
+
+    if (editingIndex !== null) {
+      onEditInstruction(editingIndex, instruction);
+      setEditingIndex(null);
+    } else {
+      onAddInstruction(instruction);
+    }
+
+    // Reset form
+    setCameraMovement(CameraMovement.ShortZoomIn);
+    setFrameCount(100);
+    setInitialCameraAngle(CameraAngle.LowAngle);
+    setInitialShotType(ShotType.MediumShot);
+    setMovementEasing(MovementEasing.Linear);
+    setSelectedSubjectIndex(0);
+  };
+
+  const handleEdit = (index: number) => {
+    const instruction = instructions[index];
+    setCameraMovement(instruction.cameraMovement);
+    setFrameCount(instruction.frameCount);
+    setInitialCameraAngle(instruction.initialCameraAngle);
+    setInitialShotType(instruction.initialShotType);
+    setMovementEasing(instruction.movementEasing);
+    setSelectedSubjectIndex(instruction.subjectIndex);
+    setEditingIndex(index);
   };
 
   return (
-    <Drawer
-      anchor="left"
+    <Dialog
       open={open}
+      TransitionComponent={Transition}
+      keepMounted
       onClose={onClose}
-      sx={{
-        width: 300,
-        flexShrink: 0,
-        "& .MuiDrawer-paper": {
-          width: 300,
-          boxSizing: "border-box",
+      aria-describedby="alert-dialog-slide-description"
+      PaperProps={{
+        style: {
+          position: "fixed",
+          left: 20,
+          margin: 0,
         },
       }}
+      maxWidth="xs"
+      fullWidth
     >
-      <Box sx={{ overflow: "auto", p: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          Cinematography Instructions
-        </Typography>
+      <DialogTitle>Cinematography Instructions</DialogTitle>
+      <DialogContent>
         <List>
           {instructions.map((instruction, index) => (
             <ListItem key={index}>
@@ -103,6 +149,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                   instruction.movementEasing
                 }`}
               />
+              <IconButton onClick={() => handleEdit(index)}>
+                <Edit />
+              </IconButton>
+              <IconButton onClick={() => onDeleteInstruction(index)}>
+                <Delete />
+              </IconButton>
             </ListItem>
           ))}
         </List>
@@ -186,10 +238,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           variant="contained"
           color="primary"
           fullWidth
-          onClick={handleAddInstruction}
+          onClick={handleAddOrUpdateInstruction}
           sx={{ mb: 2 }}
         >
-          Add Instruction
+          {editingIndex !== null ? "Update Instruction" : "Add Instruction"}
         </Button>
         {instructions.length > 0 && (
           <Stack direction="row" alignItems="center">
@@ -209,9 +261,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </Button>
           </Stack>
         )}
-      </Box>
-    </Drawer>
+      </DialogContent>
+    </Dialog>
   );
 };
-
-export default Sidebar;

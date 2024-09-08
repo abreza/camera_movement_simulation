@@ -1,13 +1,13 @@
 "use client";
 
 import { FC, useState } from "react";
-import { Box, Slider, TextField, Button, Stack } from "@mui/material";
-import Navbar from "@/components/layout/Navbar";
-import Sidebar from "@/components/layout/Sidebar";
+import { Box, Slider, TextField, Button, Stack, Fab } from "@mui/material";
 import useSimulation from "@/hooks/useSimulation";
+import { Settings as SettingsIcon } from "@mui/icons-material";
+import { Settings } from "@/components/layout/Settings";
 
 const CameraMovementSimulation: FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const {
     cameraViewRef,
@@ -15,6 +15,8 @@ const CameraMovementSimulation: FC = () => {
     instructions,
     subjects,
     handleAddInstruction,
+    handleEditInstruction,
+    handleDeleteInstruction,
     renderSimulationData,
     downloadSimulationData,
     isRendering,
@@ -33,13 +35,14 @@ const CameraMovementSimulation: FC = () => {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-      <Sidebar
+      <Settings
         open={sidebarOpen}
         subjects={subjects}
         instructions={instructions}
         onClose={() => setSidebarOpen(false)}
         onAddInstruction={handleAddInstruction}
+        onEditInstruction={handleEditInstruction}
+        onDeleteInstruction={handleDeleteInstruction}
         renderSimulationData={renderSimulationData}
         downloadSimulationData={downloadSimulationData}
       />
@@ -97,6 +100,16 @@ const CameraMovementSimulation: FC = () => {
           </Button>
         </Stack>
       )}
+      <Fab
+        sx={{
+          position: "absolute",
+          bottom: 16,
+          left: 16,
+        }}
+        onClick={() => setSidebarOpen(true)}
+      >
+        <SettingsIcon />
+      </Fab>
     </Box>
   );
 };
