@@ -12,7 +12,7 @@ export function calculateCameraPositions(
   instructions: CinematographyInstruction[],
   initialCamera: CameraFrame
 ): CameraFrame[] {
-  let cameraFrames: CameraFrame[] = [initialCamera];
+  let cameraFrames: CameraFrame[] = [];
   let currentCamera = initialCamera;
 
   for (const instruction of instructions) {

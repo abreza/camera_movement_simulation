@@ -1,4 +1,4 @@
-import React, { FC, useState } from "react";
+import React, { FC, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@mui/material";
 import { Transition } from "./Transition";
 import { InitialOptions } from "./InitialOptions";
@@ -48,6 +48,12 @@ export const Settings: FC<SettingsProps> = ({
   const [activeStep, setActiveStep] = useState(-1);
   const [showSimulationSteps, setShowSimulationSteps] = useState(false);
   const [showGeneratorOptions, setShowGeneratorOptions] = useState(false);
+
+  useEffect(() => {
+    if (activeStep === -1) {
+      setShowSimulationSteps(false);
+    }
+  }, [activeStep]);
 
   const handleGenerateRandomDataset = () => {
     setShowGeneratorOptions(true);

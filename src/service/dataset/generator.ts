@@ -5,6 +5,8 @@ import {
   ShotType,
   CameraMovement,
   MovementEasing,
+  CameraFrame,
+  Subject,
 } from "@/types/simulation";
 import { calculateCameraPositions } from "@/service/camera/calculatePositions";
 import { generateSubjects } from "../subjects/generateSubjects";
@@ -29,9 +31,9 @@ export interface GenerateRandomDatasetOptions {
 }
 
 interface Simulation {
-  subjects: any[]; // Replace 'any' with your actual Subject type
+  subjects: Subject[];
   instructions: CinematographyInstruction[];
-  cameraFrames: any[]; // Replace 'any' with your actual CameraFrame type
+  cameraFrames: CameraFrame[];
 }
 
 export function generateRandomDataset(
