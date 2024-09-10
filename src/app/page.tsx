@@ -19,6 +19,7 @@ const CameraMovementSimulation: FC = () => {
     handleAddInstruction,
     handleEditInstruction,
     handleDeleteInstruction,
+    handleImportCameraFrames,
     renderSimulationData,
     downloadSimulationData,
     isRendering,
@@ -56,6 +57,7 @@ const CameraMovementSimulation: FC = () => {
         onGenerateSubjects={handleGenerateSubjects}
         renderSimulationData={renderSimulationData}
         downloadSimulationData={downloadSimulationData}
+        onImportCameraFrames={handleImportCameraFrames}
       />
       <Box ref={worldViewRef} sx={{ height: "calc(100vh - 200px)" }}></Box>
       <Box

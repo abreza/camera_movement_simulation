@@ -1,10 +1,16 @@
-import React, { FC, useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@mui/material";
+import React, { FC, useEffect, useState, useRef } from "react";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Stack,
+} from "@mui/material";
 import { Transition } from "./Transition";
-import { InitialOptions } from "./InitialOptions";
 import { SimulationSteps } from "./simulation/SimulationSteps";
 import { GeneratorOptions } from "./dataset/GeneratorOptions";
 import {
+  CameraFrame,
   CinematographyInstruction,
   ObjectClass,
   Subject,
@@ -31,6 +37,7 @@ interface SettingsProps {
   ) => void;
   renderSimulationData: () => void;
   downloadSimulationData: () => void;
+  onImportCameraFrames: (cameraFrames: CameraFrame[]) => void;
 }
 
 export const Settings: FC<SettingsProps> = ({
@@ -44,10 +51,12 @@ export const Settings: FC<SettingsProps> = ({
   onGenerateSubjects,
   renderSimulationData,
   downloadSimulationData,
+  onImportCameraFrames,
 }) => {
   const [activeStep, setActiveStep] = useState(-1);
   const [showSimulationSteps, setShowSimulationSteps] = useState(false);
   const [showGeneratorOptions, setShowGeneratorOptions] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (activeStep === -1) {
@@ -70,6 +79,27 @@ export const Settings: FC<SettingsProps> = ({
     setActiveStep(0);
   };
 
+  const handleImportFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target?.result as string);
+          onImportCameraFrames(data);
+          onClose();
+        } catch (error) {
+          console.error("Error parsing JSON file:", error);
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -90,10 +120,32 @@ export const Settings: FC<SettingsProps> = ({
       <DialogTitle>Cinematic Camera Movement</DialogTitle>
       <DialogContent>
         {activeStep === -1 && !showGeneratorOptions && (
-          <InitialOptions
-            onGenerateRandomDataset={handleGenerateRandomDataset}
-            onRenderSimulation={handleRenderSimulation}
-          />
+          <Stack spacing={2} alignItems="center">
+            <Button
+              variant="contained"
+              onClick={handleGenerateRandomDataset}
+              fullWidth
+            >
+              Generate Random Dataset
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleRenderSimulation}
+              fullWidth
+            >
+              Render a Simulation
+            </Button>
+            <Button variant="contained" onClick={handleImportFile} fullWidth>
+              Import from File
+            </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: "none" }}
+              onChange={handleFileChange}
+              accept=".json"
+            />
+          </Stack>
         )}
         {showGeneratorOptions && (
           <GeneratorOptions

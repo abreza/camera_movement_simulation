@@ -69,6 +69,13 @@ const useSimulation = (initSubjects: Subject[]) => {
     );
   };
 
+  const handleImportCameraFrames = (importedCameraFrames: CameraFrame[]) => {
+    setCameraFrames(importedCameraFrames);
+    setInstructions([]);
+    setSubjects([]);
+    setIsRendering(true);
+  };
+
   const addSubject = (subject: Subject) => {
     setSubjects((prevSubjects) => [...prevSubjects, subject]);
   };
@@ -139,6 +146,7 @@ const useSimulation = (initSubjects: Subject[]) => {
     handleAddInstruction,
     handleEditInstruction,
     handleDeleteInstruction,
+    handleImportCameraFrames,
     addSubject,
     renderSimulationData,
     downloadSimulationData,
