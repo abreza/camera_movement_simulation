@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 import {
   CameraFrame,
   CinematographyInstruction,
@@ -9,11 +11,29 @@ import { applyCameraMovement } from "./applyCameraMovement";
 
 export function calculateCameraPositions(
   subjects: Subject[],
-  instructions: CinematographyInstruction[],
-  initialCamera: CameraFrame
+  instructions: CinematographyInstruction[]
 ): CameraFrame[] {
   let cameraFrames: CameraFrame[] = [];
-  let currentCamera = initialCamera;
+  let currentCamera: CameraFrame = {
+    position: new THREE.Vector3(),
+    angle: new THREE.Euler(),
+    focalLength: 50,
+  };
+  if (
+    instructions[0] &&
+    instructions[0].subjectIndex &&
+    instructions[0].initialCameraAngle &&
+    instructions[0].initialShotType
+  ) {
+    currentCamera = {
+      ...getInitialCameraPositionAndAngle(
+        subjects[instructions[0].subjectIndex],
+        instructions[0].initialCameraAngle,
+        instructions[0].initialShotType
+      ),
+      focalLength: 50,
+    };
+  }
 
   for (const instruction of instructions) {
     let subject: Subject | undefined;

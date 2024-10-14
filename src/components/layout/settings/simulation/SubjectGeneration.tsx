@@ -14,7 +14,7 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
   onGenerateSubjects,
   handleNext,
 }) => {
-  const [subjectCount, setSubjectCount] = useState(5);
+  const [subjectCount, setSubjectCount] = useState(1);
   const [probabilityFactors, setProbabilityFactors] = useState<
     Record<ObjectClass, number>
   >(

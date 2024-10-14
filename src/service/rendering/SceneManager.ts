@@ -147,14 +147,20 @@ export class SceneManager {
     // Add new meshes
     subjects.forEach((subject) => {
       const mesh = subjectMeshCreator.createSubjectMesh(subject, false);
-      mesh.position.copy(subject.position);
+      const boundingBox = new THREE.Box3().setFromObject(mesh);
+      let center: THREE.Vector3 = new THREE.Vector3();
+      boundingBox.getCenter(center);
+      const diff = mesh.position.sub(center);
+      const realPosition = subject.position.clone().sub(diff);
+
       mesh.rotation.copy(subject.rotation);
+      mesh.position.copy(realPosition);
       this.scene.add(mesh);
       this.subjectMeshes.push(mesh);
 
       const worldMesh = subjectMeshCreator.createSubjectMesh(subject, true);
-      worldMesh.position.copy(subject.position);
       worldMesh.rotation.copy(subject.rotation);
+      worldMesh.position.copy(realPosition);
       this.worldScene.add(worldMesh);
       this.worldSubjectMeshes.push(worldMesh);
     });

@@ -81,11 +81,7 @@ const useSimulation = (initSubjects: Subject[]) => {
   };
 
   const simulate = () => {
-    const frames = calculateCameraPositions(subjects, instructions, {
-      position: new THREE.Vector3(0, 0, 10),
-      angle: new THREE.Euler(0, 0, 0),
-      focalLength: 50,
-    });
+    const frames = calculateCameraPositions(subjects, instructions);
     setCameraFrames(frames);
   };
 

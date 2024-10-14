@@ -23,35 +23,31 @@ export function getInitialCameraPositionAndAngle(
   }
 
   let position = new THREE.Vector3();
-  let angle = new THREE.Euler();
 
-  switch (cameraAngle) {
-    case CameraAngle.LowAngle:
-      position.set(0, 0, distance);
-      angle.set(Math.PI / 6, 0, 0);
-      break;
-    case CameraAngle.MediumAngle:
-      position.set(0, subjectSize.y / 2, distance);
-      angle.set(0, 0, 0);
-      break;
-    case CameraAngle.HighAngle:
-      position.set(0, subjectSize.y, distance);
-      angle.set(-Math.PI / 6, 0, 0);
-      break;
-    case CameraAngle.BirdsEyeView:
-      position.set(0, distance * 2, distance / 2);
-      angle.set(-Math.PI / 2, 0, 0);
-      break;
-  }
+  const angels = {
+    [CameraAngle.LowAngle]: -Math.PI / 6,
+    [CameraAngle.MediumAngle]: 0,
+    [CameraAngle.HighAngle]: Math.PI / 6,
+    [CameraAngle.BirdsEyeView]: Math.PI / 3,
+  };
 
-  position.applyEuler(subject.rotation);
+  position.set(
+    0,
+    Math.max(
+      0,
+      Math.sin(angels[cameraAngle]) * distance + subjectSize.y * 0.75
+    ),
+    Math.cos(angels[cameraAngle]) * distance
+  );
   position.add(subjectPosition);
+
+  const angle = new THREE.Euler();
 
   angle.setFromQuaternion(
     new THREE.Quaternion().setFromRotationMatrix(
       new THREE.Matrix4().lookAt(
         position,
-        subjectPosition,
+        subjectPosition.add(new THREE.Vector3(0, subjectSize.y * 0.5, 0)),
         new THREE.Vector3(0, 1, 0)
       )
     )
