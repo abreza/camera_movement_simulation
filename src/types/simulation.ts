@@ -91,42 +91,44 @@ export enum MovementEasing {
   // Ease In (slow start)
   EaseInQuad = "easeInQuad",
   EaseInCubic = "easeInCubic",
-  EaseInQuart = "easeInQuart",
-  EaseInQuint = "easeInQuint",
+  // EaseInQuart = "easeInQuart",
+  // EaseInQuint = "easeInQuint",
 
   // Ease Out (slow end)
   EaseOutQuad = "easeOutQuad",
   EaseOutCubic = "easeOutCubic",
-  EaseOutQuart = "easeOutQuart",
-  EaseOutQuint = "easeOutQuint",
+  // EaseOutQuart = "easeOutQuart",
+  // EaseOutQuint = "easeOutQuint",
 
   // Ease In Out (slow start and end)
   EaseInOutQuad = "easeInOutQuad",
   EaseInOutCubic = "easeInOutCubic",
-  EaseInOutQuart = "easeInOutQuart",
-  EaseInOutQuint = "easeInOutQuint",
+  // EaseInOutQuart = "easeInOutQuart",
+  // EaseInOutQuint = "easeInOutQuint",
 
-  // Additional easing functions
-  EaseInSine = "easeInSine",
-  EaseOutSine = "easeOutSine",
+  // Sine easing
+  // EaseInSine = "easeInSine",
+  // EaseOutSine = "easeOutSine",
   EaseInOutSine = "easeInOutSine",
 
+  // Exponential easing
   EaseInExpo = "easeInExpo",
   EaseOutExpo = "easeOutExpo",
-  EaseInOutExpo = "easeInOutExpo",
+  // EaseInOutExpo = "easeInOutExpo",
 
-  EaseInCirc = "easeInCirc",
-  EaseOutCirc = "easeOutCirc",
+  // Circular easing
+  // EaseInCirc = "easeInCirc",
+  // EaseOutCirc = "easeOutCirc",
   EaseInOutCirc = "easeInOutCirc",
 
   // Bounce
-  EaseInBounce = "easeInBounce",
+  // EaseInBounce = "easeInBounce",
   EaseOutBounce = "easeOutBounce",
-  EaseInOutBounce = "easeInOutBounce",
+  // EaseInOutBounce = "easeInOutBounce",
 
   // Elastic
-  EaseInElastic = "easeInElastic",
-  EaseOutElastic = "easeOutElastic",
+  // EaseInElastic = "easeInElastic",
+  // EaseOutElastic = "easeOutElastic",
   EaseInOutElastic = "easeInOutElastic",
 }
 
