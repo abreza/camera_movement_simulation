@@ -90,6 +90,12 @@ const useSimulation = (initSubjects: Subject[]) => {
     setIsRendering(true);
   };
 
+  useEffect(() => {
+    if (subjects.length > 0) {
+      rendererRef.current?.initSubjects(subjects);
+    }
+  }, [subjects]);
+
   const render = useCallback(() => {
     if (!rendererRef.current) return;
     const frame = cameraFrames[currentFrame];

@@ -134,7 +134,9 @@ export class SceneManager {
     this.cameraHelper.update();
   }
 
-  updateSubjects(
+  updateSubjects(subjects: Subject[]): void {}
+
+  initSubjects(
     subjects: Subject[],
     subjectMeshCreator: SubjectMeshCreator
   ): void {

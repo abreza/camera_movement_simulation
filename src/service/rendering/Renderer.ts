@@ -39,7 +39,11 @@ export class Renderer {
     subjects: Subject[]
   ): void {
     this.sceneManager.updateCamera(cameraPosition, cameraAngle, focalLength);
-    this.sceneManager.updateSubjects(subjects, this.subjectMeshCreator);
+    this.sceneManager.updateSubjects(subjects);
+  }
+
+  initSubjects(subjects: Subject[]): void {
+    this.sceneManager.initSubjects(subjects, this.subjectMeshCreator);
   }
 
   render(): void {
