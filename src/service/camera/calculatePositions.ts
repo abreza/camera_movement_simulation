@@ -56,6 +56,11 @@ export function calculateCameraPositions(
       startCamera.angle = initialSetup.angle;
     }
 
+    if (subject) {
+      instruction.movementDistance = startCamera.position.distanceTo(subject.position);  
+      instruction.movementDistance -= Math.max(subject.size.x, subject.size.y, subject.size.z)
+    }
+
     for (let frame = 0; frame < instruction.frameCount; frame++) {
       const easeValue = calculateEaseValue(
         frame / (instruction.frameCount - 1),
@@ -66,6 +71,7 @@ export function calculateCameraPositions(
         startCamera,
         instruction.cameraMovement,
         easeValue,
+        instruction.movementDistance || 5,
         subject
       );
 
