@@ -47,7 +47,7 @@ export function getInitialCameraPositionAndAngle(
     new THREE.Quaternion().setFromRotationMatrix(
       new THREE.Matrix4().lookAt(
         position,
-        subjectPosition.add(new THREE.Vector3(0, subjectSize.y * 0.5, 0)),
+        subjectPosition.add(new THREE.Vector3(0, 0, 0)),
         new THREE.Vector3(0, 1, 0)
       )
     )
