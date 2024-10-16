@@ -51,7 +51,7 @@ function createRandomSubject(
   for (let attempts = 0; attempts < 100; attempts++) {
     const xPosition = Math.random() * 10 - 5;
     const zPosition = Math.random() * 10 - 5;
-    const yPosition = 0;
+    const yPosition = randomSize.y / 2;
 
     const newSubject: Subject = {
       position: new THREE.Vector3(xPosition, yPosition, zPosition),
