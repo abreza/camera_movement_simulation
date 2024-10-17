@@ -21,27 +21,27 @@ export function calculateEaseValue(t: number, easing: MovementEasing): number {
     case MovementEasing.EaseInOutCubic:
       return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
 
-    // Quartic easing
-    case MovementEasing.EaseInQuart:
-      return t * t * t * t;
-    case MovementEasing.EaseOutQuart:
-      return 1 - --t * t * t * t;
-    case MovementEasing.EaseInOutQuart:
-      return t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t;
+    // // Quartic easing
+    // case MovementEasing.EaseInQuart:
+    //   return t * t * t * t;
+    // case MovementEasing.EaseOutQuart:
+    //   return 1 - --t * t * t * t;
+    // case MovementEasing.EaseInOutQuart:
+    //   return t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t;
 
-    // Quintic easing
-    case MovementEasing.EaseInQuint:
-      return t * t * t * t * t;
-    case MovementEasing.EaseOutQuint:
-      return 1 + --t * t * t * t * t;
-    case MovementEasing.EaseInOutQuint:
-      return t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t;
+    // // Quintic easing
+    // case MovementEasing.EaseInQuint:
+    //   return t * t * t * t * t;
+    // case MovementEasing.EaseOutQuint:
+    //   return 1 + --t * t * t * t * t;
+    // case MovementEasing.EaseInOutQuint:
+    //   return t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t;
 
-    // Sinusoidal easing
-    case MovementEasing.EaseInSine:
-      return 1 - Math.cos((t * Math.PI) / 2);
-    case MovementEasing.EaseOutSine:
-      return Math.sin((t * Math.PI) / 2);
+    // // Sinusoidal easing
+    // case MovementEasing.EaseInSine:
+    //   return 1 - Math.cos((t * Math.PI) / 2);
+    // case MovementEasing.EaseOutSine:
+    //   return Math.sin((t * Math.PI) / 2);
     case MovementEasing.EaseInOutSine:
       return -(Math.cos(Math.PI * t) - 1) / 2;
 
@@ -50,51 +50,51 @@ export function calculateEaseValue(t: number, easing: MovementEasing): number {
       return t === 0 ? 0 : Math.pow(2, 10 * t - 10);
     case MovementEasing.EaseOutExpo:
       return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-    case MovementEasing.EaseInOutExpo:
-      return t === 0
-        ? 0
-        : t === 1
-        ? 1
-        : t < 0.5
-        ? Math.pow(2, 20 * t - 10) / 2
-        : (2 - Math.pow(2, -20 * t + 10)) / 2;
+    // case MovementEasing.EaseInOutExpo:
+    //   return t === 0
+    //     ? 0
+    //     : t === 1
+    //     ? 1
+    //     : t < 0.5
+    //     ? Math.pow(2, 20 * t - 10) / 2
+    //     : (2 - Math.pow(2, -20 * t + 10)) / 2;
 
-    // Circular easing
-    case MovementEasing.EaseInCirc:
-      return 1 - Math.sqrt(1 - t * t);
-    case MovementEasing.EaseOutCirc:
-      return Math.sqrt(1 - --t * t);
+    // // Circular easing
+    // case MovementEasing.EaseInCirc:
+    //   return 1 - Math.sqrt(1 - t * t);
+    // case MovementEasing.EaseOutCirc:
+    //   return Math.sqrt(1 - --t * t);
     case MovementEasing.EaseInOutCirc:
       return t < 0.5
         ? (1 - Math.sqrt(1 - 4 * t * t)) / 2
         : (Math.sqrt(1 - 4 * (t - 1) * (t - 1)) + 1) / 2;
 
-    // Bounce easing
-    case MovementEasing.EaseInBounce:
-      return 1 - easeOutBounce(1 - t);
-    case MovementEasing.EaseOutBounce:
-      return easeOutBounce(t);
-    case MovementEasing.EaseInOutBounce:
-      return t < 0.5
-        ? (1 - easeOutBounce(1 - 2 * t)) / 2
-        : (1 + easeOutBounce(2 * t - 1)) / 2;
+    // // Bounce easing
+    // case MovementEasing.EaseInBounce:
+    //   return 1 - easeOutBounce(1 - t);
+    // case MovementEasing.EaseOutBounce:
+    //   return easeOutBounce(t);
+    // case MovementEasing.EaseInOutBounce:
+    //   return t < 0.5
+    //     ? (1 - easeOutBounce(1 - 2 * t)) / 2
+    //     : (1 + easeOutBounce(2 * t - 1)) / 2;
 
-    // Elastic easing
-    case MovementEasing.EaseInElastic:
-      return t === 0
-        ? 0
-        : t === 1
-        ? 1
-        : -Math.pow(2, 10 * t - 10) *
-          Math.sin((t * 10 - 10.75) * ((2 * Math.PI) / 3));
-    case MovementEasing.EaseOutElastic:
-      return t === 0
-        ? 0
-        : t === 1
-        ? 1
-        : Math.pow(2, -10 * t) *
-            Math.sin((t * 10 - 0.75) * ((2 * Math.PI) / 3)) +
-          1;
+    // // Elastic easing
+    // case MovementEasing.EaseInElastic:
+    //   return t === 0
+    //     ? 0
+    //     : t === 1
+    //     ? 1
+    //     : -Math.pow(2, 10 * t - 10) *
+    //       Math.sin((t * 10 - 10.75) * ((2 * Math.PI) / 3));
+    // case MovementEasing.EaseOutElastic:
+    //   return t === 0
+    //     ? 0
+    //     : t === 1
+    //     ? 1
+    //     : Math.pow(2, -10 * t) *
+    //         Math.sin((t * 10 - 0.75) * ((2 * Math.PI) / 3)) +
+    //       1;
     case MovementEasing.EaseInOutElastic:
       return t === 0
         ? 0
