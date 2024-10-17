@@ -33,13 +33,11 @@ export function getInitialCameraPositionAndAngle(
 
   position.set(
     0,
-    Math.max(
-      0,
-      Math.sin(angels[cameraAngle]) * distance + subjectSize.y * 0.75
-    ),
+    Math.sin(angels[cameraAngle]) * distance + subjectSize.y * 0.75,
     Math.cos(angels[cameraAngle]) * distance
   );
   position.add(subjectPosition);
+  position.y = Math.max(0, position.y)
 
   const angle = new THREE.Euler();
 

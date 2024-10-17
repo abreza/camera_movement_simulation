@@ -5,7 +5,8 @@ export function applyCameraMovement(
   start: CameraFrame,
   movement: CameraMovement,
   easeValue: number,
-  subject?: Subject
+  moveDistance: number,  
+  subject?: Subject,
 ): CameraFrame {
   const result: CameraFrame = {
     position: start.position.clone(),
@@ -13,7 +14,6 @@ export function applyCameraMovement(
     focalLength: start.focalLength,
   };
 
-  const moveDistance = 5;
   const rotateAngle = Math.PI / 4;
   const zoomFactor = 2;
 
@@ -25,10 +25,10 @@ export function applyCameraMovement(
       result.angle.y -= rotateAngle * easeValue;
       break;
     case CameraMovement.TiltUp:
-      result.angle.x -= rotateAngle * easeValue;
+      result.angle.x += rotateAngle * easeValue;
       break;
     case CameraMovement.TiltDown:
-      result.angle.x += rotateAngle * easeValue;
+      result.angle.x -= rotateAngle * easeValue;
       break;
     case CameraMovement.DollyIn:
       result.position.z -= moveDistance * easeValue;
@@ -87,7 +87,15 @@ export function applyCameraMovement(
           Math.cos(angle) * radius
         );
         result.position.copy(newPosition.add(subject.position));
-        result.angle.y = -angle + direction * Math.PI;
+        result.angle.setFromQuaternion(
+          new THREE.Quaternion().setFromRotationMatrix(
+            new THREE.Matrix4().lookAt(
+              newPosition,
+              subject.position,
+              new THREE.Vector3(0, 1, 0)
+            )
+          )
+        );
       }
       break;
     case CameraMovement.PanAndTilt:

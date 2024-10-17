@@ -146,6 +146,7 @@ export interface CinematographyInstruction {
   initialCameraAngle?: CameraAngle;
   initialShotType?: ShotType;
   subjectIndex?: number;
+  movementDistance?: number;
   // startCamera?: Partial<CameraFrame>;
   // endCamera?: Partial<CameraFrame>;
 }
