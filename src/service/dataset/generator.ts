@@ -76,12 +76,7 @@ export function generateRandomDataset(
 
     const randomCameraFrames = calculateCameraPositions(
       randomSubjects,
-      randomInstructions,
-      {
-        position: initialCameraPosition,
-        angle: initialCameraAngle,
-        focalLength: initialFocalLength,
-      }
+      randomInstructions
     );
 
     simulations.push({
