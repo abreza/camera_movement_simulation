@@ -1,6 +1,8 @@
+
 import { FC, useState } from "react";
-import { TextField, Button, Slider, Typography, Box } from "@mui/material";
+import { TextField, Button, Slider, Typography, Box, List, ListItem, ListItemText, ListItemButton } from "@mui/material";
 import { ObjectClass } from "@/types/simulation";
+import CurveEditor from './CurveEditor';
 
 interface SubjectGenerationProps {
   onGenerateSubjects: (
@@ -8,6 +10,11 @@ interface SubjectGenerationProps {
     probabilityFactors: Record<ObjectClass, number>
   ) => void;
   handleNext: () => void;
+}
+
+interface Curve {
+  id: number;
+  points: { x: number, y: number }[];
 }
 
 export const SubjectGeneration: FC<SubjectGenerationProps> = ({
@@ -23,6 +30,8 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
       {} as Record<ObjectClass, number>
     )
   );
+  const [curves, setCurves] = useState<Curve[]>([]);
+  const [selectedCurveIndex, setSelectedCurveIndex] = useState<number | null>(null);
 
   const handleGenerateSubjects = () => {
     onGenerateSubjects(subjectCount, probabilityFactors);
@@ -36,6 +45,34 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
         [objectClass]: newValue as number,
       }));
     };
+
+  const addNewCurve = () => {
+    // Close the currently open curve editor window
+    setSelectedCurveIndex(null);
+
+    // Create and add a new curve
+    const newCurve: Curve = {
+      id: curves.length,
+      points: [
+        { x: 0, y: 0 },
+        { x: 10, y: 10 },
+        { x: 20, y: 0 },
+      ],
+    };
+    setCurves([...curves, newCurve]);
+  };
+
+  const handleCurveUpdate = (updatedCurve: Curve) => {
+    setCurves((prevCurves) =>
+      prevCurves.map((curve, index) =>
+        index === selectedCurveIndex ? updatedCurve : curve
+      )
+    );
+  };
+
+  const handleCloseEditor = () => {
+    setSelectedCurveIndex(null);
+  };
 
   return (
     <Box>
@@ -73,6 +110,34 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
       >
         Generate Subjects
       </Button>
+
+      {/* Curve Section */}
+      <Box sx={{ mt: 4 }}>
+        <Button
+          variant="outlined"
+          onClick={addNewCurve}
+          sx={{ mb: 2 }}
+        >
+          Add New Curve
+        </Button>
+        <List>
+          {curves.map((curve, index) => (
+            <ListItem key={curve.id}>
+              <ListItemButton onClick={() => setSelectedCurveIndex(index)}>
+                <ListItemText primary={`Curve ${index + 1}`} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+
+      {selectedCurveIndex !== null && (
+        <CurveEditor
+          curve={curves[selectedCurveIndex]}
+          onUpdate={(updatedCurve) => handleCurveUpdate(updatedCurve)}
+          onClose={handleCloseEditor} // Pass the close function
+        />
+      )}
     </Box>
   );
 };
