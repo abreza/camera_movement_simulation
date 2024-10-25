@@ -1,6 +1,6 @@
-
 import { FC, useState } from "react";
-import { TextField, Button, Slider, Typography, Box, List, ListItem, ListItemText, ListItemButton } from "@mui/material";
+import { TextField, Button, Slider, Typography, Box, List, ListItem, ListItemText, ListItemButton, IconButton } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { ObjectClass } from "@/types/simulation";
 import CurveEditor from './CurveEditor';
 
@@ -14,7 +14,8 @@ interface SubjectGenerationProps {
 
 interface Curve {
   id: number;
-  points: { x: number, y: number }[];
+  name: string;
+  points: { x: number; y: number }[];
 }
 
 export const SubjectGeneration: FC<SubjectGenerationProps> = ({
@@ -47,19 +48,23 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
     };
 
   const addNewCurve = () => {
-    // Close the currently open curve editor window
-    setSelectedCurveIndex(null);
-
-    // Create and add a new curve
+    // Create a new curve with a default name and points
     const newCurve: Curve = {
       id: curves.length,
+      name: `Curve ${curves.length + 1}`, // Default name
       points: [
+        { x: -5, y: -5 },
         { x: 0, y: 0 },
-        { x: 10, y: 10 },
-        { x: 20, y: 0 },
+        { x: 5, y: 5 },
       ],
     };
     setCurves([...curves, newCurve]);
+    setSelectedCurveIndex(curves.length); // Automatically open the newly created curve in the editor
+  };
+
+  const removeCurve = (index: number) => {
+    setCurves((prevCurves) => prevCurves.filter((_, i) => i !== index));
+    setSelectedCurveIndex(null);
   };
 
   const handleCurveUpdate = (updatedCurve: Curve) => {
@@ -122,9 +127,13 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
         </Button>
         <List>
           {curves.map((curve, index) => (
-            <ListItem key={curve.id}>
+            <ListItem key={curve.id} secondaryAction={
+              <IconButton edge="end" aria-label="delete" onClick={() => removeCurve(index)}>
+                <DeleteIcon />
+              </IconButton>
+            }>
               <ListItemButton onClick={() => setSelectedCurveIndex(index)}>
-                <ListItemText primary={`Curve ${index + 1}`} />
+                <ListItemText primary={`${curve.name}`} />
               </ListItemButton>
             </ListItem>
           ))}
@@ -135,7 +144,7 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
         <CurveEditor
           curve={curves[selectedCurveIndex]}
           onUpdate={(updatedCurve) => handleCurveUpdate(updatedCurve)}
-          onClose={handleCloseEditor} // Pass the close function
+          onClose={handleCloseEditor}
         />
       )}
     </Box>
