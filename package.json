@@ -14,12 +14,14 @@
     "@mui/icons-material": "^6.0.1",
     "@mui/material": "^6.0.1",
     "@three-ts/orbit-controls": "^1.4.7",
+    "d3": "^7.9.0",
     "next": "14.2.7",
     "react": "^18",
     "react-dom": "^18",
     "three": "^0.168.0"
   },
   "devDependencies": {
+    "@types/d3": "^7.4.3",
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
