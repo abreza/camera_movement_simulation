@@ -25,9 +25,6 @@ export interface GenerateRandomDatasetOptions {
   instructionCount?: number;
   minFrameCount?: number;
   maxFrameCount?: number;
-  initialCameraPosition?: THREE.Vector3;
-  initialCameraAngle?: THREE.Euler;
-  initialFocalLength?: number;
 }
 
 interface Simulation {
@@ -45,9 +42,6 @@ export function generateRandomDataset(
     instructionCount = Math.floor(Math.random() * 5) + 1,
     minFrameCount = 30,
     maxFrameCount = 120,
-    initialCameraPosition = new THREE.Vector3(0, 0, 10),
-    initialCameraAngle = new THREE.Euler(0, 0, 0),
-    initialFocalLength = 50,
   } = options;
 
   const simulations: Simulation[] = [];
@@ -63,14 +57,9 @@ export function generateRandomDataset(
         frameCount:
           Math.floor(Math.random() * (maxFrameCount - minFrameCount + 1)) +
           minFrameCount,
-        initialCameraAngle:
-          Math.random() > 0.5 ? getRandomEnum(CameraAngle) : undefined,
-        initialShotType:
-          Math.random() > 0.5 ? getRandomEnum(ShotType) : undefined,
-        subjectIndex:
-          Math.random() > 0.5
-            ? Math.floor(Math.random() * randomSubjects.length)
-            : undefined,
+        initialCameraAngle: getRandomEnum(CameraAngle),
+        initialShotType: getRandomEnum(ShotType),
+        subjectIndex: Math.floor(Math.random() * subjectCount),
       });
     }
 
@@ -94,9 +83,6 @@ export function generateRandomDataset(
       instructionCount,
       minFrameCount,
       maxFrameCount,
-      initialCameraPosition: initialCameraPosition.toArray(),
-      initialCameraAngle: initialCameraAngle.toArray(),
-      initialFocalLength,
     },
   };
 
