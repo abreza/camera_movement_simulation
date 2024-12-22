@@ -1,8 +1,19 @@
 import { FC, useState } from "react";
-import { TextField, Button, Slider, Typography, Box, List, ListItem, ListItemText, ListItemButton, IconButton } from "@mui/material";
+import {
+  TextField,
+  Button,
+  Slider,
+  Typography,
+  Box,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemButton,
+  IconButton,
+} from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { ObjectClass } from "@/types/simulation";
-import CurveEditor from './CurveEditor';
+import { ObjectClass } from "@/service/subjects/types";
+import CurveEditor from "./CurveEditor";
 
 interface SubjectGenerationProps {
   onGenerateSubjects: (
@@ -32,7 +43,9 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
     )
   );
   const [curves, setCurves] = useState<Curve[]>([]);
-  const [selectedCurveIndex, setSelectedCurveIndex] = useState<number | null>(null);
+  const [selectedCurveIndex, setSelectedCurveIndex] = useState<number | null>(
+    null
+  );
 
   const handleGenerateSubjects = () => {
     onGenerateSubjects(subjectCount, probabilityFactors);
@@ -116,22 +129,24 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
         Generate Subjects
       </Button>
 
-      {/* Curve Section */}
       <Box sx={{ mt: 4 }}>
-        <Button
-          variant="outlined"
-          onClick={addNewCurve}
-          sx={{ mb: 2 }}
-        >
+        <Button variant="outlined" onClick={addNewCurve} sx={{ mb: 2 }}>
           Add New Curve
         </Button>
         <List>
           {curves.map((curve, index) => (
-            <ListItem key={curve.id} secondaryAction={
-              <IconButton edge="end" aria-label="delete" onClick={() => removeCurve(index)}>
-                <DeleteIcon />
-              </IconButton>
-            }>
+            <ListItem
+              key={curve.id}
+              secondaryAction={
+                <IconButton
+                  edge="end"
+                  aria-label="delete"
+                  onClick={() => removeCurve(index)}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              }
+            >
               <ListItemButton onClick={() => setSelectedCurveIndex(index)}>
                 <ListItemText primary={`${curve.name}`} />
               </ListItemButton>

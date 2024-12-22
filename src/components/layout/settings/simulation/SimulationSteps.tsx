@@ -2,16 +2,13 @@ import React, { FC } from "react";
 import { Stepper, Step, StepLabel, Button, Stack } from "@mui/material";
 import { SubjectGeneration } from "./SubjectGeneration";
 import { InstructionManagement } from "./InstructionManagement";
-import {
-  CinematographyInstruction,
-  ObjectClass,
-  Subject,
-} from "@/types/simulation";
+import { CinematographyInstruction, SubjectInfo } from "@/types/simulation";
+import { ObjectClass } from "@/service/subjects/types";
 
 interface SimulationStepsProps {
   activeStep: number;
   setActiveStep: React.Dispatch<React.SetStateAction<number>>;
-  subjects: Subject[];
+  subjectsInfo: SubjectInfo[];
   instructions: CinematographyInstruction[];
   onAddInstruction: (instruction: CinematographyInstruction) => void;
   onEditInstruction: (
@@ -31,7 +28,7 @@ interface SimulationStepsProps {
 export const SimulationSteps: FC<SimulationStepsProps> = ({
   activeStep,
   setActiveStep,
-  subjects,
+  subjectsInfo,
   instructions,
   onAddInstruction,
   onEditInstruction,
@@ -67,7 +64,7 @@ export const SimulationSteps: FC<SimulationStepsProps> = ({
         />
       ) : (
         <InstructionManagement
-          subjects={subjects}
+          subjectsInfo={subjectsInfo}
           instructions={instructions}
           onAddInstruction={onAddInstruction}
           onEditInstruction={onEditInstruction}
@@ -87,7 +84,7 @@ export const SimulationSteps: FC<SimulationStepsProps> = ({
           {activeStep === 0 ? "Cancel" : "Back"}
         </Button>
         {activeStep === 0 && (
-          <Button onClick={handleNext} disabled={subjects.length === 0}>
+          <Button onClick={handleNext} disabled={subjectsInfo.length === 0}>
             Next
           </Button>
         )}

@@ -1,15 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { handleDownloadSimulationData } from "@/utils/simulationUtils";
 import {
+  CameraParameters,
   CinematographyInstruction,
-  Subject,
-  CameraFrame,
+  SubjectInfo,
 } from "@/types/simulation";
 import * as THREE from "three";
 import { Renderer } from "@/service/rendering/Renderer";
-import { calculateCameraPositions } from "@/service/camera/calculatePositions";
+import { calculateCameraPositions } from "@/service/camera";
 
-const useSimulation = (initSubjects: Subject[]) => {
+const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
   const cameraViewRef = useRef<HTMLDivElement>(null);
   const worldViewRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<Renderer | null>(null);
@@ -17,12 +17,14 @@ const useSimulation = (initSubjects: Subject[]) => {
   const [instructions, setInstructions] = useState<CinematographyInstruction[]>(
     []
   );
-  const [subjects, setSubjects] = useState<Subject[]>(initSubjects);
-  const [cameraFrames, setCameraFrames] = useState<CameraFrame[]>([
+  const [subjectsInfo, setSubjectsInfo] =
+    useState<SubjectInfo[]>(initSubjectsInfo);
+  const [cameraFrames, setCameraFrames] = useState<CameraParameters[]>([
     {
       position: new THREE.Vector3(5, 5, 15),
-      angle: new THREE.Euler(0, 0, 0),
+      rotation: new THREE.Euler(0, 0, 0),
       focalLength: 50,
+      aspectRatio: 16 / 9,
     },
   ]);
   const [isRendering, setIsRendering] = useState(false);
@@ -30,8 +32,8 @@ const useSimulation = (initSubjects: Subject[]) => {
   const [fps, setFps] = useState(30);
 
   useEffect(() => {
-    setSubjects(initSubjects);
-  }, [initSubjects]);
+    setSubjectsInfo(initSubjectsInfo);
+  }, [initSubjectsInfo]);
 
   useEffect(() => {
     if (cameraViewRef.current && worldViewRef.current) {
@@ -69,19 +71,21 @@ const useSimulation = (initSubjects: Subject[]) => {
     );
   };
 
-  const handleImportCameraFrames = (importedCameraFrames: CameraFrame[]) => {
+  const handleImportCameraFrames = (
+    importedCameraFrames: CameraParameters[]
+  ) => {
     setCameraFrames(importedCameraFrames);
     setInstructions([]);
-    setSubjects([]);
+    setSubjectsInfo([]);
     setIsRendering(true);
   };
 
-  const addSubject = (subject: Subject) => {
-    setSubjects((prevSubjects) => [...prevSubjects, subject]);
+  const addSubject = (subjectInfo: SubjectInfo) => {
+    setSubjectsInfo((prevSubjects) => [...prevSubjects, subjectInfo]);
   };
 
   const simulate = () => {
-    const frames = calculateCameraPositions(subjects, instructions);
+    const frames = calculateCameraPositions(instructions, subjectsInfo);
     setCameraFrames(frames);
   };
 
@@ -91,22 +95,25 @@ const useSimulation = (initSubjects: Subject[]) => {
   };
 
   useEffect(() => {
-    if (subjects.length > 0) {
-      rendererRef.current?.initSubjects(subjects);
+    if (subjectsInfo.length > 0) {
+      rendererRef.current?.initSubjects(subjectsInfo);
     }
-  }, [subjects]);
+  }, [subjectsInfo]);
 
   const render = useCallback(() => {
     if (!rendererRef.current) return;
     const frame = cameraFrames[currentFrame];
     rendererRef.current.updateScene(
       frame.position,
-      frame.angle,
+      frame.rotation,
       frame.focalLength,
-      subjects
+      subjectsInfo.map(({ subject, frames }) => ({
+        subject,
+        frame: frames?.[currentFrame],
+      }))
     );
     rendererRef.current.render();
-  }, [cameraFrames, currentFrame, subjects]);
+  }, [cameraFrames, currentFrame, subjectsInfo]);
 
   useEffect(() => {
     const renderInterval = setInterval(() => {
@@ -133,7 +140,7 @@ const useSimulation = (initSubjects: Subject[]) => {
   const downloadSimulationData = () => {
     simulate();
     const simulationData = {
-      subjects,
+      subjectsInfo,
       instructions,
       cameraFrames,
     };
@@ -144,7 +151,7 @@ const useSimulation = (initSubjects: Subject[]) => {
     cameraViewRef,
     worldViewRef,
     instructions,
-    subjects,
+    subjectsInfo,
     handleAddInstruction,
     handleEditInstruction,
     handleDeleteInstruction,

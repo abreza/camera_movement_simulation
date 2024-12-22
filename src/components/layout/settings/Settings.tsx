@@ -10,19 +10,15 @@ import { Transition } from "./Transition";
 import { SimulationSteps } from "./simulation/SimulationSteps";
 import { GeneratorOptions } from "./dataset/GeneratorOptions";
 import {
-  CameraFrame,
+  CameraParameters,
   CinematographyInstruction,
-  ObjectClass,
-  Subject,
+  SubjectInfo,
 } from "@/types/simulation";
-import {
-  generateRandomDataset,
-  GenerateRandomDatasetOptions,
-} from "@/service/dataset/generator";
+import { ObjectClass } from "@/service/subjects/types";
 
 interface SettingsProps {
   open: boolean;
-  subjects: Subject[];
+  subjectsInfo: SubjectInfo[];
   instructions: CinematographyInstruction[];
   onClose: () => void;
   onAddInstruction: (instruction: CinematographyInstruction) => void;
@@ -37,12 +33,12 @@ interface SettingsProps {
   ) => void;
   renderSimulationData: () => void;
   downloadSimulationData: () => void;
-  onImportCameraFrames: (cameraFrames: CameraFrame[]) => void;
+  onImportCameraFrames: (cameraFrames: CameraParameters[]) => void;
 }
 
 export const Settings: FC<SettingsProps> = ({
   open,
-  subjects,
+  subjectsInfo,
   instructions,
   onClose,
   onAddInstruction,
@@ -157,7 +153,7 @@ export const Settings: FC<SettingsProps> = ({
           <SimulationSteps
             activeStep={activeStep}
             setActiveStep={setActiveStep}
-            subjects={subjects}
+            subjectsInfo={subjectsInfo}
             instructions={instructions}
             onAddInstruction={onAddInstruction}
             onEditInstruction={onEditInstruction}

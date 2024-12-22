@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Button, TextField, Slider, Typography, Box } from "@mui/material";
-import { GenerateRandomDatasetOptions } from "@/service/dataset/generator";
 
 interface GeneratorOptionsProps {
   onGenerate: (options: GenerateRandomDatasetOptions) => void;

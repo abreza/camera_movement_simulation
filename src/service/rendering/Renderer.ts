@@ -1,15 +1,12 @@
 import * as THREE from "three";
-import { Subject } from "@/types/simulation";
+import { Subject } from "../subjects/types";
 import { SceneManager } from "./SceneManager";
-import { ModelLoader } from "./ModelLoader";
-import { SubjectMeshCreator } from "./SubjectMeshCreator";
+import { SubjectFrameInfo, SubjectInfo } from "@/types/simulation";
 
 export class Renderer {
   private cameraViewElement: HTMLDivElement;
   private worldViewElement: HTMLDivElement;
   private sceneManager: SceneManager;
-  private modelLoader: ModelLoader;
-  private subjectMeshCreator: SubjectMeshCreator;
   private resizeHandler: () => void;
 
   constructor(
@@ -19,13 +16,9 @@ export class Renderer {
     this.cameraViewElement = cameraViewElement;
     this.worldViewElement = worldViewElement;
     this.sceneManager = new SceneManager(cameraViewElement, worldViewElement);
-    this.modelLoader = new ModelLoader();
-    this.subjectMeshCreator = new SubjectMeshCreator(this.modelLoader);
 
     this.resizeHandler = this.onWindowResize.bind(this);
     window.addEventListener("resize", this.resizeHandler, false);
-
-    this.modelLoader.loadObjectModels();
   }
 
   private onWindowResize(): void {
@@ -36,14 +29,14 @@ export class Renderer {
     cameraPosition: THREE.Vector3,
     cameraAngle: THREE.Euler,
     focalLength: number,
-    subjects: Subject[]
+    subjectsFrameInfo: SubjectFrameInfo[]
   ): void {
     this.sceneManager.updateCamera(cameraPosition, cameraAngle, focalLength);
-    this.sceneManager.updateSubjects(subjects);
+    this.sceneManager.updateSubjects(subjectsFrameInfo);
   }
 
-  initSubjects(subjects: Subject[]): void {
-    this.sceneManager.initSubjects(subjects, this.subjectMeshCreator);
+  initSubjects(subjectsInfo: SubjectInfo[]): void {
+    this.sceneManager.initSubjects(subjectsInfo);
   }
 
   render(): void {

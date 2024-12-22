@@ -1,7 +1,11 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Subject } from "@/types/simulation";
-import { SubjectMeshCreator } from "./SubjectMeshCreator";
+import { createSubjectMesh } from "./SubjectMeshCreator";
+import {
+  SubjectFrame,
+  SubjectFrameInfo,
+  SubjectInfo,
+} from "@/types/simulation";
 
 export class SceneManager {
   private scene: THREE.Scene;
@@ -19,7 +23,6 @@ export class SceneManager {
     cameraViewElement: HTMLDivElement,
     worldViewElement: HTMLDivElement
   ) {
-    // Initialize all properties
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(
       75,
@@ -43,6 +46,7 @@ export class SceneManager {
 
   private setupMainScene(cameraViewElement: HTMLDivElement): void {
     this.renderer.setSize(window.innerWidth / 5, window.innerHeight / 5);
+    this.renderer.setClearColor(0xffffff, 1);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     cameraViewElement.appendChild(this.renderer.domElement);
@@ -58,11 +62,10 @@ export class SceneManager {
   }
 
   private setupLighting(): void {
-    // Main scene lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Increased intensity and changed color to white
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
     this.scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5); // Increased intensity
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
     directionalLight.position.set(5, 10, 7);
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = 2048;
@@ -71,17 +74,17 @@ export class SceneManager {
     directionalLight.shadow.camera.far = 20;
     this.scene.add(directionalLight);
 
-    const pointLight1 = new THREE.PointLight(0xffffff, 1.0); // Increased intensity
+    const pointLight1 = new THREE.PointLight(0xffffff, 1.0);
     pointLight1.position.set(-5, 5, -5);
     this.scene.add(pointLight1);
 
-    const pointLight2 = new THREE.PointLight(0xffffff, 1.0); // Added a second point light
+    const pointLight2 = new THREE.PointLight(0xffffff, 1.0);
     pointLight2.position.set(5, 5, 5);
     this.scene.add(pointLight2);
 
-    const spotLight = new THREE.SpotLight(0xffffff, 1.0); // Increased intensity
+    const spotLight = new THREE.SpotLight(0xffffff, 1.0);
     spotLight.position.set(0, 10, 0);
-    spotLight.angle = Math.PI / 3; // Widened the angle
+    spotLight.angle = Math.PI / 3;
     spotLight.penumbra = 0.1;
     spotLight.decay = 2;
     spotLight.distance = 200;
@@ -92,17 +95,15 @@ export class SceneManager {
     spotLight.shadow.camera.far = 200;
     this.scene.add(spotLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0); // Increased intensity
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
     hemiLight.position.set(0, 20, 0);
     this.scene.add(hemiLight);
 
-    // Add a rect area light for even more illumination
     const rectLight = new THREE.RectAreaLight(0xffffff, 5, 10, 10);
     rectLight.position.set(0, 5, 0);
     rectLight.lookAt(0, 0, 0);
     this.scene.add(rectLight);
 
-    // World view lighting (slightly increased)
     const worldAmbientLight = new THREE.AmbientLight(0xffffff, 1.0);
     this.worldScene.add(worldAmbientLight);
 
@@ -119,11 +120,11 @@ export class SceneManager {
 
   updateCamera(
     position: THREE.Vector3,
-    angle: THREE.Euler,
+    rotation: THREE.Euler,
     focalLength: number
   ): void {
     this.camera.position.copy(position);
-    this.camera.rotation.copy(angle);
+    this.camera.rotation.copy(rotation);
     this.camera.setFocalLength(focalLength);
     this.camera.updateMatrixWorld();
 
@@ -134,39 +135,48 @@ export class SceneManager {
     this.cameraHelper.update();
   }
 
-  updateSubjects(subjects: Subject[]): void {}
+  updateSubjectFrame(index: number, frame?: SubjectFrame): void {
+    if (!frame) {
+      return;
+    }
 
-  initSubjects(
-    subjects: Subject[],
-    subjectMeshCreator: SubjectMeshCreator
-  ): void {
-    // Remove old meshes
+    const mainMesh = this.subjectMeshes[index];
+    const worldMesh = this.worldSubjectMeshes[index];
+
+    if (!mainMesh || !worldMesh) {
+      return;
+    }
+
+    mainMesh.position.copy(frame.position.clone());
+    worldMesh.position.copy(frame.position.clone());
+
+    mainMesh.rotation.copy(frame.rotation || new THREE.Euler());
+    worldMesh.rotation.copy(frame.rotation || new THREE.Euler());
+  }
+
+  updateSubjects(subjectsFrameInfo: SubjectFrameInfo[]): void {
+    subjectsFrameInfo.forEach((subjectFrameInfo, index) =>
+      this.updateSubjectFrame(index, subjectFrameInfo.frame)
+    );
+  }
+
+  initSubjects(subjectsInfo: SubjectInfo[]): void {
     this.subjectMeshes.forEach((mesh) => this.scene.remove(mesh));
     this.worldSubjectMeshes.forEach((mesh) => this.worldScene.remove(mesh));
     this.subjectMeshes = [];
     this.worldSubjectMeshes = [];
 
-    // Add new meshes
-    subjects.forEach((subject) => {
-      const mesh = subjectMeshCreator.createSubjectMesh(subject, false);
-      mesh.rotation.copy(subject.rotation);
-
-      const boundingBox = new THREE.Box3().setFromObject(mesh);
-      let center: THREE.Vector3 = new THREE.Vector3();
-      boundingBox.getCenter(center);
-
-      const diff = mesh.position.add(center);
-      const realPosition = subject.position.clone().sub(diff);
-      mesh.position.copy(realPosition);
+    subjectsInfo.forEach((subjectInfo, index) => {
+      const mesh = createSubjectMesh(subjectInfo.subject, false);
 
       this.scene.add(mesh);
       this.subjectMeshes.push(mesh);
 
-      const worldMesh = subjectMeshCreator.createSubjectMesh(subject, true);
-      worldMesh.rotation.copy(subject.rotation);
-      worldMesh.position.copy(realPosition);
+      const worldMesh = createSubjectMesh(subjectInfo.subject, true);
       this.worldScene.add(worldMesh);
       this.worldSubjectMeshes.push(worldMesh);
+
+      this.updateSubjectFrame(index, subjectInfo.frames![0]);
     });
   }
 

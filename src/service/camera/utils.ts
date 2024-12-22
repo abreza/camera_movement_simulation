@@ -1,20 +1,19 @@
-import { Vector3, Euler, Quaternion } from "three";
+import * as THREE from "three";
 
-export function interpolateVector3(
-  start: Vector3,
-  end: Vector3,
-  t: number
-): Vector3 {
-  return new Vector3().lerpVectors(start, end, t);
-}
-
-export function interpolateEuler(start: Euler, end: Euler, t: number): Euler {
-  const startQuaternion = new Quaternion().setFromEuler(start);
-  const endQuaternion = new Quaternion().setFromEuler(end);
-  const interpolatedQuaternion = new Quaternion().slerpQuaternions(
-    startQuaternion,
-    endQuaternion,
-    t
+export const getLookAtAngle = (
+  cameraPos: THREE.Vector3,
+  targetPos: THREE.Vector3
+): THREE.Euler => {
+  const direction = new THREE.Vector3()
+    .subVectors(cameraPos, targetPos)
+    .normalize();
+  return new THREE.Euler(
+    Math.atan2(
+      -direction.y,
+      Math.sqrt(direction.x * direction.x + direction.z * direction.z)
+    ),
+    Math.atan2(direction.x, direction.z),
+    0,
+    "YXZ"
   );
-  return new Euler().setFromQuaternion(interpolatedQuaternion);
-}
+};

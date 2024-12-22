@@ -5,12 +5,13 @@ import { Box, Slider, TextField, Button, Stack, Fab } from "@mui/material";
 import useSimulation from "@/hooks/useSimulation";
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { Settings } from "@/components/layout/settings/Settings";
+import { ObjectClass } from "@/service/subjects/types";
 import { generateSubjects } from "@/service/subjects/generateSubjects";
-import { ObjectClass, Subject } from "@/types/simulation";
+import { SubjectInfo } from "@/types/simulation";
 
 const CameraMovementSimulation: FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjectsInfo, setSubjectsInfo] = useState<SubjectInfo[]>([]);
 
   const {
     cameraViewRef,
@@ -29,14 +30,13 @@ const CameraMovementSimulation: FC = () => {
     fps,
     setFps,
     setCurrentFrame,
-  } = useSimulation(subjects);
+  } = useSimulation(subjectsInfo);
 
   const handleGenerateSubjects = (
     count: number,
     probabilityFactors: Record<ObjectClass, number>
   ) => {
-    const newSubjects = generateSubjects(count, probabilityFactors);
-    setSubjects(newSubjects);
+    setSubjectsInfo(generateSubjects(count, probabilityFactors));
   };
 
   const handleSliderChange = (_: Event, value: number | number[]) => {
@@ -48,7 +48,7 @@ const CameraMovementSimulation: FC = () => {
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <Settings
         open={sidebarOpen}
-        subjects={subjects}
+        subjectsInfo={subjectsInfo}
         instructions={instructions}
         onClose={() => setSidebarOpen(false)}
         onAddInstruction={handleAddInstruction}

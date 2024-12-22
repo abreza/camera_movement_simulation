@@ -1,158 +1,154 @@
 import * as THREE from "three";
 
-export enum ObjectClass {
-  Chair = "chair",
-  Table = "table",
-  Laptop = "laptop",
-  Book = "book",
-  Tree = "tree",
+import { Subject } from "@/service/subjects/types";
+
+export enum CameraVerticalAngle {
+  Low = "low",
+  Eye = "eye",
+  High = "high",
+  Overhead = "overhead",
+  BirdsEye = "birdsEye",
 }
 
-export enum CameraAngle {
-  LowAngle = "lowAngle",
-  MediumAngle = "mediumAngle",
-  HighAngle = "highAngle",
-  BirdsEyeView = "birdsEyeView",
-
-  // Other
-  // EyeLevel = "eyeLevel",
-  // DutchAngle = "dutchAngle",
-  // WormsEyeView = "wormsEyeView",
-  // OverTheShoulder = "overTheShoulder",
-  // PointOfView = "pointOfView",
-}
-
-export enum ShotType {
+export enum ShotSize {
   CloseUp = "closeUp",
   MediumShot = "mediumShot",
   LongShot = "longShot",
-
-  // Other
-  // ExtremeCloseUp = "extremeCloseUp",
-  // MediumCloseUp = "mediumCloseUp",
-  // MediumLongShot = "mediumLongShot",
-  // FullShot = "fullShot",
-  // ExtremeLongShot = "extremeLongShot",
-  // TwoShot = "twoShot",
-  // GroupShot = "groupShot",
-  // InsertShot = "insertShot",
-  // Cutaway = "cutaway",
-  // EstablishingShot = "establishingShot",
 }
 
-export enum CameraMovement {
-  PanLeft = "panLeft",
-  PanRight = "panRight",
+export enum CameraZoomMovement {
+  Static = "static",
+  ZoomIn = "zoomIn",
+  ZoomOut = "zoomOut",
+}
 
-  TiltUp = "tiltUp",
-  TiltDown = "tiltDown",
-
+export enum CameraSubjectDistanceMovement {
+  Static = "static",
   DollyIn = "dollyIn",
   DollyOut = "dollyOut",
+}
 
+export enum CameraRotationMovement {
+  Static = "static",
+  PanLeft = "panLeft",
+  PanRight = "panRight",
+  TiltUp = "tiltUp",
+  TiltDown = "tiltDown",
+  ArcLeft = "arcLeft",
+  ArcRight = "arcRight",
+}
+
+export enum CameraTranslationMovement {
+  Static = "static",
   TruckLeft = "truckLeft",
   TruckRight = "truckRight",
-
   PedestalUp = "pedestalUp",
   PedestalDown = "pedestalDown",
+}
 
-  FullZoomIn = "fullZoomIn",
-  FullZoomOut = "fullZoomOut",
-  HalfZoomIn = "halfZoomIn",
-  HalfZoomOut = "halfZoomOut",
-  ShortZoomIn = "shortZoomIn",
-  ShortZoomOut = "shortZoomOut",
-
-  ShortArcShotLeft = "shortArcShotLeft",
-  ShortArcShotRight = "shortArcShotRight",
-  HalfArcShotLeft = "halfArcShotLeft",
-  HalfArcShotRight = "halfArcShotRight",
-  FullArcShotLeft = "fullArcShotLeft",
-  FullArcShotRight = "fullArcShotRight",
-
-  PanAndTilt = "panAndTilt",
-  DollyAndPan = "dollyAndPan",
-  ZoomAndTruck = "zoomAndTruck",
-
-  // Other
-  // CraneJib = "craneJib",
-  // Handheld = "handheld",
-  // Steadicam = "steadicam",
-  // TrackingShot = "trackingShot",
-  // WhipPan = "whipPan",
-  // DroneShot = "droneShot",
-  // Shake = "shake",
-  // RollingShutter = "rollingShutter",
+export enum MovementScale {
+  Short = "short",
+  Medium = "medium",
+  Full = "full",
 }
 
 export enum MovementEasing {
   Linear = "linear",
+  EaseInOut = "easeInOut",
+  EaseIn = "easeIn",
+  EaseOut = "easeOut",
 
-  // Ease In (slow start)
-  EaseInQuad = "easeInQuad",
-  EaseInCubic = "easeInCubic",
-  // EaseInQuart = "easeInQuart",
-  // EaseInQuint = "easeInQuint",
-
-  // Ease Out (slow end)
-  EaseOutQuad = "easeOutQuad",
-  EaseOutCubic = "easeOutCubic",
-  // EaseOutQuart = "easeOutQuart",
-  // EaseOutQuint = "easeOutQuint",
-
-  // Ease In Out (slow start and end)
-  EaseInOutQuad = "easeInOutQuad",
-  EaseInOutCubic = "easeInOutCubic",
-  // EaseInOutQuart = "easeInOutQuart",
-  // EaseInOutQuint = "easeInOutQuint",
-
-  // Sine easing
-  // EaseInSine = "easeInSine",
-  // EaseOutSine = "easeOutSine",
-  EaseInOutSine = "easeInOutSine",
-
-  // Exponential easing
-  EaseInExpo = "easeInExpo",
-  EaseOutExpo = "easeOutExpo",
-  // EaseInOutExpo = "easeInOutExpo",
-
-  // Circular easing
-  // EaseInCirc = "easeInCirc",
-  // EaseOutCirc = "easeOutCirc",
-  EaseInOutCirc = "easeInOutCirc",
-
-  // Bounce
-  // EaseInBounce = "easeInBounce",
-  EaseOutBounce = "easeOutBounce",
-  // EaseInOutBounce = "easeInOutBounce",
-
-  // Elastic
-  // EaseInElastic = "easeInElastic",
-  // EaseOutElastic = "easeOutElastic",
-  EaseInOutElastic = "easeInOutElastic",
+  Smooth = "smooth",
+  Bounce = "bounce",
+  Elastic = "elastic",
+  HandHeld = "handHeld",
+  Anticipation = "anticipation",
 }
 
-export interface Subject {
-  position: THREE.Vector3;
-  size: THREE.Vector3;
-  rotation: THREE.Euler;
-  objectClass: ObjectClass;
+export enum SubjectView {
+  Front = "front",
+  Back = "back",
+  Left = "left",
+  Right = "right",
+  ThreeQuarterLeft = "threeQuarterLeft",
+  ThreeQuarterRight = "threeQuarterRight",
 }
 
-export interface CinematographyInstruction {
-  cameraMovement: CameraMovement;
-  movementEasing: MovementEasing;
+export enum VisibilityConstraint {
+  VisibleAtAllTimes = "visibleAtAllTimes",
+  VisibleAtStart = "visibleAtStart",
+  VisibleAtEnd = "visibleAtEnd",
+}
+
+export type DistanceConstraint = {
+  minDistance: number;
+  maxDistance: number;
+};
+
+export type SubjectSizeConstraint = {
+  minSize: number; // Percentage of frame height
+  maxSize: number;
+};
+
+export type CinematographyInstruction = {
   frameCount: number;
-  initialCameraAngle?: CameraAngle;
-  initialShotType?: ShotType;
-  subjectIndex?: number;
-  movementDistance?: number;
-  // startCamera?: Partial<CameraFrame>;
-  // endCamera?: Partial<CameraFrame>;
-}
+  movementEasing: MovementEasing;
 
-export interface CameraFrame {
+  subjectIndex?: number;
+
+  initialSetup: {
+    distance?: number;
+    cameraAngle?: CameraVerticalAngle;
+    shotSize?: ShotSize;
+    subjectView?: SubjectView;
+    focusPoint?: THREE.Vector3;
+  };
+
+  movement: {
+    translation?: { type: CameraTranslationMovement; scale?: MovementScale };
+    rotation?: { type: CameraRotationMovement; scale?: MovementScale };
+    zoom?: { type: CameraZoomMovement; scale?: MovementScale };
+    distance?: { type: CameraSubjectDistanceMovement; scale?: MovementScale };
+  };
+
+  constraints?: {
+    visibility?: VisibilityConstraint;
+    distance?: DistanceConstraint;
+    subjectSize?: SubjectSizeConstraint;
+  };
+};
+
+export type CameraParameters = {
   position: THREE.Vector3;
-  angle: THREE.Euler;
+  rotation: THREE.Euler;
   focalLength: number;
-}
+  aspectRatio: number;
+};
+
+export type SubjectFrame = {
+  position: THREE.Vector3;
+  rotation: THREE.Euler;
+};
+
+export type SimulationFrame = {
+  camera: CameraParameters;
+  subjectsFrames: Record<string, SubjectFrame[]>;
+};
+
+export type Simulation = {
+  subjects: Subject[];
+  instructions: CinematographyInstruction[];
+  frames: SimulationFrame[];
+};
+
+export type SubjectInfo = {
+  subject: Subject;
+  frames?: SubjectFrame[];
+};
+
+export type SubjectFrameInfo = {
+  subject: Subject;
+  frame?: SubjectFrame;
+};
+
+export const DEFAULT_FRAME_COUNT = 180;

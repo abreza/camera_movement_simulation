@@ -1,14 +1,14 @@
 import {
-  Subject,
+  CameraParameters,
   CinematographyInstruction,
-  CameraFrame,
+  SubjectInfo,
 } from "@/types/simulation";
 import * as THREE from "three";
 
 interface SimulationData {
-  subjects: Subject[];
+  subjectsInfo: SubjectInfo[];
   instructions: CinematographyInstruction[];
-  cameraFrames: CameraFrame[];
+  cameraFrames: CameraParameters[];
 }
 
 export const handleDownloadSimulationData = (

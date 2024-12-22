@@ -1,109 +1,108 @@
 import * as THREE from "three";
-
-import { objectSizes } from "@/lib/constants";
-import { ObjectClass, Subject } from "@/types/simulation";
+import { ObjectClass, Subject } from "./types";
+import { objectSizes } from "./constants";
 import {
-  getNormalDistributionValue,
-  getRandomElement,
-} from "@/utils/simulationUtils";
+  DEFAULT_FRAME_COUNT,
+  SubjectFrame,
+  SubjectInfo,
+} from "@/types/simulation";
 
-function createRandomSubject(
-  probabilityFactors: Partial<Record<ObjectClass, number>> = {},
-  existingSubjects: Subject[] = []
-): Subject | null {
-  const defaultProbability = 0.5;
-  const normalizedFactors: Record<ObjectClass, number> = Object.values(
-    ObjectClass
-  ).reduce((acc, cls) => {
-    acc[cls] = Math.max(
-      0,
-      Math.min(1, probabilityFactors[cls] ?? defaultProbability)
-    );
-    return acc;
-  }, {} as Record<ObjectClass, number>);
-
-  const totalProbability = Object.values(normalizedFactors).reduce(
-    (sum, prob) => sum + prob,
-    0
-  );
-  const randomValue = Math.random() * totalProbability;
-
-  let cumulativeProbability = 0;
-  let selectedClass: ObjectClass | null = null;
-
-  for (const [cls, probability] of Object.entries(normalizedFactors)) {
-    cumulativeProbability += probability;
-    if (randomValue <= cumulativeProbability) {
-      selectedClass = cls as ObjectClass;
-      break;
-    }
-  }
-
-  const objectClass =
-    selectedClass || getRandomElement(Object.values(ObjectClass));
-  const size = objectSizes[objectClass];
-  const randomSize = new THREE.Vector3(
-    getNormalDistributionValue(size.mean.x, size.std.x),
-    getNormalDistributionValue(size.mean.y, size.std.y),
-    getNormalDistributionValue(size.mean.z, size.std.z)
-  );
-
-  for (let attempts = 0; attempts < 100; attempts++) {
-    const xPosition = Math.random() * 10 - 5;
-    const zPosition = Math.random() * 10 - 5;
-    const yPosition = randomSize.y / 2;
-
-    const newSubject: Subject = {
-      position: new THREE.Vector3(xPosition, yPosition, zPosition),
-      size: randomSize,
-      rotation: new THREE.Euler(0, Math.random() * Math.PI * 2, 0),
-      objectClass,
-    };
-
-    if (!checkCollision(newSubject, existingSubjects)) {
-      return newSubject;
-    }
-  }
-
-  return null;
+function generateRandomGaussian(): number {
+  let u = 0,
+    v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
 
-function checkCollision(
-  subject: Subject,
-  existingSubjects: Subject[]
-): boolean {
-  for (const existingSubject of existingSubjects) {
-    const distance = subject.position.distanceTo(existingSubject.position);
-    const minDistance =
-      (Math.max(subject.size.x, subject.size.z) +
-        Math.max(existingSubject.size.x, existingSubject.size.z)) /
-      2;
+function generateDimensions(objectClass: ObjectClass): THREE.Vector3 {
+  const { mean, std } = objectSizes[objectClass];
+  return new THREE.Vector3(
+    mean.x + generateRandomGaussian() * std.x,
+    mean.y + generateRandomGaussian() * std.y,
+    mean.z + generateRandomGaussian() * std.z
+  );
+}
 
-    if (distance < minDistance) {
-      return true;
-    }
+function generateCircularMotion(
+  subject: Subject,
+  index: number,
+  totalSubjects: number
+): SubjectFrame[] {
+  const CIRCLE_RADIUS = 5;
+  const frames: SubjectFrame[] = [];
+
+  const angleOffset = (2 * Math.PI * index) / totalSubjects;
+
+  for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
+    const angle = (2 * Math.PI * frame) / DEFAULT_FRAME_COUNT + angleOffset;
+
+    const x = CIRCLE_RADIUS * Math.cos(angle);
+    const z = CIRCLE_RADIUS * Math.sin(angle);
+    const y = subject.dimensions.height / 2;
+
+    const rotation = new THREE.Euler(0, 0, 0);
+
+    frames.push({
+      position: new THREE.Vector3(x, y, z),
+      rotation: rotation,
+    });
   }
-  return false;
+
+  return frames;
 }
 
 export function generateSubjects(
   count?: number,
   probabilityFactors?: Partial<Record<ObjectClass, number>>
-): Subject[] {
+): SubjectInfo[] {
   const objectCount = count ?? Math.floor(Math.random() * 11) + 5;
-  const subjects: Subject[] = [];
+  const subjectsInfo: SubjectInfo[] = [];
 
-  while (subjects.length < objectCount) {
-    const newSubject = createRandomSubject(probabilityFactors, subjects);
-    if (newSubject) {
-      subjects.push(newSubject);
-    } else {
-      console.warn(
-        `Could only place ${subjects.length} objects without intersection.`
-      );
-      break;
+  const defaultFactors: Record<ObjectClass, number> = {
+    [ObjectClass.Chair]: 1,
+    [ObjectClass.Table]: 0.7,
+    [ObjectClass.Laptop]: 0.5,
+    [ObjectClass.Book]: 0.8,
+    [ObjectClass.Tree]: 0.3,
+  };
+
+  const factors = { ...defaultFactors, ...probabilityFactors };
+  const totalWeight = Object.values(factors).reduce(
+    (sum, weight) => sum + weight,
+    0
+  );
+
+  for (let i = 0; i < objectCount; i++) {
+    let random = Math.random() * totalWeight;
+    let chosenClass: ObjectClass = ObjectClass.Chair;
+
+    for (const [objectClass, weight] of Object.entries(factors)) {
+      random -= weight;
+      if (random <= 0) {
+        chosenClass = objectClass as ObjectClass;
+        break;
+      }
     }
+
+    const dimensions = generateDimensions(chosenClass);
+    const subject: Subject = {
+      id: `${chosenClass}-${i}`,
+      class: chosenClass,
+      dimensions: {
+        width: dimensions.x,
+        height: dimensions.y,
+        depth: dimensions.z,
+      },
+    };
+
+    const frames = generateCircularMotion(subject, i, objectCount);
+
+    subjectsInfo.push({
+      subject,
+      frames,
+    });
   }
 
-  return subjects;
+  return subjectsInfo;
 }
