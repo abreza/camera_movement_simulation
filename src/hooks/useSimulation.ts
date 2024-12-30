@@ -6,7 +6,7 @@ import {
 } from "@/service/simulation/types";
 import * as THREE from "three";
 import { Renderer } from "@/service/rendering/Renderer";
-import { calculateCameraPositions } from "@/service/camera";
+import { calculateCameraPositions } from "@/service/optimization";
 import { SubjectInfo } from "@/service/subjects/types";
 
 const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
