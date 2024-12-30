@@ -3,11 +3,11 @@ import { handleDownloadSimulationData } from "@/utils/simulationUtils";
 import {
   CameraParameters,
   CinematographyInstruction,
-  SubjectInfo,
-} from "@/types/simulation";
+} from "@/service/simulation/types";
 import * as THREE from "three";
 import { Renderer } from "@/service/rendering/Renderer";
 import { calculateCameraPositions } from "@/service/camera";
+import { SubjectInfo } from "@/service/subjects/types";
 
 const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
   const cameraViewRef = useRef<HTMLDivElement>(null);

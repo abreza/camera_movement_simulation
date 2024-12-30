@@ -12,9 +12,8 @@ import { GeneratorOptions } from "./dataset/GeneratorOptions";
 import {
   CameraParameters,
   CinematographyInstruction,
-  SubjectInfo,
-} from "@/types/simulation";
-import { ObjectClass } from "@/service/subjects/types";
+} from "@/service/simulation/types";
+import { ObjectClass, SubjectInfo } from "@/service/subjects/types";
 
 interface SettingsProps {
   open: boolean;

@@ -1,11 +1,7 @@
 import * as THREE from "three";
-import { ObjectClass, Subject } from "./types";
+import { ObjectClass, Subject, SubjectFrame, SubjectInfo } from "./types";
 import { objectSizes } from "./constants";
-import {
-  DEFAULT_FRAME_COUNT,
-  SubjectFrame,
-  SubjectInfo,
-} from "@/types/simulation";
+import { DEFAULT_FRAME_COUNT } from "../simulation/constants";
 
 function generateRandomGaussian(): number {
   let u = 0,

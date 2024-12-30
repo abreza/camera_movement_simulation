@@ -1,11 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createSubjectMesh } from "./SubjectMeshCreator";
-import {
-  SubjectFrame,
-  SubjectFrameInfo,
-  SubjectInfo,
-} from "@/types/simulation";
+import { SubjectFrame, SubjectFrameInfo, SubjectInfo } from "../subjects/types";
 
 export class SceneManager {
   private scene: THREE.Scene;

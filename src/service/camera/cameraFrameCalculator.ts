@@ -10,13 +10,12 @@ import {
   CinematographyInstruction,
   MovementScale,
   ShotSize,
-  SubjectFrame,
-  SubjectInfo,
   SubjectView,
   VisibilityConstraint,
-} from "@/types/simulation";
+} from "@/service/simulation/types";
 import { getEasedTime } from "./movementEasing";
 import { getLookAtAngle } from "./utils";
+import { SubjectInfo, SubjectFrame } from "../subjects/types";
 
 export const calculateFramesForInstruction = (
   instruction: CinematographyInstruction,

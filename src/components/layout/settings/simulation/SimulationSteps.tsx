@@ -2,8 +2,8 @@ import React, { FC } from "react";
 import { Stepper, Step, StepLabel, Button, Stack } from "@mui/material";
 import { SubjectGeneration } from "./SubjectGeneration";
 import { InstructionManagement } from "./InstructionManagement";
-import { CinematographyInstruction, SubjectInfo } from "@/types/simulation";
-import { ObjectClass } from "@/service/subjects/types";
+import { CinematographyInstruction } from "@/service/simulation/types";
+import { ObjectClass, SubjectInfo } from "@/service/subjects/types";
 
 interface SimulationStepsProps {
   activeStep: number;

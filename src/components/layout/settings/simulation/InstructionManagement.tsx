@@ -25,9 +25,9 @@ import {
   CameraTranslationMovement,
   MovementScale,
   SubjectView,
-  SubjectInfo,
-  DEFAULT_FRAME_COUNT,
-} from "@/types/simulation";
+} from "@/service/simulation/types";
+import { SubjectInfo } from "@/service/subjects/types";
+import { DEFAULT_FRAME_COUNT } from "@/service/simulation/constants";
 
 interface InstructionManagementProps {
   subjectsInfo: SubjectInfo[];

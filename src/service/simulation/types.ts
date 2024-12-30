@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { Subject } from "@/service/subjects/types";
+import { Subject, SubjectFrame } from "@/service/subjects/types";
 
 export enum CameraVerticalAngle {
   Low = "low",
@@ -34,8 +34,6 @@ export enum CameraRotationMovement {
   PanRight = "panRight",
   TiltUp = "tiltUp",
   TiltDown = "tiltDown",
-  ArcLeft = "arcLeft",
-  ArcRight = "arcRight",
 }
 
 export enum CameraTranslationMovement {
@@ -80,28 +78,36 @@ export enum VisibilityConstraint {
   VisibleAtEnd = "visibleAtEnd",
 }
 
-export type DistanceConstraint = {
-  minDistance: number;
-  maxDistance: number;
-};
-
-export type SubjectSizeConstraint = {
-  minSize: number; // Percentage of frame height
-  maxSize: number;
-};
+export enum SubjectInFrame {
+  InnerLeft = "innerLeft",
+  InnerRight = "innerRight",
+  InnerTop = "innerTop",
+  InnerBottom = "innerBottom",
+  InnerCenter = "innerCenter",
+  OuterLeft = "outerLeft",
+  OuterRight = "outerRight",
+  OuterTop = "outerTop",
+  OuterBottom = "outerBottom",
+}
 
 export type CinematographyInstruction = {
-  frameCount: number;
+  maxFrameCount: number;
   movementEasing: MovementEasing;
 
   subjectIndex?: number;
 
   initialSetup: {
-    distance?: number;
     cameraAngle?: CameraVerticalAngle;
     shotSize?: ShotSize;
     subjectView?: SubjectView;
-    focusPoint?: THREE.Vector3;
+    subjectInFrame?: SubjectInFrame;
+  };
+
+  endSetup: {
+    cameraAngle?: CameraVerticalAngle;
+    shotSize?: ShotSize;
+    subjectView?: SubjectView;
+    subjectInFrame?: SubjectInFrame;
   };
 
   movement: {
@@ -113,8 +119,6 @@ export type CinematographyInstruction = {
 
   constraints?: {
     visibility?: VisibilityConstraint;
-    distance?: DistanceConstraint;
-    subjectSize?: SubjectSizeConstraint;
   };
 };
 
@@ -123,11 +127,6 @@ export type CameraParameters = {
   rotation: THREE.Euler;
   focalLength: number;
   aspectRatio: number;
-};
-
-export type SubjectFrame = {
-  position: THREE.Vector3;
-  rotation: THREE.Euler;
 };
 
 export type SimulationFrame = {
@@ -140,15 +139,3 @@ export type Simulation = {
   instructions: CinematographyInstruction[];
   frames: SimulationFrame[];
 };
-
-export type SubjectInfo = {
-  subject: Subject;
-  frames?: SubjectFrame[];
-};
-
-export type SubjectFrameInfo = {
-  subject: Subject;
-  frame?: SubjectFrame;
-};
-
-export const DEFAULT_FRAME_COUNT = 180;

@@ -1,9 +1,9 @@
 import {
   CameraParameters,
   CinematographyInstruction,
-} from "@/service/simulation/types";
-import { calculateFramesForInstruction } from "./cameraFrameCalculator";
+} from "../simulation/types";
 import { SubjectInfo } from "../subjects/types";
+import { optimizeCameraParameters } from "./optimizer";
 
 export const calculateCameraPositions = (
   instructions: CinematographyInstruction[],
@@ -22,14 +22,14 @@ export const calculateCameraPositions = (
         ? cameraFrames[cameraFrames.length - 1]
         : undefined;
 
-    const frames = calculateFramesForInstruction(
+    const frames = optimizeCameraParameters(
       instruction,
       startCameraParameter,
       subjectInfo
     );
 
     cameraFrames = [...cameraFrames, ...frames];
-    currentFrameNumber += instruction.frameCount;
+    currentFrameNumber += frames.length;
   });
 
   return cameraFrames;

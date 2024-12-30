@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 export enum ObjectClass {
   Chair = "chair",
   Table = "table",
@@ -16,4 +18,19 @@ export type Subject = {
   id: string;
   class: ObjectClass;
   dimensions: SubjectDimensions;
+};
+
+export type SubjectFrame = {
+  position: THREE.Vector3;
+  rotation: THREE.Euler;
+};
+
+export type SubjectInfo = {
+  subject: Subject;
+  frames?: SubjectFrame[];
+};
+
+export type SubjectFrameInfo = {
+  subject: Subject;
+  frame?: SubjectFrame;
 };

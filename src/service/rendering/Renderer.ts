@@ -1,7 +1,6 @@
 import * as THREE from "three";
-import { Subject } from "../subjects/types";
 import { SceneManager } from "./SceneManager";
-import { SubjectFrameInfo, SubjectInfo } from "@/types/simulation";
+import { SubjectFrameInfo, SubjectInfo } from "../subjects/types";
 
 export class Renderer {
   private cameraViewElement: HTMLDivElement;
