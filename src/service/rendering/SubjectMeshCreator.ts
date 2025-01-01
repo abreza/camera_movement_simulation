@@ -2,21 +2,35 @@ import * as THREE from "three";
 import { Subject, SubjectDimensions } from "../subjects/types";
 import { objectModels } from "./ModelLoader";
 
-export const createSubjectMesh = (
+export const createSubjectMesh = async (
   subject: Subject,
   isWorldView: boolean
-): THREE.Object3D => {
-  const model = objectModels.get(subject.class);
-  if (!model) {
-    console.warn(`No model found for ${subject.class}. Using fallback cube.`);
+): Promise<THREE.Object3D> => {
+  let model: THREE.Object3D;
+
+  try {
+    model = await objectModels.get(subject.class);
+  } catch (error) {
+    console.warn(
+      `Error loading model for ${subject.class}. Using fallback cube.`,
+      error
+    );
     return createFallbackMesh(subject.dimensions);
   }
 
   const subjectMesh = model.clone();
   scaleSubjectMesh(subjectMesh, subject.dimensions);
-  setupMeshMaterials(subjectMesh, isWorldView);
 
-  return subjectMesh;
+  const boundingBox = new THREE.Box3().setFromObject(subjectMesh);
+  const center = new THREE.Vector3();
+  boundingBox.getCenter(center);
+
+  const container = new THREE.Object3D();
+  container.add(subjectMesh);
+  subjectMesh.position.sub(center);
+
+  setupMeshMaterials(subjectMesh, isWorldView);
+  return container;
 };
 
 const createFallbackMesh = (dimensions: SubjectDimensions): THREE.Mesh => {

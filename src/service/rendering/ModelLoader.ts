@@ -1,33 +1,73 @@
+// src/service/rendering/ModelLoader.ts
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import { ObjectClass } from "../subjects/types";
 import { modelPaths } from "../subjects/constants";
+import * as THREE from "three";
 
-const mtlLoader = new MTLLoader();
+class ObjectModelLoader {
+  private loadedModels: Partial<Record<ObjectClass, THREE.Object3D>> = {};
+  private loadingPromises: Partial<
+    Record<ObjectClass, Promise<THREE.Object3D>>
+  > = {};
 
-export const objectModels = new Map();
+  private async loadModel(objectClass: ObjectClass): Promise<THREE.Object3D> {
+    const { obj, mtl } = modelPaths[objectClass];
 
-Object.entries(modelPaths).forEach(([objectClass, { obj, mtl }]) => {
-  mtlLoader.load(
-    mtl,
-    (materials) => {
-      materials.preload();
-      const objLoader = new OBJLoader();
-      objLoader.setMaterials(materials);
-      objLoader.load(
-        obj,
-        (object) => {
-          objectModels.set(objectClass as ObjectClass, object);
-        },
-        undefined,
-        (error) => {
-          console.error(`Error loading model for ${objectClass}:`, error);
-        }
+    const mtlLoader = new MTLLoader();
+    const materials = await new Promise<MTLLoader.MaterialCreator>(
+      (resolve, reject) => {
+        mtlLoader.load(mtl, resolve, undefined, (error) =>
+          reject(
+            new Error(`Error loading materials for ${objectClass}: ${error}`)
+          )
+        );
+      }
+    );
+
+    materials.preload();
+    const objLoader = new OBJLoader();
+    objLoader.setMaterials(materials);
+
+    const object = await new Promise<THREE.Object3D>((resolve, reject) => {
+      objLoader.load(obj, resolve, undefined, (error) =>
+        reject(new Error(`Error loading model for ${objectClass}: ${error}`))
       );
-    },
-    undefined,
-    (error) => {
-      console.error(`Error loading materials for ${objectClass}:`, error);
+    });
+
+    this.loadedModels[objectClass] = object;
+    return object;
+  }
+
+  public async get(objectClass: ObjectClass): Promise<THREE.Object3D> {
+    // If model is already loaded, return it
+    const loadedModel = this.loadedModels[objectClass];
+    if (loadedModel) {
+      return loadedModel;
     }
-  );
-});
+
+    // If model is currently loading, return the existing promise
+    const loadingPromise = this.loadingPromises[objectClass];
+    if (loadingPromise) {
+      return loadingPromise;
+    }
+
+    // Start loading the model
+    try {
+      const promise = this.loadModel(objectClass);
+      this.loadingPromises[objectClass] = promise;
+      const model = await promise;
+
+      // Clean up the loading promise
+      delete this.loadingPromises[objectClass];
+
+      return model;
+    } catch (error) {
+      // Clean up the loading promise on error
+      delete this.loadingPromises[objectClass];
+      throw error;
+    }
+  }
+}
+
+export const objectModels = new ObjectModelLoader();

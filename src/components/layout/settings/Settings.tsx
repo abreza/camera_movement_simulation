@@ -12,7 +12,7 @@ import { GeneratorOptions } from "./dataset/GeneratorOptions";
 import {
   CameraParameters,
   CinematographyInstruction,
-} from "@/service/simulation/types";
+} from "@/service/simulation/instruction/types";
 import { ObjectClass, SubjectInfo } from "@/service/subjects/types";
 
 interface SettingsProps {
@@ -63,8 +63,8 @@ export const Settings: FC<SettingsProps> = ({
     setShowGeneratorOptions(true);
   };
 
-  const handleGenerateDataset = (options: GenerateRandomDatasetOptions) => {
-    generateRandomDataset(options);
+  const handleGenerateDataset = (options: any) => {
+    // generateRandomDataset(options);
     setShowGeneratorOptions(false);
     onClose();
   };

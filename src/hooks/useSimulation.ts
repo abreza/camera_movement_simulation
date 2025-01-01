@@ -3,10 +3,10 @@ import { handleDownloadSimulationData } from "@/utils/simulationUtils";
 import {
   CameraParameters,
   CinematographyInstruction,
-} from "@/service/simulation/types";
+} from "@/service/simulation/instruction/types";
 import * as THREE from "three";
 import { Renderer } from "@/service/rendering/Renderer";
-import { calculateCameraPositions } from "@/service/optimization";
+import { calculateCameraPositions } from "@/service/simulation/optimization";
 import { SubjectInfo } from "@/service/subjects/types";
 
 const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {

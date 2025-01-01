@@ -1,8 +1,8 @@
 import {
   CameraParameters,
   CinematographyInstruction,
-} from "../simulation/types";
-import { SubjectInfo } from "../subjects/types";
+} from "../instruction/types";
+import { SubjectInfo } from "../../subjects/types";
 import { optimizeCameraParameters } from "./optimizer";
 
 export const calculateCameraPositions = (

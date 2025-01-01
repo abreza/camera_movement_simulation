@@ -162,13 +162,13 @@ export class SceneManager {
     this.subjectMeshes = [];
     this.worldSubjectMeshes = [];
 
-    subjectsInfo.forEach((subjectInfo, index) => {
-      const mesh = createSubjectMesh(subjectInfo.subject, false);
+    subjectsInfo.forEach(async (subjectInfo, index) => {
+      const mesh = await createSubjectMesh(subjectInfo.subject, false);
 
       this.scene.add(mesh);
       this.subjectMeshes.push(mesh);
 
-      const worldMesh = createSubjectMesh(subjectInfo.subject, true);
+      const worldMesh = await createSubjectMesh(subjectInfo.subject, true);
       this.worldScene.add(worldMesh);
       this.worldSubjectMeshes.push(worldMesh);
 

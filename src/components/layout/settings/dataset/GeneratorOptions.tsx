@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button, TextField, Slider, Typography, Box } from "@mui/material";
 
 interface GeneratorOptionsProps {
-  onGenerate: (options: GenerateRandomDatasetOptions) => void;
+  onGenerate: (options: any) => void;
   onClose: () => void;
 }
 
@@ -10,7 +10,7 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
   onGenerate,
   onClose,
 }) => {
-  const [options, setOptions] = useState<GenerateRandomDatasetOptions>({
+  const [options, setOptions] = useState<any>({
     simulationCount: 100,
     subjectCount: 5,
     instructionCount: 1,
@@ -19,12 +19,12 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
   });
 
   const handleChange =
-    (name: keyof GenerateRandomDatasetOptions) =>
+    (name: keyof any) =>
     (
       event: React.ChangeEvent<HTMLInputElement> | Event,
       newValue: number | number[]
     ) => {
-      setOptions((prevOptions) => ({
+      setOptions((prevOptions: any) => ({
         ...prevOptions,
         [name]:
           name === "simulationCount"
@@ -92,7 +92,7 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
       <Slider
         value={[options.minFrameCount ?? 30, options.maxFrameCount ?? 120]}
         onChange={(event, newValue) => {
-          setOptions((prevOptions) => ({
+          setOptions((prevOptions: any) => ({
             ...prevOptions,
             minFrameCount: (newValue as number[])[0],
             maxFrameCount: (newValue as number[])[1],

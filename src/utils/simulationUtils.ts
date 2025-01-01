@@ -2,7 +2,7 @@ import { SubjectInfo } from "@/service/subjects/types";
 import {
   CameraParameters,
   CinematographyInstruction,
-} from "@/service/simulation/types";
+} from "@/service/simulation/instruction/types";
 import * as THREE from "three";
 
 interface SimulationData {

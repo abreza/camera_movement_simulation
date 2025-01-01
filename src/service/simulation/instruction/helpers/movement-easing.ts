@@ -1,4 +1,4 @@
-import { MovementEasing } from "@/service/simulation/types";
+import { MovementEasing } from "@/service/simulation/instruction/types";
 
 const elasticOut = (t: number): number => {
   const p = 0.3;

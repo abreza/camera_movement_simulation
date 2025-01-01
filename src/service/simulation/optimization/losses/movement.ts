@@ -1,19 +1,20 @@
 import * as THREE from "three";
 import {
-  CameraSubjectDistanceMovement,
-  MovementScale,
+  CameraSubjectDistance,
+  Scale,
   CameraParameters,
   CameraRotationMovement,
   CameraTranslationMovement,
   CameraZoomMovement,
   CinematographyInstruction,
-} from "@/service/simulation/types";
+  MovementConfig,
+} from "@/service/simulation/instruction/types";
+import { SCALE_FACTORS } from "../../instruction/constants";
 import { SubjectInfo } from "@/service/subjects/types";
-import { MOVEMENT_SCALE_FACTORS } from "../constants";
-import { getEasedTime } from "../movementEasing";
+import { getEasedTime } from "../../instruction/helpers/movement-easing";
 
 export const calculateCameraSubjectDistanceLoss = (
-  distance: { type: CameraSubjectDistanceMovement; scale?: MovementScale },
+  distance: { type: CameraSubjectDistance; scale?: Scale },
   allCameraParameters: CameraParameters[],
   subjectInfo: SubjectInfo
 ): number => {
@@ -21,7 +22,7 @@ export const calculateCameraSubjectDistanceLoss = (
     return 0;
   }
 
-  const scale = MOVEMENT_SCALE_FACTORS[distance.scale || MovementScale.Full];
+  const scale = SCALE_FACTORS[distance.scale || Scale.Full];
   const frameCount = allCameraParameters.length;
   let totalLoss = 0;
 
@@ -29,9 +30,9 @@ export const calculateCameraSubjectDistanceLoss = (
     subjectInfo.frames[0].position
   );
   const targetFinalDistance =
-    distance.type === CameraSubjectDistanceMovement.Static
+    distance.type === CameraSubjectDistance.Static
       ? initialDistance
-      : distance.type === CameraSubjectDistanceMovement.DollyIn
+      : distance.type === CameraSubjectDistance.DollyIn
       ? initialDistance * (1 - scale)
       : initialDistance * (1 + scale);
 
@@ -53,12 +54,12 @@ export const calculateCameraSubjectDistanceLoss = (
 };
 
 export const calculateTranslationMovementLoss = (
-  movement: { type: CameraTranslationMovement; scale?: MovementScale },
+  movement: MovementConfig<CameraTranslationMovement>,
   allCameraParameters: CameraParameters[],
   instruction: CinematographyInstruction
 ): number => {
   const frameCount = allCameraParameters.length;
-  const scale = MOVEMENT_SCALE_FACTORS[movement.scale || MovementScale.Full];
+  const scale = SCALE_FACTORS[movement.scale || Scale.Full];
   let totalLoss = 0;
 
   const initialPosition = allCameraParameters[0].position.clone();
@@ -95,12 +96,12 @@ export const calculateTranslationMovementLoss = (
 };
 
 export const calculateRotationMovementLoss = (
-  movement: { type: CameraRotationMovement; scale?: MovementScale },
+  movement: MovementConfig<CameraRotationMovement>,
   allCameraParameters: CameraParameters[],
   instruction: CinematographyInstruction
 ): number => {
   const frameCount = allCameraParameters.length;
-  const scale = MOVEMENT_SCALE_FACTORS[movement.scale || MovementScale.Full];
+  const scale = SCALE_FACTORS[movement.scale || Scale.Full];
   let totalLoss = 0;
 
   const initialRotation = allCameraParameters[0].rotation.clone();
@@ -142,12 +143,12 @@ export const calculateRotationMovementLoss = (
 };
 
 export const calculateZoomMovementLoss = (
-  movement: { type: CameraZoomMovement; scale?: MovementScale },
+  movement: MovementConfig<CameraZoomMovement>,
   allCameraParameters: CameraParameters[],
   instruction: CinematographyInstruction
 ): number => {
   const frameCount = allCameraParameters.length;
-  const scale = MOVEMENT_SCALE_FACTORS[movement.scale || MovementScale.Full];
+  const scale = SCALE_FACTORS[movement.scale || Scale.Full];
   let totalLoss = 0;
 
   const initialFocalLength = allCameraParameters[0].focalLength;
