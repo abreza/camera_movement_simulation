@@ -120,97 +120,6 @@ const calculateFramingLoss = (
   return Math.pow(screenX - targetX, 2) + Math.pow(screenY - targetY, 2);
 };
 
-const calculateMovementLoss = (
-  frames: CameraParameters[],
-  instruction: CinematographyInstruction
-): Record<string, number> => {
-  const losses = {
-    translation: 0,
-    rotation: 0,
-    zoom: 0,
-  };
-
-  if (!instruction.movement) return losses;
-
-  const frameCount = frames.length;
-  for (let i = 1; i < frameCount; i++) {
-    const prevFrame = frames[i - 1];
-    const currentFrame = frames[i];
-
-    // Translation movement consistency
-    if (instruction.movement.translation) {
-      const translation = new THREE.Vector3().subVectors(
-        currentFrame.position,
-        prevFrame.position
-      );
-      const expectedDirection = new THREE.Vector3();
-      switch (instruction.movement.translation.type) {
-        case "truckLeft":
-          expectedDirection.set(-1, 0, 0);
-          break;
-        case "truckRight":
-          expectedDirection.set(1, 0, 0);
-          break;
-        case "pedestalUp":
-          expectedDirection.set(0, 1, 0);
-          break;
-        case "pedestalDown":
-          expectedDirection.set(0, -1, 0);
-          break;
-      }
-      losses.translation +=
-        1 - Math.abs(translation.normalize().dot(expectedDirection));
-    }
-
-    // Rotation movement consistency
-    if (instruction.movement.rotation) {
-      const rotationDiff = new THREE.Euler(
-        currentFrame.rotation.x - prevFrame.rotation.x,
-        currentFrame.rotation.y - prevFrame.rotation.y,
-        currentFrame.rotation.z - prevFrame.rotation.z
-      );
-      const expectedRotation = new THREE.Euler();
-      switch (instruction.movement.rotation.type) {
-        case "panLeft":
-          expectedRotation.y = 1;
-          break;
-        case "panRight":
-          expectedRotation.y = -1;
-          break;
-        case "tiltUp":
-          expectedRotation.x = 1;
-          break;
-        case "tiltDown":
-          expectedRotation.x = -1;
-          break;
-      }
-      losses.rotation +=
-        1 -
-        Math.abs(
-          new THREE.Vector3(rotationDiff.x, rotationDiff.y, rotationDiff.z)
-            .normalize()
-            .dot(
-              new THREE.Vector3(
-                expectedRotation.x,
-                expectedRotation.y,
-                expectedRotation.z
-              )
-            )
-        );
-    }
-
-    // Zoom movement consistency
-    if (instruction.movement.zoom) {
-      const zoomRatio = currentFrame.focalLength / prevFrame.focalLength;
-      const expectedRatio =
-        instruction.movement.zoom.type === "zoomIn" ? 1.1 : 0.9;
-      losses.zoom += Math.pow(zoomRatio - expectedRatio, 2);
-    }
-  }
-
-  return losses;
-};
-
 export const calculateTotalLoss = (
   frames: CameraParameters[],
   instruction: CinematographyInstruction,
@@ -317,17 +226,6 @@ export const calculateTotalLoss = (
         ) * LOSS_SCALE_FACTORS.subjectFraming;
       totalLoss += losses.endFraming;
     }
-  }
-
-  // Movement losses
-  if (instruction.movement) {
-    const movementLosses = calculateMovementLoss(frames, instruction);
-    Object.entries(movementLosses).forEach(([key, loss]) => {
-      losses[`movement_${key}`] =
-        loss *
-        LOSS_SCALE_FACTORS.movement[key as "translation" | "rotation" | "zoom"];
-      totalLoss += losses[`movement_${key}`];
-    });
   }
 
   // Constraint losses
