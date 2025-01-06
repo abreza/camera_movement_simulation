@@ -1,5 +1,8 @@
 import * as THREE from "three";
-import { CameraParameters, CinematographyInstruction } from "../instruction/types";
+import {
+  CameraParameters,
+  CinematographyInstruction,
+} from "../instruction/types";
 import { SubjectInfo } from "../../subjects/types";
 import { initCameraParameters } from "../rule-based";
 import { AXISES } from "../constants";

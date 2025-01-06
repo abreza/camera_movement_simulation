@@ -14,29 +14,10 @@ export enum ShotSize {
   LongShot = "longShot",
 }
 
-export enum CameraZoomMovement {
-  ZoomIn = "zoomIn",
-  ZoomOut = "zoomOut",
-}
-
 export enum CameraSubjectDistance {
   Static = "static",
   DollyIn = "dollyIn",
   DollyOut = "dollyOut",
-}
-
-export enum CameraRotationMovement {
-  PanLeft = "panLeft",
-  PanRight = "panRight",
-  TiltUp = "tiltUp",
-  TiltDown = "tiltDown",
-}
-
-export enum CameraTranslationMovement {
-  TruckLeft = "truckLeft",
-  TruckRight = "truckRight",
-  PedestalUp = "pedestalUp",
-  PedestalDown = "pedestalDown",
 }
 
 export enum Scale {
@@ -114,25 +95,25 @@ export type CameraParameters = {
   aspectRatio: number;
 };
 
-export type MovementsConfig = {
-  translation?: MovementConfig<CameraTranslationMovement>;
-  rotation?: MovementConfig<CameraRotationMovement>;
-  zoom?: MovementConfig<CameraZoomMovement>;
-};
-
 export type ConstraintsConfig = {
   allFramesVisibility?: boolean;
   distance?: DistanceConstraint;
-  staticPosition?: boolean;
-  staticRotation?: boolean;
+  staticPosition?: { x: boolean; y: boolean; z: boolean };
+  staticRotation?: { x: boolean; y: boolean; z: boolean };
+  importance?: number;
 };
+
+export enum InterpolationMode {
+  Normal = "normal",
+  SubjectAware = "subjectAware",
+}
 
 export type CinematographyInstruction = {
   frameCount: number;
   movementEasing: MovementEasing;
+  interpolationMode?: InterpolationMode;
   subjectIndex?: number;
   initialSetup?: SetupConfig;
   endSetup?: SetupConfig;
-  movement?: MovementsConfig;
   constraints?: ConstraintsConfig;
 };

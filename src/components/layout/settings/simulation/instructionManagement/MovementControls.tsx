@@ -6,12 +6,7 @@ import {
   Select,
   Stack,
 } from "@mui/material";
-import {
-  CameraTranslationMovement,
-  CameraRotationMovement,
-  CameraZoomMovement,
-  Scale,
-} from "@/service/simulation/instruction/types";
+import { Scale } from "@/service/simulation/instruction/types";
 
 interface MovementControlProps {
   type: string | undefined;
@@ -75,65 +70,3 @@ export const MovementControl: FC<MovementControlProps> = ({
     )}
   </Stack>
 );
-
-interface MovementControlsProps {
-  translationType: CameraTranslationMovement | undefined;
-  setTranslationType: (type: CameraTranslationMovement | undefined) => void;
-  translationScale: Scale | undefined;
-  setTranslationScale: (scale: Scale | undefined) => void;
-  rotationType: CameraRotationMovement | undefined;
-  setRotationType: (type: CameraRotationMovement | undefined) => void;
-  rotationScale: Scale | undefined;
-  setRotationScale: (scale: Scale | undefined) => void;
-  zoomType: CameraZoomMovement | undefined;
-  setZoomType: (type: CameraZoomMovement | undefined) => void;
-  zoomScale: Scale | undefined;
-  setZoomScale: (scale: Scale | undefined) => void;
-}
-
-export const MovementControls: FC<MovementControlsProps> = ({
-  translationType,
-  setTranslationType,
-  translationScale,
-  setTranslationScale,
-  rotationType,
-  setRotationType,
-  rotationScale,
-  setRotationScale,
-  zoomType,
-  setZoomType,
-  zoomScale,
-  setZoomScale,
-}) => (
-  <>
-    <MovementControl
-      type={translationType}
-      scale={translationScale}
-      onTypeChange={setTranslationType}
-      onScaleChange={setTranslationScale}
-      options={Object.values(CameraTranslationMovement)}
-      label="Translation Movement"
-      allowEmpty={true}
-    />
-    <MovementControl
-      type={rotationType}
-      scale={rotationScale}
-      onTypeChange={setRotationType}
-      onScaleChange={setRotationScale}
-      options={Object.values(CameraRotationMovement)}
-      label="Rotation Movement"
-      allowEmpty={true}
-    />
-    <MovementControl
-      type={zoomType}
-      scale={zoomScale}
-      onTypeChange={setZoomType}
-      onScaleChange={setZoomScale}
-      options={Object.values(CameraZoomMovement)}
-      label="Zoom Movement"
-      allowEmpty={true}
-    />
-  </>
-);
-
-export default MovementControls;

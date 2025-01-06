@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import {
   CameraSubjectDistance,
+  InterpolationMode,
   MovementEasing,
   Scale,
 } from "@/service/simulation/instruction/types";
@@ -21,6 +22,8 @@ interface GeneralSettingsProps {
   setFrameCount: (count: number) => void;
   movementEasing: MovementEasing;
   setMovementEasing: (easing: MovementEasing) => void;
+  interpolationMode: InterpolationMode;
+  setInterpolationMode: (mode: InterpolationMode) => void;
   selectedSubjectIndex?: number;
   setSelectedSubjectIndex: (index?: number) => void;
   allFramesVisibility?: boolean;
@@ -46,6 +49,8 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
   setDistanceType,
   distanceScale,
   setDistanceScale,
+  interpolationMode,
+  setInterpolationMode,
 }) => (
   <>
     <FormControlLabel
@@ -115,5 +120,22 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
       InputProps={{ inputProps: { min: 100, step: 100 } }}
       helperText="Number of frames for this instruction (minimum 100)"
     />
+
+    <FormControl fullWidth sx={{ mb: 2 }} size="small">
+      <InputLabel>Interpolation Mode</InputLabel>
+      <Select
+        value={interpolationMode}
+        onChange={(e) =>
+          setInterpolationMode(e.target.value as InterpolationMode)
+        }
+        label="Interpolation Mode"
+      >
+        {Object.values(InterpolationMode).map((mode) => (
+          <MenuItem key={mode} value={mode}>
+            {mode}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
   </>
 );

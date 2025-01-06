@@ -26,14 +26,6 @@ export const InstructionList: FC<InstructionListProps> = ({
           }
           Frames: ${instruction.frameCount}, Easing: ${
             instruction.movementEasing
-          }
-          Movements: ${
-            instruction.movement
-              ? Object.entries(instruction.movement)
-                  .filter(([_, value]) => value !== undefined)
-                  .map(([key, value]) => `${key}: ${value.type}`)
-                  .join(", ")
-              : ""
           }`}
         />
         <IconButton size="small" onClick={() => onEdit(index)}>

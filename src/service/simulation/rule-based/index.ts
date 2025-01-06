@@ -5,9 +5,8 @@ import {
 import { SubjectInfo } from "../../subjects/types";
 import { getEasedTime } from "../instruction/helpers/movement-easing";
 import { getCameraBySetup } from "./camera-setup";
-import { interpolateParameters, applyMovement } from "./interpolation-movement";
+import { interpolateParameters } from "./interpolation";
 import { applyVisibilityConstraints } from "./visibility";
-import { generateMovement } from "./movement-generation";
 import { applyDistanceConstraint } from "./distance-constraint";
 
 export const initCameraParameters = (
@@ -28,25 +27,25 @@ export const initCameraParameters = (
     startCameraParameter ||
     getCameraBySetup(instruction.initialSetup, subjectInfo.subject, startFrame);
 
-  if (instruction.endSetup) {
-    const endParams = getCameraBySetup(
-      instruction.endSetup,
-      subjectInfo.subject,
-      endFrame
+  const endParams = instruction.endSetup
+    ? getCameraBySetup(instruction.endSetup, subjectInfo.subject, endFrame)
+    : startParams;
+
+  for (let i = 0; i < instruction.frameCount; i++) {
+    const easedT = getEasedTime(
+      i / (instruction.frameCount - 1),
+      instruction.movementEasing
     );
 
-    for (let i = 0; i < instruction.frameCount; i++) {
-      const easedT = getEasedTime(
-        i / (instruction.frameCount - 1),
-        instruction.movementEasing
-      );
-
-      frames.push(interpolateParameters(startParams, endParams, easedT));
-    }
-
-    applyMovement(frames, instruction);
-  } else {
-    frames = generateMovement(startParams, instruction);
+    frames.push(
+      interpolateParameters(
+        startParams,
+        endParams,
+        easedT,
+        instruction.interpolationMode,
+        subjectInfo
+      )
+    );
   }
 
   if (instruction.constraints?.distance) {

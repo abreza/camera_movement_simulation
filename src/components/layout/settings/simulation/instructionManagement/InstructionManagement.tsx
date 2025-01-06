@@ -6,21 +6,18 @@ import {
   MovementEasing,
   CameraVerticalAngle,
   ShotSize,
-  CameraZoomMovement,
   CameraSubjectDistance,
-  CameraRotationMovement,
-  CameraTranslationMovement,
   Scale,
   SubjectView,
   SubjectFraming,
   SubjectFramePosition,
   SubjectFrameZone,
+  InterpolationMode,
 } from "@/service/simulation/instruction/types";
 import { SubjectInfo } from "@/service/subjects/types";
 import { DEFAULT_FRAME_COUNT } from "@/service/simulation/constants";
 import { InstructionList } from "./InstructionList";
 import { SetupControls } from "./SetupControls";
-import { MovementControls } from "./MovementControls";
 import { GeneralSettings } from "./GeneralSettings";
 
 interface InstructionManagementProps {
@@ -91,26 +88,14 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
     SubjectFraming | undefined
   >();
 
-  // Movement States
-  const [translationType, setTranslationType] = useState<
-    CameraTranslationMovement | undefined
-  >();
-  const [translationScale, setTranslationScale] = useState<Scale | undefined>(
-    Scale.Medium
-  );
-  const [rotationType, setRotationType] = useState<
-    CameraRotationMovement | undefined
-  >();
-  const [rotationScale, setRotationScale] = useState<Scale | undefined>(
-    Scale.Medium
-  );
-  const [zoomType, setZoomType] = useState<CameraZoomMovement | undefined>();
-  const [zoomScale, setZoomScale] = useState<Scale | undefined>(Scale.Medium);
   const [distanceType, setDistanceType] = useState<
     CameraSubjectDistance | undefined
   >();
   const [distanceScale, setDistanceScale] = useState<Scale | undefined>(
     Scale.Medium
+  );
+  const [interpolationMode, setInterpolationMode] = useState<InterpolationMode>(
+    InterpolationMode.Normal
   );
 
   const handleAddOrUpdateInstruction = () => {
@@ -118,6 +103,7 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
       frameCount,
       movementEasing,
       subjectIndex: selectedSubjectIndex,
+      interpolationMode,
       initialSetup: {
         cameraAngle: initialCameraAngle,
         shotSize: initialShotSize,
@@ -133,22 +119,14 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
               subjectFraming: endSubjectFraming,
             }
           : undefined,
-      movement: {
-        translation: translationType
-          ? { type: translationType, scale: translationScale }
-          : undefined,
-        rotation: rotationType
-          ? { type: rotationType, scale: rotationScale }
-          : undefined,
-        zoom: zoomType ? { type: zoomType, scale: zoomScale } : undefined,
-      },
       constraints: {
         allFramesVisibility: visibilityConstraint,
         distance: distanceType
           ? { type: distanceType, scale: distanceScale }
           : undefined,
-        staticPosition: false,
-        staticRotation: false,
+        staticPosition: { x: false, y: false, z: false },
+        staticRotation: { x: false, y: false, z: false },
+        importance: 1,
       },
     };
 
@@ -184,15 +162,9 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
     setEndSubjectView(undefined);
     setEndSubjectFraming(undefined);
 
-    // Reset movements
-    setTranslationType(undefined);
-    setTranslationScale(Scale.Medium);
-    setRotationType(undefined);
-    setRotationScale(Scale.Medium);
-    setZoomType(undefined);
-    setZoomScale(Scale.Medium);
     setDistanceType(undefined);
     setDistanceScale(Scale.Medium);
+    setInterpolationMode(InterpolationMode.Normal);
   };
 
   const handleEdit = (index: number) => {
@@ -214,15 +186,11 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
     setEndSubjectView(instruction.endSetup?.subjectView);
     setEndSubjectFraming(instruction.endSetup?.subjectFraming);
 
-    // Set movement
-    setTranslationType(instruction.movement?.translation?.type);
-    setTranslationScale(instruction.movement?.translation?.scale);
-    setRotationType(instruction.movement?.rotation?.type);
-    setRotationScale(instruction.movement?.rotation?.scale);
-    setZoomType(instruction.movement?.zoom?.type);
-    setZoomScale(instruction.movement?.zoom?.scale);
     setDistanceType(instruction.constraints?.distance?.type);
     setDistanceScale(instruction.constraints?.distance?.scale);
+    setInterpolationMode(
+      instruction.interpolationMode ?? InterpolationMode.Normal
+    );
 
     setEditingIndex(index);
   };
@@ -262,25 +230,6 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
       />
 
       <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
-        Camera Movement
-      </Typography>
-
-      <MovementControls
-        translationType={translationType}
-        setTranslationType={setTranslationType}
-        translationScale={translationScale}
-        setTranslationScale={setTranslationScale}
-        rotationType={rotationType}
-        setRotationType={setRotationType}
-        rotationScale={rotationScale}
-        setRotationScale={setRotationScale}
-        zoomType={zoomType}
-        setZoomType={setZoomType}
-        zoomScale={zoomScale}
-        setZoomScale={setZoomScale}
-        />
-
-      <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
         General Settings
       </Typography>
 
@@ -289,6 +238,8 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
         setFrameCount={setFrameCount}
         movementEasing={movementEasing}
         setMovementEasing={setMovementEasing}
+        interpolationMode={interpolationMode}
+        setInterpolationMode={setInterpolationMode}
         selectedSubjectIndex={selectedSubjectIndex}
         setSelectedSubjectIndex={setSelectedSubjectIndex}
         allFramesVisibility={visibilityConstraint}
