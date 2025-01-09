@@ -1,4 +1,4 @@
-import React, { FC, useState } from "react";
+import React, { FC, useState, useMemo, useEffect } from "react";
 import {
   Box,
   Button,
@@ -7,7 +7,11 @@ import {
   Select,
   SelectChangeEvent,
   Typography,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   CameraVerticalAngle,
   ShotSize,
@@ -16,35 +20,39 @@ import {
   CameraMovementType,
   MovementSpeed,
 } from "@/service/simulation/instruction/types";
+import {
+  DEFAULT_START_CAMERA_SETUP,
+  DEFAULT_MOVEMENT,
+  DEFAULT_END_CAMERA_SETUP,
+} from "./constant";
+import { getEnumLabel } from "./enumLabels";
+import { highLevelInstructionRules } from "./rules";
 
 interface HighLevelTabProps {
   onTranslate: (data: any) => void;
 }
 
 export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
-  const [initial, setInitial] = useState({
-    cameraAngle: "",
-    shotSize: "",
-    subjectView: "",
-    subjectFraming: "",
-  });
+  const [initial, setInitial] = useState(DEFAULT_START_CAMERA_SETUP);
+  const [movement, setMovement] = useState(DEFAULT_MOVEMENT);
+  const [final, setFinal] = useState(DEFAULT_END_CAMERA_SETUP);
 
-  const [movement, setMovement] = useState({
-    type: "",
-    speed: "",
-  });
+  const disabledFields = useMemo(() => {
+    const movementType =
+      movement.type as keyof typeof highLevelInstructionRules;
+    return (highLevelInstructionRules[movementType]?.disabledFinalSetup ||
+      []) as string[];
+  }, [movement.type]);
 
-  const [final, setFinal] = useState({
-    cameraAngle: "",
-    shotSize: "",
-    subjectView: "",
-    subjectFraming: "",
-  });
-
-  const isValid =
-    Object.values(initial).every((val) => val !== "") &&
-    Object.values(movement).every((val) => val !== "") &&
-    Object.values(final).every((val) => val !== "");
+  useEffect(() => {
+    const newFinal = { ...final } as any;
+    disabledFields.forEach((field) => {
+      if (field in newFinal) {
+        newFinal[field] = undefined;
+      }
+    });
+    setFinal(newFinal);
+  }, [movement.type]);
 
   const handleInitialChange =
     (field: string) => (event: SelectChangeEvent<string>) => {
@@ -63,8 +71,10 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
 
   const renderSelect = (
     options: string[],
-    value: string,
-    onChange: (event: SelectChangeEvent<string>) => void
+    value: string = "",
+    onChange: (event: SelectChangeEvent<string>) => void,
+    haveEmptyOption: boolean = false,
+    enumType: string
   ) => (
     <FormControl size="small" sx={{ mx: 1 }}>
       <Select
@@ -79,21 +89,117 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
           },
         }}
       >
-        <MenuItem value="" sx={{ fontSize: "inherit", fontWeight: "normal" }}>
-          -
-        </MenuItem>
+        {haveEmptyOption && (
+          <MenuItem value="" sx={{ fontSize: "inherit", fontWeight: "normal" }}>
+            -
+          </MenuItem>
+        )}
         {options.map((option) => (
           <MenuItem
             key={option}
             value={option}
             sx={{ fontSize: "inherit", fontWeight: "normal" }}
           >
-            {option}
+            {getEnumLabel(option, enumType)}
           </MenuItem>
         ))}
       </Select>
     </FormControl>
   );
+
+  const renderFinalSetup = () => {
+    // Build the final setup text in a more grammatically correct way
+    const elements = [];
+    let hasContent = false;
+
+    // Handle camera angle and subject view together
+    if (
+      !disabledFields.includes("cameraAngle") ||
+      !disabledFields.includes("subjectView")
+    ) {
+      hasContent = true;
+      elements.push(
+        <>
+          {!disabledFields.includes("cameraAngle") && (
+            <>
+              a{" "}
+              {renderSelect(
+                Object.values(CameraVerticalAngle),
+                final.cameraAngle,
+                handleFinalChange("cameraAngle"),
+                true,
+                "CameraVerticalAngle"
+              )}{" "}
+              camera angle
+            </>
+          )}
+          {!disabledFields.includes("cameraAngle") &&
+            !disabledFields.includes("subjectView") &&
+            " from "}
+          {!disabledFields.includes("subjectView") && (
+            <>
+              the{" "}
+              {renderSelect(
+                Object.values(SubjectView),
+                final.subjectView,
+                handleFinalChange("subjectView"),
+                true,
+                "SubjectView"
+              )}
+              {" view"}
+            </>
+          )}
+        </>
+      );
+    }
+
+    // Handle shot size
+    if (!disabledFields.includes("shotSize")) {
+      if (hasContent) elements.push(", ");
+      hasContent = true;
+      elements.push(
+        <>
+          {elements.length === 0 ? "a " : ""}
+          {renderSelect(
+            Object.values(ShotSize),
+            final.shotSize,
+            handleFinalChange("shotSize"),
+            true,
+            "ShotSize"
+          )}{" "}
+          shot
+        </>
+      );
+    }
+
+    // Handle subject framing
+    if (!disabledFields.includes("subjectFraming")) {
+      if (hasContent) elements.push(", ");
+      elements.push(
+        <>
+          positioning the subject in the{" "}
+          {renderSelect(
+            Object.values(SubjectInFramePosition),
+            final.subjectFraming,
+            handleFinalChange("subjectFraming"),
+            true,
+            "SubjectInFramePosition"
+          )}{" "}
+          portion of the frame
+        </>
+      );
+    }
+
+    if (elements.length === 0) {
+      return null;
+    }
+
+    return (
+      <Typography variant="body2" sx={{ lineHeight: 2, fontWeight: 300 }}>
+        Finally, conclude with {elements}.
+      </Typography>
+    );
+  };
 
   return (
     <Box>
@@ -105,64 +211,73 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
         {renderSelect(
           Object.values(CameraVerticalAngle),
           initial.cameraAngle,
-          handleInitialChange("cameraAngle")
+          handleInitialChange("cameraAngle"),
+          false,
+          "CameraVerticalAngle"
         )}{" "}
         camera angle from the{" "}
         {renderSelect(
           Object.values(SubjectView),
           initial.subjectView,
-          handleInitialChange("subjectView")
-        )}{" "}
-        side of the subject, using a{" "}
-        {renderSelect(
-          Object.values(ShotSize),
-          initial.shotSize,
-          handleInitialChange("shotSize")
+          handleInitialChange("subjectView"),
+          false,
+          "SubjectView"
         )}{" "}
         shot size and positioning the subject in the{" "}
         {renderSelect(
-          Object.values(SubjectInFramePosition),
-          initial.subjectFraming,
-          handleInitialChange("subjectFraming")
+          Object.values(ShotSize),
+          initial.shotSize,
+          handleInitialChange("shotSize"),
+          false,
+          "ShotSize"
         )}{" "}
-        portion of the frame. Next, apply a{" "}
+        portion of the frame.
+      </Typography>
+
+      <Typography
+        variant="body2"
+        sx={{ mb: 2, lineHeight: 2, fontWeight: 300 }}
+      >
+        Next, apply a{" "}
         {renderSelect(
           Object.values(CameraMovementType),
           movement.type,
-          handleMovementChange("type")
+          handleMovementChange("type"),
+          false,
+          "CameraMovementType"
         )}{" "}
         movement with{" "}
         {renderSelect(
           Object.values(MovementSpeed),
           movement.speed,
-          handleMovementChange("speed")
+          handleMovementChange("speed"),
+          false,
+          "MovementSpeed"
         )}{" "}
-        speed. Finally, conclude with a{" "}
-        {renderSelect(
-          Object.values(CameraVerticalAngle),
-          final.cameraAngle,
-          handleFinalChange("cameraAngle")
-        )}{" "}
-        camera angle from the{" "}
-        {renderSelect(
-          Object.values(SubjectView),
-          final.subjectView,
-          handleFinalChange("subjectView")
-        )}{" "}
-        side of the subject, using a{" "}
-        {renderSelect(
-          Object.values(ShotSize),
-          final.shotSize,
-          handleFinalChange("shotSize")
-        )}{" "}
-        shot size and positioning the subject in the{" "}
-        {renderSelect(
-          Object.values(SubjectInFramePosition),
-          final.subjectFraming,
-          handleFinalChange("subjectFraming")
-        )}{" "}
-        portion of the frame.
+        speed.
       </Typography>
+
+      <Accordion
+        sx={{ mb: 2, boxShadow: "none", "&:before": { display: "none" } }}
+      >
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          sx={{
+            padding: 0,
+            minHeight: "unset",
+            "& .MuiAccordionSummary-content": {
+              margin: 0,
+            },
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            Advanced End Setup
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{ padding: "8px 0" }}>
+          {renderFinalSetup()}
+        </AccordionDetails>
+      </Accordion>
 
       <Button
         variant="contained"
@@ -176,7 +291,6 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
           };
           onTranslate(data);
         }}
-        disabled={!isValid}
       >
         Translate to Low-Level Instructions
       </Button>

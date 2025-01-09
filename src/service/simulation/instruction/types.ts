@@ -34,47 +34,47 @@ export enum Scale {
 
 export enum MovementEasing {
   Linear = "linear",
-  // Sine based
+
   EaseInSine = "easeInSine",
   EaseOutSine = "easeOutSine",
   EaseInOutSine = "easeInOutSine",
-  // Quad based
+
   EaseInQuad = "easeInQuad",
   EaseOutQuad = "easeOutQuad",
   EaseInOutQuad = "easeInOutQuad",
-  // Cubic based
+
   EaseInCubic = "easeInCubic",
   EaseOutCubic = "easeOutCubic",
   EaseInOutCubic = "easeInOutCubic",
-  // Quart based
+
   EaseInQuart = "easeInQuart",
   EaseOutQuart = "easeOutQuart",
   EaseInOutQuart = "easeInOutQuart",
-  // Quint based
+
   EaseInQuint = "easeInQuint",
   EaseOutQuint = "easeOutQuint",
   EaseInOutQuint = "easeInOutQuint",
-  // Expo based
+
   EaseInExpo = "easeInExpo",
   EaseOutExpo = "easeOutExpo",
   EaseInOutExpo = "easeInOutExpo",
-  // Circ based
+
   EaseInCirc = "easeInCirc",
   EaseOutCirc = "easeOutCirc",
   EaseInOutCirc = "easeInOutCirc",
-  // Back based
+
   EaseInBack = "easeInBack",
   EaseOutBack = "easeOutBack",
   EaseInOutBack = "easeInOutBack",
-  // Elastic based
+
   EaseInElastic = "easeInElastic",
   EaseOutElastic = "easeOutElastic",
   EaseInOutElastic = "easeInOutElastic",
-  // Bounce based
+
   EaseInBounce = "easeInBounce",
   EaseOutBounce = "easeOutBounce",
   EaseInOutBounce = "easeInOutBounce",
-  // Special camera movements
+
   HandHeld = "handHeld",
   Anticipation = "anticipation",
   Smooth = "smooth",
@@ -156,16 +156,27 @@ export type CinematographyInstruction = {
 
 export enum CameraMovementType {
   Static = "static",
-  Pan = "pan",
-  Tilt = "tilt",
-  Dolly = "dolly",
-  Truck = "truck",
-  Pedestal = "pedestal",
-  Arc = "arc",
-  Orbit = "orbit",
-  Crane = "crane",
-  HandHeld = "handHeld",
-  Float = "float",
+
+  PanLeft = "panLeft",
+  PanRight = "panRight",
+  TiltUp = "tiltUp",
+  TiltDown = "tiltDown",
+  DollyIn = "dollyIn",
+  DollyOut = "dollyOut",
+  TruckLeft = "truckLeft",
+  TruckRight = "truckRight",
+  PedestalUp = "pedestalUp",
+  PedestalDown = "pedestalDown",
+
+  ArcLeft = "arcLeft",
+  ArcRight = "arcRight",
+
+  CraneUp = "craneUp",
+  CraneDown = "craneDown",
+
+  DollyOutZoomIn = "dollyOutZoomIn",
+  DollyInZoomOut = "dollyInZoomOut",
+
   Follow = "follow",
 }
 
