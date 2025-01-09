@@ -108,11 +108,9 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
   );
 
   const renderFinalSetup = () => {
-    // Build the final setup text in a more grammatically correct way
     const elements = [];
     let hasContent = false;
 
-    // Handle camera angle and subject view together
     if (
       !disabledFields.includes("cameraAngle") ||
       !disabledFields.includes("subjectView")
@@ -153,7 +151,6 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
       );
     }
 
-    // Handle shot size
     if (!disabledFields.includes("shotSize")) {
       if (hasContent) elements.push(", ");
       hasContent = true;
@@ -172,7 +169,6 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
       );
     }
 
-    // Handle subject framing
     if (!disabledFields.includes("subjectFraming")) {
       if (hasContent) elements.push(", ");
       elements.push(
@@ -223,13 +219,21 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
           false,
           "SubjectView"
         )}{" "}
-        shot size and positioning the subject in the{" "}
+        side of the subject, using a{" "}
         {renderSelect(
           Object.values(ShotSize),
           initial.shotSize,
           handleInitialChange("shotSize"),
           false,
           "ShotSize"
+        )}{" "}
+        shot size and positioning the subject in the{" "}
+        {renderSelect(
+          Object.values(SubjectInFramePosition),
+          initial.subjectFraming,
+          handleInitialChange("subjectFraming"),
+          false,
+          "subjectFraming"
         )}{" "}
         portion of the frame.
       </Typography>
