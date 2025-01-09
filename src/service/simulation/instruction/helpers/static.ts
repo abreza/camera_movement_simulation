@@ -62,10 +62,14 @@ export const getDesiredHorizontalAngle = (view: SubjectView): number => {
       return -Math.PI * 0.5;
     case SubjectView.Right:
       return Math.PI * 0.5;
-    case SubjectView.ThreeQuarterLeft:
+    case SubjectView.ThreeQuarterFrontLeft:
       return -Math.PI * 0.25;
-    case SubjectView.ThreeQuarterRight:
+    case SubjectView.ThreeQuarterFrontRight:
       return Math.PI * 0.25;
+    case SubjectView.ThreeQuarterBackLeft:
+      return -Math.PI * 0.75;
+    case SubjectView.ThreeQuarterBackRight:
+      return Math.PI * 0.75;
     default:
       return 0;
   }

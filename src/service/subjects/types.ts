@@ -18,6 +18,10 @@ export type Subject = {
   id: string;
   class: ObjectClass;
   dimensions: SubjectDimensions;
+  attentionBox?: {
+    dimensions: SubjectDimensions;
+    position: THREE.Vector3;
+  };
 };
 
 export type SubjectFrame = {

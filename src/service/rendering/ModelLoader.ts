@@ -1,4 +1,3 @@
-// src/service/rendering/ModelLoader.ts
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import { ObjectClass } from "../subjects/types";
@@ -40,30 +39,25 @@ class ObjectModelLoader {
   }
 
   public async get(objectClass: ObjectClass): Promise<THREE.Object3D> {
-    // If model is already loaded, return it
     const loadedModel = this.loadedModels[objectClass];
     if (loadedModel) {
       return loadedModel;
     }
 
-    // If model is currently loading, return the existing promise
     const loadingPromise = this.loadingPromises[objectClass];
     if (loadingPromise) {
       return loadingPromise;
     }
 
-    // Start loading the model
     try {
       const promise = this.loadModel(objectClass);
       this.loadingPromises[objectClass] = promise;
       const model = await promise;
 
-      // Clean up the loading promise
       delete this.loadingPromises[objectClass];
 
       return model;
     } catch (error) {
-      // Clean up the loading promise on error
       delete this.loadingPromises[objectClass];
       throw error;
     }

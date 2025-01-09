@@ -16,6 +16,7 @@ interface MovementControlProps {
   options: any[];
   label: string;
   allowEmpty?: boolean;
+  StartAdornmentComponent?: FC<any>;
 }
 
 export const MovementControl: FC<MovementControlProps> = ({
@@ -26,6 +27,7 @@ export const MovementControl: FC<MovementControlProps> = ({
   options,
   label,
   allowEmpty = true,
+  StartAdornmentComponent,
 }) => (
   <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
     <FormControl fullWidth size="small">
@@ -34,6 +36,10 @@ export const MovementControl: FC<MovementControlProps> = ({
         value={type ?? ""}
         onChange={(e) => onTypeChange(e.target.value || undefined)}
         label={label}
+        startAdornment={
+          StartAdornmentComponent && <StartAdornmentComponent easing={type} />
+        }
+        renderValue={(value) => value}
       >
         {allowEmpty && (
           <MenuItem value="">
@@ -42,6 +48,9 @@ export const MovementControl: FC<MovementControlProps> = ({
         )}
         {options.map((option) => (
           <MenuItem key={option} value={option}>
+            {StartAdornmentComponent && (
+              <StartAdornmentComponent easing={option} />
+            )}
             {option}
           </MenuItem>
         ))}

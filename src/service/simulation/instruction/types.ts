@@ -9,9 +9,14 @@ export enum CameraVerticalAngle {
 }
 
 export enum ShotSize {
+  ExtremeCloseUp = "extremeCloseUp",
   CloseUp = "closeUp",
+  MediumCloseUp = "mediumCloseUp",
   MediumShot = "mediumShot",
+  FullShot = "fullShot",
   LongShot = "longShot",
+  VeryLongShot = "veryLongShot",
+  ExtremeLongShot = "extremeLongShot",
 }
 
 export enum CameraSubjectDistance {
@@ -29,14 +34,50 @@ export enum Scale {
 
 export enum MovementEasing {
   Linear = "linear",
-  EaseInOut = "easeInOut",
-  EaseIn = "easeIn",
-  EaseOut = "easeOut",
-  Smooth = "smooth",
-  Bounce = "bounce",
-  Elastic = "elastic",
+  // Sine based
+  EaseInSine = "easeInSine",
+  EaseOutSine = "easeOutSine",
+  EaseInOutSine = "easeInOutSine",
+  // Quad based
+  EaseInQuad = "easeInQuad",
+  EaseOutQuad = "easeOutQuad",
+  EaseInOutQuad = "easeInOutQuad",
+  // Cubic based
+  EaseInCubic = "easeInCubic",
+  EaseOutCubic = "easeOutCubic",
+  EaseInOutCubic = "easeInOutCubic",
+  // Quart based
+  EaseInQuart = "easeInQuart",
+  EaseOutQuart = "easeOutQuart",
+  EaseInOutQuart = "easeInOutQuart",
+  // Quint based
+  EaseInQuint = "easeInQuint",
+  EaseOutQuint = "easeOutQuint",
+  EaseInOutQuint = "easeInOutQuint",
+  // Expo based
+  EaseInExpo = "easeInExpo",
+  EaseOutExpo = "easeOutExpo",
+  EaseInOutExpo = "easeInOutExpo",
+  // Circ based
+  EaseInCirc = "easeInCirc",
+  EaseOutCirc = "easeOutCirc",
+  EaseInOutCirc = "easeInOutCirc",
+  // Back based
+  EaseInBack = "easeInBack",
+  EaseOutBack = "easeOutBack",
+  EaseInOutBack = "easeInOutBack",
+  // Elastic based
+  EaseInElastic = "easeInElastic",
+  EaseOutElastic = "easeOutElastic",
+  EaseInOutElastic = "easeInOutElastic",
+  // Bounce based
+  EaseInBounce = "easeInBounce",
+  EaseOutBounce = "easeOutBounce",
+  EaseInOutBounce = "easeInOutBounce",
+  // Special camera movements
   HandHeld = "handHeld",
   Anticipation = "anticipation",
+  Smooth = "smooth",
 }
 
 export enum SubjectView {
@@ -44,11 +85,13 @@ export enum SubjectView {
   Back = "back",
   Left = "left",
   Right = "right",
-  ThreeQuarterLeft = "threeQuarterLeft",
-  ThreeQuarterRight = "threeQuarterRight",
+  ThreeQuarterFrontLeft = "threeQuarterFrontLeft",
+  ThreeQuarterFrontRight = "threeQuarterFrontRight",
+  ThreeQuarterBackLeft = "threeQuarterBackLeft",
+  ThreeQuarterBackRight = "threeQuarterBackRight",
 }
 
-export enum SubjectFramePosition {
+export enum SubjectInFramePosition {
   Left = "left",
   Right = "right",
   Top = "top",
@@ -58,11 +101,10 @@ export enum SubjectFramePosition {
   TopRight = "topRight",
   BottomLeft = "bottomLeft",
   BottomRight = "bottomRight",
-}
-
-export enum SubjectFrameZone {
-  Inner = "inner",
-  Outer = "outer",
+  OuterLeft = "outerLeft",
+  OuterRight = "outerRight",
+  OuterTop = "outerTop",
+  OuterBottom = "outerBottom",
 }
 
 export type MovementConfig<T> = {
@@ -76,9 +118,8 @@ export type DistanceConstraint = {
 };
 
 export type SubjectFraming = {
-  position: SubjectFramePosition;
-  zone: SubjectFrameZone;
-  scale: Scale;
+  position: SubjectInFramePosition;
+  dutchAngleScale?: Scale;
 };
 
 export type SetupConfig = {
@@ -103,17 +144,35 @@ export type ConstraintsConfig = {
   importance?: number;
 };
 
-export enum InterpolationMode {
-  Normal = "normal",
-  SubjectAware = "subjectAware",
-}
-
 export type CinematographyInstruction = {
   frameCount: number;
+  initialSetup: SetupConfig;
   movementEasing: MovementEasing;
-  interpolationMode?: InterpolationMode;
+  subjectAwareInterpolation?: boolean;
   subjectIndex?: number;
-  initialSetup?: SetupConfig;
   endSetup?: SetupConfig;
   constraints?: ConstraintsConfig;
 };
+
+export enum CameraMovementType {
+  Static = "static",
+  Pan = "pan",
+  Tilt = "tilt",
+  Dolly = "dolly",
+  Truck = "truck",
+  Pedestal = "pedestal",
+  Arc = "arc",
+  Orbit = "orbit",
+  Crane = "crane",
+  HandHeld = "handHeld",
+  Float = "float",
+  Follow = "follow",
+}
+
+export enum MovementSpeed {
+  SlowToFast = "slowToFast",
+  FastToSlow = "fastToSlow",
+  Constant = "constant",
+  StopAndGo = "stopAndGo",
+  DeliberateStartStop = "deliberateStartStop",
+}

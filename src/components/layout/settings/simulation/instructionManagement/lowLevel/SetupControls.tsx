@@ -11,8 +11,7 @@ import {
   CameraVerticalAngle,
   ShotSize,
   SubjectView,
-  SubjectFramePosition,
-  SubjectFrameZone,
+  SubjectInFramePosition,
   Scale,
   SubjectFraming,
 } from "@/service/simulation/instruction/types";
@@ -54,7 +53,7 @@ export const SetupControls: FC<SetupControlsProps> = ({
 
   return (
     <>
-      <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
+      <Typography variant="subtitle2" sx={{ mb: 1 }}>
         {isInitial ? "Initial Setup" : "End Setup"}
       </Typography>
 
@@ -130,7 +129,7 @@ export const SetupControls: FC<SetupControlsProps> = ({
             onChange={(e) =>
               handleFramingChange(
                 "position",
-                (e.target.value as SubjectFramePosition) || undefined
+                (e.target.value as SubjectInFramePosition) || undefined
               )
             }
             label="Frame Position"
@@ -138,7 +137,7 @@ export const SetupControls: FC<SetupControlsProps> = ({
             <MenuItem value="">
               <em>None</em>
             </MenuItem>
-            {Object.values(SubjectFramePosition).map((position) => (
+            {Object.values(SubjectInFramePosition).map((position) => (
               <MenuItem key={position} value={position}>
                 {position}
               </MenuItem>
@@ -147,35 +146,12 @@ export const SetupControls: FC<SetupControlsProps> = ({
         </FormControl>
 
         <FormControl fullWidth size="small">
-          <InputLabel>Frame Zone</InputLabel>
+          <InputLabel>Subject Dutch Angle Scale</InputLabel>
           <Select
-            value={subjectFraming?.zone || ""}
+            value={subjectFraming?.dutchAngleScale || ""}
             onChange={(e) =>
               handleFramingChange(
-                "zone",
-                (e.target.value as SubjectFrameZone) || undefined
-              )
-            }
-            label="Frame Zone"
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            {Object.values(SubjectFrameZone).map((zone) => (
-              <MenuItem key={zone} value={zone}>
-                {zone}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <FormControl fullWidth size="small">
-          <InputLabel>Subject Scale in Frame</InputLabel>
-          <Select
-            value={subjectFraming?.scale || ""}
-            onChange={(e) =>
-              handleFramingChange(
-                "scale",
+                "dutchAngleScale",
                 (e.target.value as Scale) || undefined
               )
             }

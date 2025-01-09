@@ -109,7 +109,7 @@ export const Settings: FC<SettingsProps> = ({
           margin: 0,
         },
       }}
-      maxWidth="xs"
+      maxWidth="sm"
       fullWidth
     >
       <DialogTitle>Cinematic Camera Movement</DialogTitle>

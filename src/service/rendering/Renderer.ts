@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { SceneManager } from "./SceneManager";
 import { SubjectFrameInfo, SubjectInfo } from "../subjects/types";
+import { CameraParameters } from "../simulation/instruction/types";
 
 export class Renderer {
   private cameraViewElement: HTMLDivElement;
@@ -25,12 +26,10 @@ export class Renderer {
   }
 
   updateScene(
-    cameraPosition: THREE.Vector3,
-    cameraAngle: THREE.Euler,
-    focalLength: number,
+    camera: CameraParameters,
     subjectsFrameInfo: SubjectFrameInfo[]
   ): void {
-    this.sceneManager.updateCamera(cameraPosition, cameraAngle, focalLength);
+    this.sceneManager.updateCamera(camera);
     this.sceneManager.updateSubjects(subjectsFrameInfo);
   }
 

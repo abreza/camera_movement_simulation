@@ -104,9 +104,7 @@ const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
     if (!rendererRef.current) return;
     const frame = cameraFrames[currentFrame];
     rendererRef.current.updateScene(
-      frame.position,
-      frame.rotation,
-      frame.focalLength,
+      frame,
       subjectsInfo.map(({ subject, frames }) => ({
         subject,
         frame: frames?.[currentFrame],

@@ -1,24 +1,72 @@
 import * as THREE from "three";
+import { SubjectDimensions } from "../subjects/types";
+import { DEFAULT_FOCAL_LENGTH, SENSOR_HEIGHT } from "./constants";
+import { CameraParameters } from "./instruction/types";
 
 export const getLookAtAngle = (
   cameraPosition: THREE.Vector3,
   targetPosition: THREE.Vector3
 ): THREE.Euler => {
-  const direction = new THREE.Vector3()
-    .subVectors(targetPosition, cameraPosition)
-    .normalize();
+  const tempCamera = new THREE.PerspectiveCamera();
+  tempCamera.position.copy(cameraPosition);
+  tempCamera.lookAt(targetPosition);
+  return tempCamera.rotation.clone();
+};
 
-  const rotationMatrix = new THREE.Matrix4();
-  const up = new THREE.Vector3(0, 1, 0);
+export interface ProjectedBounds {
+  width: number;
+  height: number;
+  center: THREE.Vector2;
+}
 
-  if (Math.abs(direction.x) < 1e-10 && Math.abs(direction.z) < 1e-10) {
-    up.set(0, 0, direction.y > 0 ? 1 : -1);
-  }
+export const projectPoint = (
+  point: THREE.Vector3,
+  cameraParams: CameraParameters
+): THREE.Vector2 => {
+  const tempCamera = new THREE.PerspectiveCamera();
+  tempCamera.setFocalLength(cameraParams.focalLength);
 
-  rotationMatrix.lookAt(new THREE.Vector3(0, 0, 0), direction, up);
+  tempCamera.position.copy(cameraParams.position);
+  tempCamera.rotation.copy(cameraParams.rotation);
 
-  const euler = new THREE.Euler();
-  euler.setFromRotationMatrix(rotationMatrix, "XYZ");
+  tempCamera.updateProjectionMatrix();
 
-  return euler;
+  const ndc = point.clone().project(tempCamera);
+
+  return new THREE.Vector2(ndc.x, ndc.y);
+};
+
+export const projectBoundingBox = (
+  dimensions: SubjectDimensions,
+  position: THREE.Vector3,
+  camera: CameraParameters
+): ProjectedBounds => {
+  const halfWidth = dimensions.width / 2;
+  const halfHeight = dimensions.height / 2;
+  const halfDepth = dimensions.depth / 2;
+
+  const corners = [
+    new THREE.Vector3(-halfWidth, -halfHeight, -halfDepth).add(position),
+    new THREE.Vector3(halfWidth, -halfHeight, -halfDepth).add(position),
+    new THREE.Vector3(-halfWidth, halfHeight, -halfDepth).add(position),
+    new THREE.Vector3(halfWidth, halfHeight, -halfDepth).add(position),
+    new THREE.Vector3(-halfWidth, -halfHeight, halfDepth).add(position),
+    new THREE.Vector3(halfWidth, -halfHeight, halfDepth).add(position),
+    new THREE.Vector3(-halfWidth, halfHeight, halfDepth).add(position),
+    new THREE.Vector3(halfWidth, halfHeight, halfDepth).add(position),
+  ];
+
+  debugger;
+  const projectedPoints = corners.map((corner) => projectPoint(corner, camera));
+
+  const minX = Math.min(...projectedPoints.map((p) => p.x));
+  const maxX = Math.max(...projectedPoints.map((p) => p.x));
+  const minY = Math.min(...projectedPoints.map((p) => p.y));
+  const maxY = Math.max(...projectedPoints.map((p) => p.y));
+
+  return {
+    width: maxX - minX,
+    height: maxY - minY,
+    center: new THREE.Vector2((minX + maxX) / 2, (minY + maxY) / 2),
+  };
 };

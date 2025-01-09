@@ -7,23 +7,25 @@ import {
   TextField,
   Switch,
   FormControlLabel,
+  FormGroup,
+  Typography,
 } from "@mui/material";
 import {
   CameraSubjectDistance,
-  InterpolationMode,
   MovementEasing,
   Scale,
 } from "@/service/simulation/instruction/types";
 import { SubjectInfo } from "@/service/subjects/types";
 import { MovementControl } from "./MovementControls";
+import { EasingChart } from "./EasingChart";
 
 interface GeneralSettingsProps {
   frameCount: number;
   setFrameCount: (count: number) => void;
   movementEasing: MovementEasing;
   setMovementEasing: (easing: MovementEasing) => void;
-  interpolationMode: InterpolationMode;
-  setInterpolationMode: (mode: InterpolationMode) => void;
+  subjectAwareInterpolation?: boolean;
+  setSubjectAwareInterpolation: (subjectAwareInterpolation?: boolean) => void;
   selectedSubjectIndex?: number;
   setSelectedSubjectIndex: (index?: number) => void;
   allFramesVisibility?: boolean;
@@ -49,8 +51,8 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
   setDistanceType,
   distanceScale,
   setDistanceScale,
-  interpolationMode,
-  setInterpolationMode,
+  subjectAwareInterpolation,
+  setSubjectAwareInterpolation,
 }) => (
   <>
     <FormControlLabel
@@ -61,7 +63,20 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
         />
       }
       label="Subject visible at all times"
-      sx={{ mb: 2, width: "100%" }}
+      sx={{ mb: 1, width: "100%" }}
+    />
+
+    <FormControlLabel
+      control={
+        <Switch
+          checked={subjectAwareInterpolation}
+          onChange={() =>
+            setSubjectAwareInterpolation(!subjectAwareInterpolation)
+          }
+        />
+      }
+      label={"Subject Aware Interpolation"}
+      sx={{ mb: 1, width: "100%" }}
     />
 
     <MovementControl
@@ -74,20 +89,14 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
       allowEmpty={true}
     />
 
-    <FormControl fullWidth sx={{ mb: 2 }} size="small">
-      <InputLabel>Movement Easing</InputLabel>
-      <Select
-        value={movementEasing}
-        onChange={(e) => setMovementEasing(e.target.value as MovementEasing)}
-        label="Movement Easing"
-      >
-        {Object.values(MovementEasing).map((easing) => (
-          <MenuItem key={easing} value={easing}>
-            {easing}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+    <MovementControl
+      type={movementEasing}
+      onTypeChange={setMovementEasing}
+      options={Object.values(MovementEasing)}
+      label="Movement Easing"
+      allowEmpty={false}
+      StartAdornmentComponent={EasingChart}
+    />
 
     <FormControl fullWidth sx={{ mb: 2 }} size="small">
       <InputLabel>Target Subject</InputLabel>
@@ -120,22 +129,5 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
       InputProps={{ inputProps: { min: 100, step: 100 } }}
       helperText="Number of frames for this instruction (minimum 100)"
     />
-
-    <FormControl fullWidth sx={{ mb: 2 }} size="small">
-      <InputLabel>Interpolation Mode</InputLabel>
-      <Select
-        value={interpolationMode}
-        onChange={(e) =>
-          setInterpolationMode(e.target.value as InterpolationMode)
-        }
-        label="Interpolation Mode"
-      >
-        {Object.values(InterpolationMode).map((mode) => (
-          <MenuItem key={mode} value={mode}>
-            {mode}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
   </>
 );

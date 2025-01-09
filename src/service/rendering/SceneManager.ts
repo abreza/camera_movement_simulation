@@ -2,6 +2,12 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createSubjectMesh } from "./SubjectMeshCreator";
 import { SubjectFrame, SubjectFrameInfo, SubjectInfo } from "../subjects/types";
+import { CameraParameters } from "../simulation/instruction/types";
+import {
+  DEFAULT_ASPECT_RATIO,
+  DEFAULT_FOCAL_LENGTH,
+} from "../simulation/constants";
+import { CameraMeshCreator } from "./CameraMeshCreator";
 
 export class SceneManager {
   private scene: THREE.Scene;
@@ -20,15 +26,14 @@ export class SceneManager {
     worldViewElement: HTMLDivElement
   ) {
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
+    this.camera = new THREE.PerspectiveCamera();
+    this.camera.setFocalLength(DEFAULT_FOCAL_LENGTH);
+    this.camera.aspect = DEFAULT_ASPECT_RATIO;
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.worldScene = new THREE.Scene();
-    this.worldCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+    this.worldCamera = new THREE.PerspectiveCamera();
+    this.worldCamera.setFocalLength(DEFAULT_FOCAL_LENGTH);
+    this.worldCamera.aspect = DEFAULT_ASPECT_RATIO;
     this.worldRenderer = new THREE.WebGLRenderer({ antialias: true });
     this.worldControls = new OrbitControls(this.worldCamera, worldViewElement);
     this.subjectMeshes = [];
@@ -37,7 +42,24 @@ export class SceneManager {
 
     this.setupMainScene(cameraViewElement);
     this.setupWorldScene(worldViewElement);
+    this.setupFloor();
     this.setupLighting();
+    this.initCameraMesh();
+  }
+
+  private setupFloor(): void {
+    const floorGeometry = new THREE.PlaneGeometry(100, 100);
+    const floorMaterial = new THREE.MeshStandardMaterial({
+      color: 0xeeeeaa,
+      roughness: 0.8,
+      metalness: 0.2,
+    });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+    floor.position.y = 0;
+    floor.receiveShadow = true;
+    this.worldScene.add(floor);
+    this.scene.add(floor.clone());
   }
 
   private setupMainScene(cameraViewElement: HTMLDivElement): void {
@@ -91,15 +113,6 @@ export class SceneManager {
     spotLight.shadow.camera.far = 200;
     this.scene.add(spotLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
-    hemiLight.position.set(0, 20, 0);
-    this.scene.add(hemiLight);
-
-    const rectLight = new THREE.RectAreaLight(0xffffff, 5, 10, 10);
-    rectLight.position.set(0, 5, 0);
-    rectLight.lookAt(0, 0, 0);
-    this.scene.add(rectLight);
-
     const worldAmbientLight = new THREE.AmbientLight(0xffffff, 1.0);
     this.worldScene.add(worldAmbientLight);
 
@@ -109,20 +122,43 @@ export class SceneManager {
   }
 
   onWindowResize(): void {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    if (window.innerWidth / window.innerHeight > DEFAULT_ASPECT_RATIO) {
+      this.renderer.setSize(
+        DEFAULT_ASPECT_RATIO * window.innerHeight,
+        window.innerHeight
+      );
+    } else {
+      this.renderer.setSize(
+        window.innerWidth,
+        window.innerWidth / DEFAULT_ASPECT_RATIO
+      );
+    }
   }
 
-  updateCamera(
-    position: THREE.Vector3,
-    rotation: THREE.Euler,
-    focalLength: number
-  ): void {
-    this.camera.position.copy(position);
-    this.camera.rotation.copy(rotation);
-    this.camera.setFocalLength(focalLength);
+  private cameraMesh: THREE.Group | null = null;
+
+  // Add this method to your SceneManager class:
+  private initCameraMesh(): void {
+    if (this.cameraMesh) {
+      this.worldScene.remove(this.cameraMesh);
+    }
+
+    this.cameraMesh = CameraMeshCreator.createCameraMesh();
+    this.worldScene.add(this.cameraMesh);
+  }
+
+  // Modify your updateCamera method to include cameraMesh updates:
+  updateCamera(camera: CameraParameters): void {
+    this.camera.position.copy(camera.position);
+    this.camera.rotation.copy(camera.rotation);
+    this.camera.setFocalLength(camera.focalLength);
     this.camera.updateMatrixWorld();
+
+    // Update camera mesh position and rotation
+    if (this.cameraMesh) {
+      this.cameraMesh.position.copy(camera.position);
+      this.cameraMesh.rotation.copy(camera.rotation);
+    }
 
     if (!this.cameraHelper) {
       this.cameraHelper = new THREE.CameraHelper(this.camera);
@@ -183,6 +219,10 @@ export class SceneManager {
   }
 
   dispose(): void {
+    if (this.cameraMesh) {
+      this.worldScene.remove(this.cameraMesh);
+      this.cameraMesh.traverse(this.disposeObject);
+    }
     this.scene.traverse(this.disposeObject);
     this.worldScene.traverse(this.disposeObject);
     this.renderer.dispose();

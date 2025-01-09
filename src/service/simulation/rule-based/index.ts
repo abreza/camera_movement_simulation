@@ -4,7 +4,7 @@ import {
 } from "../instruction/types";
 import { SubjectInfo } from "../../subjects/types";
 import { getEasedTime } from "../instruction/helpers/movement-easing";
-import { getCameraBySetup } from "./camera-setup";
+import { getCameraBySetup } from "./setup";
 import { interpolateParameters } from "./interpolation";
 import { applyVisibilityConstraints } from "./visibility";
 import { applyDistanceConstraint } from "./distance-constraint";
@@ -42,7 +42,7 @@ export const initCameraParameters = (
         startParams,
         endParams,
         easedT,
-        instruction.interpolationMode,
+        instruction.subjectAwareInterpolation,
         subjectInfo
       )
     );

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { CameraParameters, InterpolationMode } from "../instruction/types";
+import { CameraParameters } from "../instruction/types";
 import { SubjectInfo, SubjectFrame } from "../../subjects/types";
 
 const getFrontVector = (rotation: THREE.Euler): THREE.Vector3 => {
@@ -118,10 +118,10 @@ export const interpolateParameters = (
   start: CameraParameters,
   end: CameraParameters,
   t: number,
-  mode: InterpolationMode = InterpolationMode.Normal,
+  subjectAwareInterpolation: boolean = false,
   subjectInfo?: SubjectInfo
 ): CameraParameters => {
-  if (mode === InterpolationMode.SubjectAware && subjectInfo?.frames) {
+  if (subjectAwareInterpolation && subjectInfo?.frames) {
     const frameIndex = Math.floor(t * (subjectInfo.frames.length - 1));
     return interpolateSubjectAware(
       start,
