@@ -31,10 +31,10 @@ export const subjectViewLabels: Record<SubjectView, string> = {
   [SubjectView.Back]: "Back",
   [SubjectView.Left]: "Left Side",
   [SubjectView.Right]: "Right Side",
-  [SubjectView.ThreeQuarterFrontLeft]: "¾ Front Left",
-  [SubjectView.ThreeQuarterFrontRight]: "¾ Front Right",
-  [SubjectView.ThreeQuarterBackLeft]: "¾ Back Left",
-  [SubjectView.ThreeQuarterBackRight]: "¾ Back Right",
+  [SubjectView.ThreeQuarterFrontLeft]: "Three Quarter Front Left",
+  [SubjectView.ThreeQuarterFrontRight]: "Three Quarter Front Right",
+  [SubjectView.ThreeQuarterBackLeft]: "Three Quarter Back Left",
+  [SubjectView.ThreeQuarterBackRight]: "Three Quarter Back Right",
 };
 
 export const subjectInFramePositionLabels: Record<

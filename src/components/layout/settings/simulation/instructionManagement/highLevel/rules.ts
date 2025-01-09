@@ -1,4 +1,12 @@
-export const highLevelInstructionRules = {
+import {
+  CameraMovementType,
+  SetupConfig,
+} from "@/service/simulation/instruction/types";
+
+export const highLevelInstructionRules: Record<
+  CameraMovementType,
+  { disabledFinalSetup: (keyof SetupConfig)[] }
+> = {
   static: {
     disabledFinalSetup: [
       "cameraAngle",
@@ -48,6 +56,12 @@ export const highLevelInstructionRules = {
   },
   craneDown: {
     disabledFinalSetup: ["subjectView"],
+  },
+  dollyOutZoomIn: {
+    disabledFinalSetup: ["cameraAngle", "shotSize", "subjectView"],
+  },
+  dollyInZoomOut: {
+    disabledFinalSetup: ["cameraAngle", "shotSize", "subjectView"],
   },
   follow: {
     disabledFinalSetup: [],

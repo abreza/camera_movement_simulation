@@ -27,6 +27,7 @@ import {
 } from "./constant";
 import { getEnumLabel } from "./enumLabels";
 import { highLevelInstructionRules } from "./rules";
+import { generateRandomTexts } from "./generator";
 
 interface HighLevelTabProps {
   onTranslate: (data: any) => void;
@@ -297,6 +298,13 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
         }}
       >
         Translate to Low-Level Instructions
+      </Button>
+      <Button
+        onClick={() => generateRandomTexts()}
+        sx={{ mt: 2 }}
+        color="secondary"
+      >
+        Generate 1000 Random Prompt
       </Button>
     </Box>
   );
