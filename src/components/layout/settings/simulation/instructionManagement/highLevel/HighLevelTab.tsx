@@ -2,9 +2,6 @@ import React, { FC, useState, useMemo, useEffect } from "react";
 import {
   Box,
   Button,
-  FormControl,
-  MenuItem,
-  Select,
   SelectChangeEvent,
   Typography,
   Accordion,
@@ -12,6 +9,7 @@ import {
   AccordionDetails,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+
 import {
   CameraVerticalAngle,
   ShotSize,
@@ -20,14 +18,19 @@ import {
   CameraMovementType,
   MovementSpeed,
 } from "@/service/simulation/instruction/types";
+
 import {
   DEFAULT_START_CAMERA_SETUP,
   DEFAULT_MOVEMENT,
   DEFAULT_END_CAMERA_SETUP,
 } from "./constant";
+
 import { getEnumLabel } from "./enumLabels";
 import { highLevelInstructionRules } from "./rules";
 import { generateRandomTexts } from "./generator";
+
+import { SelectRenderer } from "./SelectRenderer";
+import { FinalSetup } from "./FinalSetup";
 
 interface HighLevelTabProps {
   onTranslate: (data: any) => void;
@@ -70,134 +73,6 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
       setFinal((prev) => ({ ...prev, [field]: event.target.value }));
     };
 
-  const renderSelect = (
-    options: string[],
-    value: string = "",
-    onChange: (event: SelectChangeEvent<string>) => void,
-    haveEmptyOption: boolean = false,
-    enumType: string
-  ) => (
-    <FormControl size="small" sx={{ mx: 1 }}>
-      <Select
-        value={value}
-        onChange={onChange}
-        displayEmpty
-        variant="standard"
-        sx={{
-          "& .MuiSelect-select": {
-            fontSize: "10px",
-            fontWeight: "bold",
-          },
-        }}
-      >
-        {haveEmptyOption && (
-          <MenuItem value="" sx={{ fontSize: "inherit", fontWeight: "normal" }}>
-            -
-          </MenuItem>
-        )}
-        {options.map((option) => (
-          <MenuItem
-            key={option}
-            value={option}
-            sx={{ fontSize: "inherit", fontWeight: "normal" }}
-          >
-            {getEnumLabel(option, enumType)}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  );
-
-  const renderFinalSetup = () => {
-    const elements = [];
-    let hasContent = false;
-
-    if (
-      !disabledFields.includes("cameraAngle") ||
-      !disabledFields.includes("subjectView")
-    ) {
-      hasContent = true;
-      elements.push(
-        <React.Fragment key="camera-angle-view">
-          {!disabledFields.includes("cameraAngle") && (
-            <>
-              a{" "}
-              {renderSelect(
-                Object.values(CameraVerticalAngle),
-                final.cameraAngle,
-                handleFinalChange("cameraAngle"),
-                true,
-                "CameraVerticalAngle"
-              )}{" "}
-              camera angle
-            </>
-          )}
-          {!disabledFields.includes("cameraAngle") &&
-            !disabledFields.includes("subjectView") &&
-            " from "}
-          {!disabledFields.includes("subjectView") && (
-            <>
-              the{" "}
-              {renderSelect(
-                Object.values(SubjectView),
-                final.subjectView,
-                handleFinalChange("subjectView"),
-                true,
-                "SubjectView"
-              )}
-              {" view"}
-            </>
-          )}
-        </React.Fragment>
-      );
-    }
-
-    if (!disabledFields.includes("shotSize")) {
-      if (hasContent) elements.push(<span key="comma-1">, </span>);
-      hasContent = true;
-      elements.push(
-        <React.Fragment key="shot-size">
-          {elements.length === 0 ? "a " : ""}
-          {renderSelect(
-            Object.values(ShotSize),
-            final.shotSize,
-            handleFinalChange("shotSize"),
-            true,
-            "ShotSize"
-          )}{" "}
-          shot
-        </React.Fragment>
-      );
-    }
-
-    if (!disabledFields.includes("subjectFraming")) {
-      if (hasContent) elements.push(<span key="comma-2">, </span>);
-      elements.push(
-        <React.Fragment key="subject-framing">
-          positioning the subject in the{" "}
-          {renderSelect(
-            Object.values(SubjectInFramePosition),
-            final.subjectFraming,
-            handleFinalChange("subjectFraming"),
-            true,
-            "SubjectInFramePosition"
-          )}{" "}
-          portion of the frame
-        </React.Fragment>
-      );
-    }
-
-    if (elements.length === 0) {
-      return null;
-    }
-
-    return (
-      <Typography variant="body2" sx={{ lineHeight: 2, fontWeight: 300 }}>
-        Finally, conclude with {elements}
-      </Typography>
-    );
-  };
-
   return (
     <Box>
       <Typography
@@ -205,37 +80,33 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
         sx={{ mb: 2, lineHeight: 2, fontWeight: 300 }}
       >
         Generate cinematography camera trajectory that begins with a{" "}
-        {renderSelect(
-          Object.values(CameraVerticalAngle),
-          initial.cameraAngle,
-          handleInitialChange("cameraAngle"),
-          false,
-          "CameraVerticalAngle"
-        )}{" "}
+        <SelectRenderer
+          options={Object.values(CameraVerticalAngle)}
+          value={initial.cameraAngle}
+          onChange={handleInitialChange("cameraAngle")}
+          enumType="CameraVerticalAngle"
+        />{" "}
         camera angle from the{" "}
-        {renderSelect(
-          Object.values(SubjectView),
-          initial.subjectView,
-          handleInitialChange("subjectView"),
-          false,
-          "SubjectView"
-        )}{" "}
+        <SelectRenderer
+          options={Object.values(SubjectView)}
+          value={initial.subjectView}
+          onChange={handleInitialChange("subjectView")}
+          enumType="SubjectView"
+        />{" "}
         side of the subject, using a{" "}
-        {renderSelect(
-          Object.values(ShotSize),
-          initial.shotSize,
-          handleInitialChange("shotSize"),
-          false,
-          "ShotSize"
-        )}{" "}
+        <SelectRenderer
+          options={Object.values(ShotSize)}
+          value={initial.shotSize}
+          onChange={handleInitialChange("shotSize")}
+          enumType="ShotSize"
+        />{" "}
         shot size and positioning the subject in the{" "}
-        {renderSelect(
-          Object.values(SubjectInFramePosition),
-          initial.subjectFraming,
-          handleInitialChange("subjectFraming"),
-          false,
-          "subjectFraming"
-        )}{" "}
+        <SelectRenderer
+          options={Object.values(SubjectInFramePosition)}
+          value={initial.subjectFraming}
+          onChange={handleInitialChange("subjectFraming")}
+          enumType="SubjectInFramePosition"
+        />{" "}
         portion of the frame.
       </Typography>
 
@@ -244,21 +115,19 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
         sx={{ mb: 2, lineHeight: 2, fontWeight: 300 }}
       >
         Next, apply a{" "}
-        {renderSelect(
-          Object.values(CameraMovementType),
-          movement.type,
-          handleMovementChange("type"),
-          false,
-          "CameraMovementType"
-        )}{" "}
+        <SelectRenderer
+          options={Object.values(CameraMovementType)}
+          value={movement.type}
+          onChange={handleMovementChange("type")}
+          enumType="CameraMovementType"
+        />{" "}
         movement with{" "}
-        {renderSelect(
-          Object.values(MovementSpeed),
-          movement.speed,
-          handleMovementChange("speed"),
-          false,
-          "MovementSpeed"
-        )}{" "}
+        <SelectRenderer
+          options={Object.values(MovementSpeed)}
+          value={movement.speed}
+          onChange={handleMovementChange("speed")}
+          enumType="MovementSpeed"
+        />{" "}
         speed.
       </Typography>
 
@@ -280,7 +149,11 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
           </Typography>
         </AccordionSummary>
         <AccordionDetails sx={{ padding: "8px 0" }}>
-          {renderFinalSetup()}
+          <FinalSetup
+            disabledFields={disabledFields}
+            final={final}
+            handleFinalChange={handleFinalChange}
+          />
         </AccordionDetails>
       </Accordion>
 
