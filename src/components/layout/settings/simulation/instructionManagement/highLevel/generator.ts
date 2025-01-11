@@ -5,6 +5,8 @@ import {
   SubjectInFramePosition,
   CameraMovementType,
   MovementSpeed,
+  CinematographyPrompt,
+  CinematographySetup,
 } from "@/service/simulation/instruction/types";
 import { highLevelInstructionRules } from "./rules";
 import {
@@ -16,12 +18,79 @@ import {
   movementSpeedLabels,
 } from "./enumLabels";
 
+const SHOT_SIZE_ORDER = [
+  ShotSize.ExtremeCloseUp,
+  ShotSize.CloseUp,
+  ShotSize.MediumCloseUp,
+  ShotSize.MediumShot,
+  ShotSize.FullShot,
+  ShotSize.LongShot,
+  ShotSize.VeryLongShot,
+  ShotSize.ExtremeLongShot,
+];
+
+const getShotSizeIndex = (shotSize: ShotSize): number => {
+  return SHOT_SIZE_ORDER.indexOf(shotSize);
+};
+
+const MOVEMENT_VALIDATION_RULES = {
+  [CameraMovementType.DollyIn]: {
+    shotSize: (initial: ShotSize, final?: ShotSize) => {
+      if (!final) return true;
+      const initialIndex = getShotSizeIndex(initial);
+      const finalIndex = getShotSizeIndex(final);
+
+      return finalIndex <= initialIndex;
+    },
+  },
+  [CameraMovementType.DollyOut]: {
+    shotSize: (initial: ShotSize, final?: ShotSize) => {
+      if (!final) return true;
+      const initialIndex = getShotSizeIndex(initial);
+      const finalIndex = getShotSizeIndex(final);
+
+      return finalIndex >= initialIndex;
+    },
+  },
+  [CameraMovementType.DollyInZoomOut]: {
+    shotSize: (initial: ShotSize, final?: ShotSize) => {
+      if (!final) return true;
+
+      return initial === final;
+    },
+  },
+  [CameraMovementType.DollyOutZoomIn]: {
+    shotSize: (initial: ShotSize, final?: ShotSize) => {
+      if (!final) return true;
+
+      return initial === final;
+    },
+  },
+};
+
+const validateSetup = ({
+  initial,
+  movement,
+  final,
+}: CinematographyPrompt): boolean => {
+  const rules = (MOVEMENT_VALIDATION_RULES as any)[movement.type];
+  if (!rules) return true;
+
+  if (rules.shotSize && final.shotSize) {
+    if (!rules.shotSize(initial.shotSize, final.shotSize)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const getRandomEnumValue = <T extends object>(enumObj: T): T[keyof T] => {
   const values = Object.values(enumObj);
   return values[Math.floor(Math.random() * values.length)];
 };
 
-const generateInitialSetup = () => {
+const generateInitialSetup = (): CinematographySetup => {
   return {
     cameraAngle: getRandomEnumValue(CameraVerticalAngle),
     shotSize: getRandomEnumValue(ShotSize),
@@ -37,25 +106,47 @@ const generateMovement = () => {
   };
 };
 
-const generateEndSetup = (movementType: CameraMovementType) => {
+const generateEndSetup = (
+  initial: CinematographySetup,
+  movementType: CameraMovementType
+) => {
   const disabledFields = (highLevelInstructionRules[movementType]
     ?.disabledFinalSetup || []) as string[];
-  const endSetup: any = {};
+  let validEndSetup: Partial<CinematographySetup>;
+  let attempts = 0;
+  const MAX_ATTEMPTS = 10;
 
-  if (!disabledFields.includes("cameraAngle") && Math.random() < 0.5) {
-    endSetup.cameraAngle = getRandomEnumValue(CameraVerticalAngle);
-  }
-  if (!disabledFields.includes("shotSize") && Math.random() < 0.5) {
-    endSetup.shotSize = getRandomEnumValue(ShotSize);
-  }
-  if (!disabledFields.includes("subjectView") && Math.random() < 0.5) {
-    endSetup.subjectView = getRandomEnumValue(SubjectView);
-  }
-  if (!disabledFields.includes("subjectFraming") && Math.random() < 0.5) {
-    endSetup.subjectFraming = getRandomEnumValue(SubjectInFramePosition);
+  do {
+    validEndSetup = {};
+
+    if (!disabledFields.includes("cameraAngle") && Math.random() < 0.5) {
+      validEndSetup.cameraAngle = getRandomEnumValue(CameraVerticalAngle);
+    }
+    if (!disabledFields.includes("shotSize") && Math.random() < 0.5) {
+      validEndSetup.shotSize = getRandomEnumValue(ShotSize);
+    }
+    if (!disabledFields.includes("subjectView") && Math.random() < 0.5) {
+      validEndSetup.subjectView = getRandomEnumValue(SubjectView);
+    }
+    if (!disabledFields.includes("subjectFraming") && Math.random() < 0.5) {
+      validEndSetup.subjectFraming = getRandomEnumValue(SubjectInFramePosition);
+    }
+
+    attempts++;
+  } while (
+    !validateSetup({
+      initial,
+      movement: { type: movementType, speed: MovementSpeed.Constant },
+      final: validEndSetup,
+    }) &&
+    attempts < MAX_ATTEMPTS
+  );
+
+  if (attempts >= MAX_ATTEMPTS) {
+    return {};
   }
 
-  return endSetup;
+  return validEndSetup;
 };
 
 const formatInstruction = (
@@ -125,7 +216,7 @@ const formatInstruction = (
 const generateRandomInstruction = () => {
   const initial = generateInitialSetup();
   const movement = generateMovement();
-  const final = generateEndSetup(movement.type as CameraMovementType);
+  const final = generateEndSetup(initial, movement.type);
 
   return formatInstruction(initial, movement, final);
 };

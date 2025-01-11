@@ -118,7 +118,7 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
     ) {
       hasContent = true;
       elements.push(
-        <>
+        <React.Fragment key="camera-angle-view">
           {!disabledFields.includes("cameraAngle") && (
             <>
               a{" "}
@@ -148,15 +148,15 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
               {" view"}
             </>
           )}
-        </>
+        </React.Fragment>
       );
     }
 
     if (!disabledFields.includes("shotSize")) {
-      if (hasContent) elements.push(", ");
+      if (hasContent) elements.push(<span key="comma-1">, </span>);
       hasContent = true;
       elements.push(
-        <>
+        <React.Fragment key="shot-size">
           {elements.length === 0 ? "a " : ""}
           {renderSelect(
             Object.values(ShotSize),
@@ -166,14 +166,14 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
             "ShotSize"
           )}{" "}
           shot
-        </>
+        </React.Fragment>
       );
     }
 
     if (!disabledFields.includes("subjectFraming")) {
-      if (hasContent) elements.push(", ");
+      if (hasContent) elements.push(<span key="comma-2">, </span>);
       elements.push(
-        <>
+        <React.Fragment key="subject-framing">
           positioning the subject in the{" "}
           {renderSelect(
             Object.values(SubjectInFramePosition),
@@ -183,7 +183,7 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
             "SubjectInFramePosition"
           )}{" "}
           portion of the frame
-        </>
+        </React.Fragment>
       );
     }
 
@@ -193,7 +193,7 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
 
     return (
       <Typography variant="body2" sx={{ lineHeight: 2, fontWeight: 300 }}>
-        Finally, conclude with {elements}.
+        Finally, conclude with {elements}
       </Typography>
     );
   };

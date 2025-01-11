@@ -7,8 +7,6 @@ import {
   TextField,
   Switch,
   FormControlLabel,
-  FormGroup,
-  Typography,
 } from "@mui/material";
 import {
   CameraSubjectDistance,
@@ -69,7 +67,7 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
     <FormControlLabel
       control={
         <Switch
-          checked={subjectAwareInterpolation}
+          checked={subjectAwareInterpolation || false}
           onChange={() =>
             setSubjectAwareInterpolation(!subjectAwareInterpolation)
           }

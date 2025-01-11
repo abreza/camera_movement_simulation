@@ -144,7 +144,7 @@ export type ConstraintsConfig = {
   importance?: number;
 };
 
-export type CinematographyInstruction = {
+export type SimulationInstruction = {
   frameCount: number;
   initialSetup: SetupConfig;
   movementEasing: MovementEasing;
@@ -187,3 +187,19 @@ export enum MovementSpeed {
   StopAndGo = "stopAndGo",
   DeliberateStartStop = "deliberateStartStop",
 }
+
+export type CinematographySetup = {
+  cameraAngle: CameraVerticalAngle;
+  shotSize: ShotSize;
+  subjectView: SubjectView;
+  subjectFraming: SubjectInFramePosition;
+};
+
+export type CinematographyPrompt = {
+  initial: CinematographySetup;
+  movement: {
+    type: CameraMovementType;
+    speed: MovementSpeed;
+  };
+  final: Partial<CinematographySetup>;
+};
