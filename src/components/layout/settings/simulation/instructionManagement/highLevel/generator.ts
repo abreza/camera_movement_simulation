@@ -17,17 +17,7 @@ import {
   cameraMovementTypeLabels,
   movementSpeedLabels,
 } from "./enumLabels";
-
-const SHOT_SIZE_ORDER = [
-  ShotSize.ExtremeCloseUp,
-  ShotSize.CloseUp,
-  ShotSize.MediumCloseUp,
-  ShotSize.MediumShot,
-  ShotSize.FullShot,
-  ShotSize.LongShot,
-  ShotSize.VeryLongShot,
-  ShotSize.ExtremeLongShot,
-];
+import { SHOT_SIZE_ORDER } from "./constant";
 
 const getShotSizeIndex = (shotSize: ShotSize): number => {
   return SHOT_SIZE_ORDER.indexOf(shotSize);

@@ -11,19 +11,19 @@ import { SimulationSteps } from "./simulation/SimulationSteps";
 import { GeneratorOptions } from "./dataset/GeneratorOptions";
 import {
   CameraParameters,
-  CinematographyInstruction,
+  SimulationInstruction,
 } from "@/service/simulation/instruction/types";
 import { ObjectClass, SubjectInfo } from "@/service/subjects/types";
 
 interface SettingsProps {
   open: boolean;
   subjectsInfo: SubjectInfo[];
-  instructions: CinematographyInstruction[];
+  instructions: SimulationInstruction[];
   onClose: () => void;
-  onAddInstruction: (instruction: CinematographyInstruction) => void;
+  onAddInstruction: (instruction: SimulationInstruction) => void;
   onEditInstruction: (
     index: number,
-    instruction: CinematographyInstruction
+    instruction: SimulationInstruction
   ) => void;
   onDeleteInstruction: (index: number) => void;
   onGenerateSubjects: (

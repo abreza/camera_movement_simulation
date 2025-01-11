@@ -1,6 +1,6 @@
 import React, { FC, useState } from "react";
 import { Box, Tab, Tabs } from "@mui/material";
-import { CinematographyInstruction } from "@/service/simulation/instruction/types";
+import { SimulationInstruction } from "@/service/simulation/instruction/types";
 import { SubjectInfo } from "@/service/subjects/types";
 import { TextPromptTab } from "./textPrompt/TextPromptTab";
 import LowLevelTab from "./lowLevel/LowLevelTab";
@@ -9,11 +9,11 @@ import { HighLevelTab } from "./highLevel/HighLevelTab";
 
 export interface InstructionManagementProps {
   subjectsInfo: SubjectInfo[];
-  instructions: CinematographyInstruction[];
-  onAddInstruction: (instruction: CinematographyInstruction) => void;
+  instructions: SimulationInstruction[];
+  onAddInstruction: (instruction: SimulationInstruction) => void;
   onEditInstruction: (
     index: number,
-    instruction: CinematographyInstruction
+    instruction: SimulationInstruction
   ) => void;
   onDeleteInstruction: (index: number) => void;
   onClose: () => void;
@@ -45,7 +45,7 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
   };
 
   const handleAddOrUpdateInstruction = () => {
-    const instruction: CinematographyInstruction = {
+    const instruction: SimulationInstruction = {
       frameCount: formState.frameCount,
       movementEasing: formState.movementEasing,
       subjectIndex: formState.selectedSubjectIndex,

@@ -1,12 +1,12 @@
 import {
   CameraParameters,
-  CinematographyInstruction,
+  SimulationInstruction,
 } from "../instruction/types";
 import { SubjectInfo } from "../../subjects/types";
 import { optimizeCameraParameters } from "./optimizer";
 
 export const calculateCameraPositions = (
-  instructions: CinematographyInstruction[],
+  instructions: SimulationInstruction[],
   subjectsInfo: SubjectInfo[]
 ): CameraParameters[] => {
   let cameraFrames: CameraParameters[] = [];

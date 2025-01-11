@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { handleDownloadSimulationData } from "@/utils/simulationUtils";
 import {
   CameraParameters,
-  CinematographyInstruction,
+  SimulationInstruction,
 } from "@/service/simulation/instruction/types";
 import * as THREE from "three";
 import { Renderer } from "@/service/rendering/Renderer";
@@ -14,7 +14,7 @@ const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
   const worldViewRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<Renderer | null>(null);
 
-  const [instructions, setInstructions] = useState<CinematographyInstruction[]>(
+  const [instructions, setInstructions] = useState<SimulationInstruction[]>(
     []
   );
   const [subjectsInfo, setSubjectsInfo] =
@@ -50,13 +50,13 @@ const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
     };
   }, []);
 
-  const handleAddInstruction = (instruction: CinematographyInstruction) => {
+  const handleAddInstruction = (instruction: SimulationInstruction) => {
     setInstructions((prevInstructions) => [...prevInstructions, instruction]);
   };
 
   const handleEditInstruction = (
     index: number,
-    instruction: CinematographyInstruction
+    instruction: SimulationInstruction
   ) => {
     setInstructions((prevInstructions) => {
       const newInstructions = [...prevInstructions];

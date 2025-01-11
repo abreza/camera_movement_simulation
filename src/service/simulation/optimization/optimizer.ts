@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {
   CameraParameters,
-  CinematographyInstruction,
+  SimulationInstruction,
 } from "../instruction/types";
 import { SubjectInfo } from "../../subjects/types";
 import { initCameraParameters } from "../rule-based";
@@ -15,7 +15,7 @@ import {
 import { calculateTotalLoss } from "./losses";
 
 export const optimizeCameraParameters = (
-  instruction: CinematographyInstruction,
+  instruction: SimulationInstruction,
   startCameraParameter?: CameraParameters,
   subjectInfo?: SubjectInfo
 ): CameraParameters[] => {

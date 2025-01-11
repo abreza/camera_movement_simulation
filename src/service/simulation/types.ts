@@ -1,7 +1,7 @@
 import { SubjectFrame, Subject } from "../subjects/types";
 import {
   CameraParameters,
-  CinematographyInstruction,
+  SimulationInstruction,
 } from "./instruction/types";
 
 export type SimulationFrame = {
@@ -11,6 +11,6 @@ export type SimulationFrame = {
 
 export type Simulation = {
   subjects: Subject[];
-  instructions: CinematographyInstruction[];
+  instructions: SimulationInstruction[];
   frames: SimulationFrame[];
 };

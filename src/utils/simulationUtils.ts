@@ -1,13 +1,13 @@
 import { SubjectInfo } from "@/service/subjects/types";
 import {
   CameraParameters,
-  CinematographyInstruction,
+  SimulationInstruction,
 } from "@/service/simulation/instruction/types";
 import * as THREE from "three";
 
 interface SimulationData {
   subjectsInfo: SubjectInfo[];
-  instructions: CinematographyInstruction[];
+  instructions: SimulationInstruction[];
   cameraFrames: CameraParameters[];
 }
 

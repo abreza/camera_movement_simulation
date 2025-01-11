@@ -1,5 +1,5 @@
 import {
-  CinematographyInstruction,
+  SimulationInstruction,
   CameraParameters,
 } from "../instruction/types";
 import { SubjectInfo } from "../../subjects/types";
@@ -10,7 +10,7 @@ import { applyVisibilityConstraints } from "./visibility";
 import { applyDistanceConstraint } from "./distance-constraint";
 
 export const initCameraParameters = (
-  instruction: CinematographyInstruction,
+  instruction: SimulationInstruction,
   startCameraParameter: CameraParameters | undefined,
   subjectInfo: SubjectInfo | undefined
 ): CameraParameters[] => {

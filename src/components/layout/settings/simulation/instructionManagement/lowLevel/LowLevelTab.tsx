@@ -11,11 +11,11 @@ import { Download } from "@mui/icons-material";
 import { InstructionList } from "./InstructionList";
 import { SetupControls } from "./SetupControls";
 import { GeneralSettings } from "./GeneralSettings";
-import { CinematographyInstruction } from "@/service/simulation/instruction/types";
+import { SimulationInstruction } from "@/service/simulation/instruction/types";
 import { SubjectInfo } from "@/service/subjects/types";
 
 interface LowLevelTabProps {
-  instructions: CinematographyInstruction[];
+  instructions: SimulationInstruction[];
   formState: {
     frameCount: number;
     movementEasing: any;

@@ -25,3 +25,18 @@ export const DEFAULT_MOVEMENT = {
   type: CameraMovementType.DollyIn,
   speed: MovementSpeed.Constant,
 };
+
+export const SHOT_SIZE_ORDER = [
+  ShotSize.ExtremeCloseUp,
+  ShotSize.CloseUp,
+  ShotSize.MediumCloseUp,
+  ShotSize.MediumShot,
+  ShotSize.FullShot,
+  ShotSize.LongShot,
+  ShotSize.VeryLongShot,
+  ShotSize.ExtremeLongShot,
+];
+
+export function getShotSizeIndex(shotSize: ShotSize): number {
+  return SHOT_SIZE_ORDER.indexOf(shotSize);
+}

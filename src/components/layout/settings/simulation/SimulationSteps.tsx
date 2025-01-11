@@ -2,18 +2,18 @@ import React, { FC } from "react";
 import { Stepper, Step, StepLabel, Button, Stack } from "@mui/material";
 import { SubjectGeneration } from "./SubjectGeneration";
 import { InstructionManagement } from "./instructionManagement/InstructionManagement";
-import { CinematographyInstruction } from "@/service/simulation/instruction/types";
+import { SimulationInstruction } from "@/service/simulation/instruction/types";
 import { ObjectClass, SubjectInfo } from "@/service/subjects/types";
 
 interface SimulationStepsProps {
   activeStep: number;
   setActiveStep: React.Dispatch<React.SetStateAction<number>>;
   subjectsInfo: SubjectInfo[];
-  instructions: CinematographyInstruction[];
-  onAddInstruction: (instruction: CinematographyInstruction) => void;
+  instructions: SimulationInstruction[];
+  onAddInstruction: (instruction: SimulationInstruction) => void;
   onEditInstruction: (
     index: number,
-    instruction: CinematographyInstruction
+    instruction: SimulationInstruction
   ) => void;
   onDeleteInstruction: (index: number) => void;
   onGenerateSubjects: (

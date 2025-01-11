@@ -1,6 +1,6 @@
 import {
   CameraParameters,
-  CinematographyInstruction,
+  SimulationInstruction,
   ShotSize,
   SubjectFraming,
 } from "../../instruction/types";
@@ -122,7 +122,7 @@ const calculateFramingLoss = (
 
 export const calculateTotalLoss = (
   frames: CameraParameters[],
-  instruction: CinematographyInstruction,
+  instruction: SimulationInstruction,
   subjectInfo?: SubjectInfo
 ): number => {
   if (!subjectInfo?.frames?.length) return 0;

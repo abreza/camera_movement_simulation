@@ -1,10 +1,10 @@
 import React, { FC } from "react";
 import { IconButton, List, ListItem, ListItemText } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
-import { CinematographyInstruction } from "@/service/simulation/instruction/types";
+import { SimulationInstruction } from "@/service/simulation/instruction/types";
 
 interface InstructionListProps {
-  instructions: CinematographyInstruction[];
+  instructions: SimulationInstruction[];
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
 }
