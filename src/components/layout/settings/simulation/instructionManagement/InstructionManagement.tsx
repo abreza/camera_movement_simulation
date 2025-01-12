@@ -1,11 +1,15 @@
 import React, { FC, useState } from "react";
 import { Box, Tab, Tabs } from "@mui/material";
-import { SimulationInstruction } from "@/service/simulation/instruction/types";
+import {
+  CinematographyPrompt,
+  SimulationInstruction,
+} from "@/service/simulation/instruction/types";
 import { SubjectInfo } from "@/service/subjects/types";
 import { TextPromptTab } from "./textPrompt/TextPromptTab";
 import LowLevelTab from "./lowLevel/LowLevelTab";
 import { useInstructionForm } from "./lowLevel/useInstructionForm";
 import { HighLevelTab } from "./highLevel/HighLevelTab";
+import { translatePromptToSimulationInstruction } from "@/service/simulation/instruction/high-level/translator";
 
 export interface InstructionManagementProps {
   subjectsInfo: SubjectInfo[];
@@ -44,12 +48,12 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
     setActiveTab(1);
   };
 
-  const handleAddOrUpdateInstruction = () => {
+  const handleAddOrUpdateInstruction = (instruction = formState) => {
     if (editingIndex !== null) {
-      onEditInstruction(editingIndex, formState);
+      onEditInstruction(editingIndex, instruction);
       setEditingIndex(null);
     } else {
-      onAddInstruction(formState);
+      onAddInstruction(instruction);
     }
 
     resetForm();
@@ -85,7 +89,14 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
         {activeTab === 0 ? (
           <TextPromptTab onTranslate={handleTranslateInstruction} />
         ) : activeTab === 1 ? (
-          <HighLevelTab onTranslate={handleTranslateInstruction} />
+          <HighLevelTab
+            onTranslate={(cinematographyPrompt: CinematographyPrompt) => {
+              const instruction =
+                translatePromptToSimulationInstruction(cinematographyPrompt);
+              handleAddOrUpdateInstruction(instruction);
+              setActiveTab(2);
+            }}
+          />
         ) : (
           <LowLevelTab
             instructions={instructions}

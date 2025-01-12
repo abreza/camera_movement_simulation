@@ -56,7 +56,6 @@ export const projectBoundingBox = (
     new THREE.Vector3(halfWidth, halfHeight, halfDepth).add(position),
   ];
 
-  debugger;
   const projectedPoints = corners.map((corner) => projectPoint(corner, camera));
 
   const minX = Math.min(...projectedPoints.map((p) => p.x));

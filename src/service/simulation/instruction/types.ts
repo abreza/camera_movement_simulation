@@ -107,7 +107,7 @@ export type MovementConfig<T> = {
 };
 
 export type SubjectFraming = {
-  position: SubjectInFramePosition;
+  position?: SubjectInFramePosition;
   dutchAngleScale?: Scale;
 };
 
@@ -197,7 +197,6 @@ export enum MovementSpeed {
   SlowToFast = "slowToFast",
   FastToSlow = "fastToSlow",
   Constant = "constant",
-  StopAndGo = "stopAndGo",
   DeliberateStartStop = "deliberateStartStop",
 }
 

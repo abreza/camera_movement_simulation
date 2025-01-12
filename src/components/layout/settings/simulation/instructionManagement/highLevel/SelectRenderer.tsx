@@ -5,7 +5,7 @@ import {
   MenuItem,
   SelectChangeEvent,
 } from "@mui/material";
-import { getEnumLabel } from "./enumLabels";
+import { getEnumLabel } from "@/service/simulation/instruction/high-level/enumLabels";
 
 interface SelectRendererProps {
   options: string[];

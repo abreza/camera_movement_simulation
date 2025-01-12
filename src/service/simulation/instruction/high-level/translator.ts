@@ -9,6 +9,8 @@ import {
   CinematographySetup,
   ShotSize,
   SubjectView,
+  Scale,
+  CameraVerticalAngle,
 } from "@/service/simulation/instruction/types";
 import { getShotSizeIndex, SHOT_SIZE_ORDER } from "./constant";
 
@@ -18,8 +20,6 @@ function mapMovementSpeedToEasing(speed: MovementSpeed): MovementEasing {
       return MovementEasing.EaseInQuad;
     case MovementSpeed.FastToSlow:
       return MovementEasing.EaseOutQuad;
-    case MovementSpeed.StopAndGo:
-      return MovementEasing.HandHeld;
     case MovementSpeed.DeliberateStartStop:
       return MovementEasing.Smooth;
     case MovementSpeed.Constant:
@@ -32,12 +32,12 @@ function mapCinematographySetupToConfig(
   setup: Partial<CinematographySetup>
 ): SetupConfig {
   return {
-    cameraAngle: setup.cameraAngle,
-    shotSize: setup.shotSize,
-    subjectView: setup.subjectView,
-    subjectFraming: setup.subjectFraming
-      ? { position: setup.subjectFraming }
-      : undefined,
+    ...(setup.cameraAngle && { cameraAngle: setup.cameraAngle }),
+    ...(setup.shotSize && { shotSize: setup.shotSize }),
+    ...(setup.subjectView && { subjectView: setup.subjectView }),
+    ...(setup.subjectFraming && {
+      subjectFraming: { position: setup.subjectFraming },
+    }),
   };
 }
 
@@ -48,6 +48,10 @@ function determineSubjectAwareInterpolation(
     case CameraMovementType.ArcLeft:
     case CameraMovementType.ArcRight:
     case CameraMovementType.Follow:
+    case CameraMovementType.DollyIn:
+    case CameraMovementType.DollyInZoomOut:
+    case CameraMovementType.DollyOut:
+    case CameraMovementType.DollyOutZoomIn:
       return true;
     default:
       return false;
@@ -188,6 +192,28 @@ function buildConstraintsForMovement(
         },
       };
 
+    case CameraMovementType.CraneUp:
+    case CameraMovementType.CraneDown:
+      return {
+        ...baseConstraints,
+        staticPosition: {
+          left: false,
+          right: false,
+          up: false,
+          down: false,
+          forward: false,
+          backward: false,
+        },
+        staticRotation: {
+          left: false,
+          right: false,
+          up: false,
+          down: false,
+          rollClockwise: true,
+          rollNonClockwise: true,
+        },
+      };
+
     case CameraMovementType.DollyIn:
     case CameraMovementType.DollyOut:
       return {
@@ -239,6 +265,50 @@ function buildConstraintsForMovement(
         allFramesVisibility: true,
       };
 
+    case CameraMovementType.DutchLeft:
+    case CameraMovementType.DutchRight:
+      return {
+        ...baseConstraints,
+        staticPosition: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          forward: true,
+          backward: true,
+        },
+        staticRotation: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          rollClockwise: movementType === CameraMovementType.DutchRight,
+          rollNonClockwise: movementType === CameraMovementType.DutchLeft,
+        },
+      };
+
+    case CameraMovementType.Follow:
+      return {
+        ...baseConstraints,
+        staticPosition: {
+          left: false,
+          right: false,
+          up: false,
+          down: false,
+          forward: false,
+          backward: false,
+        },
+        staticRotation: {
+          left: false,
+          right: false,
+          up: false,
+          down: false,
+          rollClockwise: false,
+          rollNonClockwise: false,
+        },
+        staticDistance: true,
+      };
+
     default:
       return baseConstraints;
   }
@@ -246,14 +316,12 @@ function buildConstraintsForMovement(
 
 function getCloserShotSize(currentShot: ShotSize): ShotSize {
   const index = getShotSizeIndex(currentShot);
-
   if (index <= 0) return currentShot;
   return SHOT_SIZE_ORDER[index - 1];
 }
 
 function getFartherShotSize(currentShot: ShotSize): ShotSize {
   const index = getShotSizeIndex(currentShot);
-
   if (index < 0 || index >= SHOT_SIZE_ORDER.length - 1) return currentShot;
   return SHOT_SIZE_ORDER[index + 1];
 }
@@ -286,24 +354,41 @@ function autoGenerateEndSetup(
 
   switch (movementType) {
     case CameraMovementType.DollyIn:
+    case CameraMovementType.DollyInZoomOut:
       endSetup.shotSize = getCloserShotSize(initial.shotSize);
       break;
 
     case CameraMovementType.DollyOut:
+    case CameraMovementType.DollyOutZoomIn:
       endSetup.shotSize = getFartherShotSize(initial.shotSize);
       break;
 
     case CameraMovementType.ArcLeft:
     case CameraMovementType.ArcRight:
       endSetup.subjectView = getQuarterSideView(initial.subjectView);
-
       break;
 
-    case CameraMovementType.DollyInZoomOut:
-      endSetup.shotSize = getCloserShotSize(initial.shotSize);
+    case CameraMovementType.DutchLeft:
+    case CameraMovementType.DutchRight:
+      endSetup.subjectFraming = {
+        ...endSetup.subjectFraming,
+        dutchAngleScale: Scale.Medium,
+      };
       break;
-    case CameraMovementType.DollyOutZoomIn:
-      endSetup.shotSize = getFartherShotSize(initial.shotSize);
+
+    case CameraMovementType.CraneUp:
+    case CameraMovementType.CraneDown:
+      if (
+        movementType === CameraMovementType.CraneUp &&
+        initial.cameraAngle === "eye"
+      ) {
+        endSetup.cameraAngle = CameraVerticalAngle.High;
+      } else if (
+        movementType === CameraMovementType.CraneDown &&
+        initial.cameraAngle === "eye"
+      ) {
+        endSetup.cameraAngle = CameraVerticalAngle.Low;
+      }
       break;
 
     default:
@@ -330,22 +415,16 @@ export function translatePromptToSimulationInstruction(
 
   const constraints = buildConstraintsForMovement(prompt.movement.type);
 
-  let endSetup: SetupConfig = autoGenerateEndSetup(
-    prompt.initial,
-    prompt.movement.type
-  );
-
-  if (Object.keys(prompt.final).length) {
-    endSetup = { ...endSetup, ...mapCinematographySetupToConfig(prompt.final) };
-  }
-
   return {
     frameCount,
     subjectIndex,
     subjectAwareInterpolation,
     movementEasing,
     initialSetup: mapCinematographySetupToConfig(prompt.initial),
-    endSetup,
+    endSetup: {
+      ...autoGenerateEndSetup(prompt.initial, prompt.movement.type),
+      ...mapCinematographySetupToConfig(prompt.final),
+    },
     constraints,
   };
 }

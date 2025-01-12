@@ -211,7 +211,6 @@ export const useInstructionForm = () => {
   return {
     formState,
     setters: {
-      setFormState,
       setFrameCount,
       setMovementEasing,
       setSubjectIndex,

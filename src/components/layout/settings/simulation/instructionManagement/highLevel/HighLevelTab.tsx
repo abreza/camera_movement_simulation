@@ -17,23 +17,23 @@ import {
   SubjectInFramePosition,
   CameraMovementType,
   MovementSpeed,
+  CinematographyPrompt,
 } from "@/service/simulation/instruction/types";
 
 import {
   DEFAULT_START_CAMERA_SETUP,
   DEFAULT_MOVEMENT,
   DEFAULT_END_CAMERA_SETUP,
-} from "./constant";
+} from "@/service/simulation/instruction/high-level/constant";
 
-import { getEnumLabel } from "./enumLabels";
-import { highLevelInstructionRules } from "./rules";
-import { generateRandomTexts } from "./generator";
+import { highLevelInstructionRules } from "@/service/simulation/instruction/high-level/rules";
+import { generateRandomTexts } from "@/service/simulation/instruction/high-level/generator";
 
 import { SelectRenderer } from "./SelectRenderer";
 import { FinalSetup } from "./FinalSetup";
 
 interface HighLevelTabProps {
-  onTranslate: (data: any) => void;
+  onTranslate: (data: CinematographyPrompt) => void;
 }
 
 export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {

@@ -83,7 +83,6 @@ export const movementSpeedLabels: Record<MovementSpeed, string> = {
   [MovementSpeed.SlowToFast]: "Slow to Fast",
   [MovementSpeed.FastToSlow]: "Fast to Slow",
   [MovementSpeed.Constant]: "Constant",
-  [MovementSpeed.StopAndGo]: "Stop and Go",
   [MovementSpeed.DeliberateStartStop]: "Deliberate Start/Stop",
 };
 
