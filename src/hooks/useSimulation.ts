@@ -14,9 +14,7 @@ const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
   const worldViewRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<Renderer | null>(null);
 
-  const [instructions, setInstructions] = useState<SimulationInstruction[]>(
-    []
-  );
+  const [instructions, setInstructions] = useState<SimulationInstruction[]>([]);
   const [subjectsInfo, setSubjectsInfo] =
     useState<SubjectInfo[]>(initSubjectsInfo);
   const [cameraFrames, setCameraFrames] = useState<CameraParameters[]>([

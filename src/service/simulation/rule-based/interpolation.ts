@@ -72,25 +72,21 @@ const interpolateSubjectAware = (
     startParams.relativeAngle +
     (endParams.relativeAngle - startParams.relativeAngle) * t;
 
-  // Calculate the desired camera position based on interpolated distance and angle
   const subjectFrontVector = getFrontVector(currentSubject.rotation);
   const rightVector = new THREE.Vector3(1, 0, 0).applyEuler(
     currentSubject.rotation
   );
 
-  // Calculate the camera offset direction based on interpolated angle
   const cameraOffset = new THREE.Vector3();
   cameraOffset
     .copy(subjectFrontVector)
     .multiplyScalar(Math.cos(interpolatedAngle))
     .add(rightVector.multiplyScalar(Math.sin(interpolatedAngle)));
 
-  // Set the final camera position
   const interpolatedPosition = currentSubject.position
     .clone()
     .add(cameraOffset.multiplyScalar(interpolatedDistance));
 
-  // Calculate camera rotation to look at the subject
   const lookAtMatrix = new THREE.Matrix4();
   lookAtMatrix.lookAt(
     interpolatedPosition,

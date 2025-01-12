@@ -48,12 +48,12 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
     setActiveTab(1);
   };
 
-  const handleAddOrUpdateInstruction = (instruction = formState) => {
+  const handleAddOrUpdateInstruction = () => {
     if (editingIndex !== null) {
-      onEditInstruction(editingIndex, instruction);
+      onEditInstruction(editingIndex, formState);
       setEditingIndex(null);
     } else {
-      onAddInstruction(instruction);
+      onAddInstruction(formState);
     }
 
     resetForm();
@@ -93,7 +93,7 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
             onTranslate={(cinematographyPrompt: CinematographyPrompt) => {
               const instruction =
                 translatePromptToSimulationInstruction(cinematographyPrompt);
-              handleAddOrUpdateInstruction(instruction);
+              resetForm(instruction);
               setActiveTab(2);
             }}
           />

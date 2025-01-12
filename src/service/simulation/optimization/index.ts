@@ -1,7 +1,4 @@
-import {
-  CameraParameters,
-  SimulationInstruction,
-} from "../instruction/types";
+import { CameraParameters, SimulationInstruction } from "../instruction/types";
 import { SubjectInfo } from "../../subjects/types";
 import { optimizeCameraParameters } from "./optimizer";
 
@@ -13,10 +10,7 @@ export const calculateCameraPositions = (
   let currentFrameNumber = 0;
 
   instructions.forEach((instruction) => {
-    const subjectInfo =
-      instruction.subjectIndex !== undefined
-        ? subjectsInfo[instruction.subjectIndex]
-        : undefined;
+    const subjectInfo = subjectsInfo[instruction.subjectIndex || 0];
     const startCameraParameter =
       cameraFrames.length > 0
         ? cameraFrames[cameraFrames.length - 1]

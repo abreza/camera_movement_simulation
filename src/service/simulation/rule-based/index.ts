@@ -5,6 +5,10 @@ import { getCameraBySetup } from "./setup";
 import { interpolateParameters } from "./interpolation";
 import { applyVisibilityConstraints } from "./visibility";
 import { applyStaticDistanceConstraint } from "./distance-constraint";
+import {
+  applyPositionalConstraints,
+  applyRotationalConstraints,
+} from "./motion-constraint";
 
 export const initCameraParameters = (
   instruction: SimulationInstruction,
@@ -52,6 +56,23 @@ export const initCameraParameters = (
   if (instruction.constraints?.allFramesVisibility) {
     frames = applyVisibilityConstraints(frames, subjectInfo);
   }
+
+  const maxSpeed = instruction.constraints?.maxSpeed;
+  const maxAcceleration = instruction.constraints?.maxAccelerate;
+  if (maxSpeed !== undefined || maxAcceleration !== undefined) {
+    const safeMaxSpeed = maxSpeed ?? Number.POSITIVE_INFINITY;
+    const safeMaxAcceleration = maxAcceleration ?? Number.POSITIVE_INFINITY;
+    frames = applyPositionalConstraints(
+      frames,
+      safeMaxSpeed,
+      safeMaxAcceleration
+    );
+  }
+
+  const maxRotationDegPerFrame = 1;
+  const maxRotationRadPerFrame = (maxRotationDegPerFrame * Math.PI) / 180;
+
+  frames = applyRotationalConstraints(frames, maxRotationRadPerFrame);
 
   return frames;
 };

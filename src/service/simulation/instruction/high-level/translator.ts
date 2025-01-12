@@ -117,8 +117,8 @@ function buildConstraintsForMovement(
           backward: true,
         },
         staticRotation: {
-          left: movementType === CameraMovementType.PanLeft,
-          right: movementType === CameraMovementType.PanRight,
+          left: movementType === CameraMovementType.PanRight,
+          right: movementType === CameraMovementType.PanLeft,
           up: true,
           down: true,
           rollClockwise: true,
@@ -141,8 +141,8 @@ function buildConstraintsForMovement(
         staticRotation: {
           left: true,
           right: true,
-          up: movementType === CameraMovementType.TiltUp,
-          down: movementType === CameraMovementType.TiltDown,
+          up: movementType === CameraMovementType.TiltDown,
+          down: movementType === CameraMovementType.TiltUp,
           rollClockwise: true,
           rollNonClockwise: true,
         },
@@ -153,8 +153,8 @@ function buildConstraintsForMovement(
       return {
         ...baseConstraints,
         staticPosition: {
-          left: movementType === CameraMovementType.TruckLeft,
-          right: movementType === CameraMovementType.TruckRight,
+          left: movementType === CameraMovementType.TruckRight,
+          right: movementType === CameraMovementType.TruckLeft,
           up: true,
           down: true,
           forward: true,
@@ -177,8 +177,8 @@ function buildConstraintsForMovement(
         staticPosition: {
           left: true,
           right: true,
-          up: movementType === CameraMovementType.PedestalUp,
-          down: movementType === CameraMovementType.PedestalDown,
+          up: movementType === CameraMovementType.PedestalDown,
+          down: movementType === CameraMovementType.PedestalUp,
           forward: true,
           backward: true,
         },
@@ -223,8 +223,8 @@ function buildConstraintsForMovement(
           right: true,
           up: true,
           down: true,
-          forward: movementType === CameraMovementType.DollyIn,
-          backward: movementType === CameraMovementType.DollyOut,
+          forward: movementType === CameraMovementType.DollyOut,
+          backward: movementType === CameraMovementType.DollyIn,
         },
         staticRotation: {
           left: true,
@@ -245,8 +245,8 @@ function buildConstraintsForMovement(
           right: true,
           up: true,
           down: true,
-          forward: movementType === CameraMovementType.DollyInZoomOut,
-          backward: movementType === CameraMovementType.DollyOutZoomIn,
+          forward: movementType === CameraMovementType.DollyOutZoomIn,
+          backward: movementType === CameraMovementType.DollyInZoomOut,
         },
         staticRotation: {
           left: true,
@@ -282,8 +282,8 @@ function buildConstraintsForMovement(
           right: true,
           up: true,
           down: true,
-          rollClockwise: movementType === CameraMovementType.DutchRight,
-          rollNonClockwise: movementType === CameraMovementType.DutchLeft,
+          rollClockwise: movementType === CameraMovementType.DutchLeft,
+          rollNonClockwise: movementType === CameraMovementType.DutchRight,
         },
       };
 
