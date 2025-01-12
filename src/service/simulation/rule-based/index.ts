@@ -9,6 +9,7 @@ import {
   applyPositionalConstraints,
   applyRotationalConstraints,
 } from "./motion-constraint";
+import { applyLockedMovementAndRotationOnEndFrame } from "./setup/constraints";
 
 export const initCameraParameters = (
   instruction: SimulationInstruction,
@@ -28,9 +29,15 @@ export const initCameraParameters = (
     startCameraParameter ||
     getCameraBySetup(instruction.initialSetup, subjectInfo.subject, startFrame);
 
-  const endParams = instruction.endSetup
+  let endParams = instruction.endSetup
     ? getCameraBySetup(instruction.endSetup, subjectInfo.subject, endFrame)
     : startParams;
+
+  endParams = applyLockedMovementAndRotationOnEndFrame(
+    endParams,
+    startParams,
+    instruction.constraints
+  );
 
   for (let i = 0; i < instruction.frameCount; i++) {
     const easedT = getEasedTime(
@@ -69,7 +76,7 @@ export const initCameraParameters = (
     );
   }
 
-  const maxRotationDegPerFrame = 1;
+  const maxRotationDegPerFrame = 30;
   const maxRotationRadPerFrame = (maxRotationDegPerFrame * Math.PI) / 180;
 
   frames = applyRotationalConstraints(frames, maxRotationRadPerFrame);

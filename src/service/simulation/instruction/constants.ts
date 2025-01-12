@@ -26,7 +26,7 @@ export const defaultSimulationInstruction: SimulationInstruction = {
     allFramesVisibility: true,
     staticDistance: false,
     staticCameraSubjectRotation: false,
-    staticPosition: {
+    lockedMovement: {
       left: false,
       right: false,
       up: false,
@@ -34,7 +34,7 @@ export const defaultSimulationInstruction: SimulationInstruction = {
       forward: false,
       backward: false,
     },
-    staticRotation: {
+    lockedRotation: {
       left: false,
       right: false,
       up: false,

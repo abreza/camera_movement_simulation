@@ -72,22 +72,22 @@ export const useInstructionForm = () => {
     }));
   };
 
-  const setStaticPosition = (value: ConstraintsConfig["staticPosition"]) => {
+  const setLockedPosition = (value: ConstraintsConfig["lockedMovement"]) => {
     setFormState((prev) => ({
       ...prev,
       constraints: {
         ...prev.constraints,
-        staticPosition: value,
+        lockedMovement: value,
       },
     }));
   };
 
-  const setStaticRotation = (value: ConstraintsConfig["staticRotation"]) => {
+  const setLockedRotation = (value: ConstraintsConfig["lockedRotation"]) => {
     setFormState((prev) => ({
       ...prev,
       constraints: {
         ...prev.constraints,
-        staticRotation: value,
+        lockedRotation: value,
       },
     }));
   };
@@ -218,8 +218,8 @@ export const useInstructionForm = () => {
       setAllFramesVisibility,
       setStaticDistance,
       setStaticCameraSubjectRotation,
-      setStaticPosition,
-      setStaticRotation,
+      setLockedPosition,
+      setLockedRotation,
       setImportance,
       setMaxAccelerate,
       setMaxSpeed,

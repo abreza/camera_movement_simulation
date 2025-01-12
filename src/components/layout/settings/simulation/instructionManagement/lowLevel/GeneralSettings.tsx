@@ -88,16 +88,16 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
       </FormControl>
 
       <StaticControls
-        staticPosition={
-          instruction.constraints?.staticPosition ||
-          defaultSimulationInstruction.constraints!.staticPosition!
+        lockedMovement={
+          instruction.constraints?.lockedMovement ||
+          defaultSimulationInstruction.constraints!.lockedMovement!
         }
-        setStaticPosition={setters.setStaticPosition}
-        staticRotation={
-          instruction.constraints?.staticRotation ||
-          defaultSimulationInstruction.constraints!.staticRotation!
+        setLockedPosition={setters.setLockedPosition}
+        lockedRotation={
+          instruction.constraints?.lockedRotation ||
+          defaultSimulationInstruction.constraints!.lockedRotation!
         }
-        setStaticRotation={setters.setStaticRotation}
+        setLockedRotation={setters.setLockedRotation}
       />
 
       <AdditionalConstraints

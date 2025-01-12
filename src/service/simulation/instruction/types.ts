@@ -125,7 +125,7 @@ export type CameraParameters = {
   aspectRatio: number;
 };
 
-export type StaticPosition = {
+export type LockedMovement = {
   left: boolean;
   right: boolean;
   up: boolean;
@@ -134,7 +134,7 @@ export type StaticPosition = {
   backward: boolean;
 };
 
-export type StaticRotation = {
+export type LockedRotation = {
   left: boolean;
   right: boolean;
   up: boolean;
@@ -147,8 +147,8 @@ export type ConstraintsConfig = {
   allFramesVisibility?: boolean;
   staticDistance?: boolean;
   staticCameraSubjectRotation?: boolean;
-  staticPosition?: StaticPosition;
-  staticRotation?: StaticRotation;
+  lockedMovement?: LockedMovement;
+  lockedRotation?: LockedRotation;
   maxAccelerate?: number;
   maxSpeed?: number;
   importance?: number;

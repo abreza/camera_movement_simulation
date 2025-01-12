@@ -6,51 +6,51 @@ import {
   Typography,
 } from "@mui/material";
 import {
-  StaticPosition,
-  StaticRotation,
+  LockedMovement,
+  LockedRotation,
 } from "@/service/simulation/instruction/types";
 
 interface StaticControlsProps {
-  staticPosition: StaticPosition;
-  setStaticPosition: (value: StaticPosition) => void;
-  staticRotation: StaticRotation;
-  setStaticRotation: (value: StaticRotation) => void;
+  lockedMovement: LockedMovement;
+  setLockedPosition: (value: LockedMovement) => void;
+  lockedRotation: LockedRotation;
+  setLockedRotation: (value: LockedRotation) => void;
 }
 
 export const StaticControls: FC<StaticControlsProps> = ({
-  staticPosition,
-  setStaticPosition,
-  staticRotation,
-  setStaticRotation,
+  lockedMovement,
+  setLockedPosition,
+  lockedRotation,
+  setLockedRotation,
 }) => {
-  const handleStaticPositionChange = (key: keyof StaticPosition) => {
-    setStaticPosition({
-      ...staticPosition,
-      [key]: !staticPosition[key],
+  const handleStaticPositionChange = (key: keyof LockedMovement) => {
+    setLockedPosition({
+      ...lockedMovement,
+      [key]: !lockedMovement[key],
     });
   };
 
-  const handleStaticRotationChange = (key: keyof StaticRotation) => {
-    setStaticRotation({
-      ...staticRotation,
-      [key]: !staticRotation[key],
+  const handleStaticRotationChange = (key: keyof LockedRotation) => {
+    setLockedRotation({
+      ...lockedRotation,
+      [key]: !lockedRotation[key],
     });
   };
 
   return (
     <>
       <Typography variant="body2" sx={{ mt: 2 }}>
-        Static Position
+        Locked Movement
       </Typography>
       <FormGroup row>
-        {Object.keys(staticPosition).map((posKey) => (
+        {Object.keys(lockedMovement).map((posKey) => (
           <FormControlLabel
             key={posKey}
             control={
               <Checkbox
-                checked={staticPosition[posKey as keyof StaticPosition]}
+                checked={lockedMovement[posKey as keyof LockedMovement]}
                 onChange={() =>
-                  handleStaticPositionChange(posKey as keyof StaticPosition)
+                  handleStaticPositionChange(posKey as keyof LockedMovement)
                 }
               />
             }
@@ -61,17 +61,17 @@ export const StaticControls: FC<StaticControlsProps> = ({
       </FormGroup>
 
       <Typography variant="body2" sx={{ mt: 2 }}>
-        Static Rotation
+        Locked Rotation
       </Typography>
       <FormGroup row>
-        {Object.keys(staticRotation).map((rotKey) => (
+        {Object.keys(lockedRotation).map((rotKey) => (
           <FormControlLabel
             key={rotKey}
             control={
               <Checkbox
-                checked={staticRotation[rotKey as keyof StaticRotation]}
+                checked={lockedRotation[rotKey as keyof LockedRotation]}
                 onChange={() =>
-                  handleStaticRotationChange(rotKey as keyof StaticRotation)
+                  handleStaticRotationChange(rotKey as keyof LockedRotation)
                 }
               />
             }
