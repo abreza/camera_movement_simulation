@@ -110,7 +110,7 @@ export const FinalSetup: FC<FinalSetupProps> = ({
   }
 
   return (
-    <Typography variant="body2" sx={{ lineHeight: 2, fontWeight: 300 }}>
+    <Typography component="div" variant="body2" sx={{ lineHeight: 2, fontWeight: 300 }}>
       Finally, conclude with {elements}
     </Typography>
   );

@@ -230,7 +230,7 @@ export const calculateTotalLoss = (
 
   // Constraint losses
   if (instruction.constraints) {
-    if (instruction.constraints.distance) {
+    if (instruction.constraints.staticDistance) {
       let distanceLoss = 0;
       for (let i = 0; i < frames.length; i++) {
         const currentDistance = frames[i].position.distanceTo(

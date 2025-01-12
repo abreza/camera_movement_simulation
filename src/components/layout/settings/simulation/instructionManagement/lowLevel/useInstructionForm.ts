@@ -1,106 +1,229 @@
 import { useState } from "react";
-import { DEFAULT_FRAME_COUNT } from "@/service/simulation/constants";
 import {
-  MovementEasing,
-  CameraSubjectDistance,
-  Scale,
+  SimulationInstruction,
   CameraVerticalAngle,
   ShotSize,
   SubjectView,
-  SubjectFraming,
-  SubjectInFramePosition,
+  MovementEasing,
+  ConstraintsConfig,
 } from "@/service/simulation/instruction/types";
+import { defaultSimulationInstruction } from "@/service/simulation/instruction/constants";
 
 export const useInstructionForm = () => {
-  const [frameCount, setFrameCount] = useState<number>(DEFAULT_FRAME_COUNT);
-  const [movementEasing, setMovementEasing] = useState<MovementEasing>(
-    MovementEasing.Linear
-  );
-  const [selectedSubjectIndex, setSelectedSubjectIndex] = useState<
-    number | undefined
-  >(0);
-  const [visibilityConstraint, setVisibilityConstraint] = useState<
-    boolean | undefined
-  >(true);
-  const [subjectAwareInterpolation, setSubjectAwareInterpolation] =
-    useState<boolean>();
-  const [distanceType, setDistanceType] = useState<
-    CameraSubjectDistance | undefined
-  >();
-  const [distanceScale, setDistanceScale] = useState<Scale | undefined>(
-    Scale.Medium
-  );
-
-  const [initialCameraAngle, setInitialCameraAngle] = useState<
-    CameraVerticalAngle | undefined
-  >(CameraVerticalAngle.Eye);
-  const [initialShotSize, setInitialShotSize] = useState<ShotSize | undefined>(
-    ShotSize.MediumShot
-  );
-  const [initialSubjectView, setInitialSubjectView] = useState<
-    SubjectView | undefined
-  >(SubjectView.Front);
-  const [initialSubjectFraming, setInitialSubjectFraming] = useState<
-    SubjectFraming | undefined
-  >({
-    position: SubjectInFramePosition.Center,
+  const [formState, setFormState] = useState<SimulationInstruction>({
+    ...defaultSimulationInstruction,
   });
 
-  const [endCameraAngle, setEndCameraAngle] = useState<
-    CameraVerticalAngle | undefined
-  >();
-  const [endShotSize, setEndShotSize] = useState<ShotSize | undefined>();
-  const [endSubjectView, setEndSubjectView] = useState<
-    SubjectView | undefined
-  >();
-  const [endSubjectFraming, setEndSubjectFraming] = useState<
-    SubjectFraming | undefined
-  >();
+  const setFrameCount = (count: number) => {
+    setFormState((prev) => ({
+      ...prev,
+      frameCount: count,
+    }));
+  };
 
-  const resetForm = () => {
-    setFrameCount(DEFAULT_FRAME_COUNT);
-    setMovementEasing(MovementEasing.Linear);
-    setSelectedSubjectIndex(0);
-    setVisibilityConstraint(true);
-    setInitialCameraAngle(CameraVerticalAngle.Eye);
-    setInitialShotSize(ShotSize.MediumShot);
-    setInitialSubjectView(SubjectView.Front);
-    setInitialSubjectFraming({ position: SubjectInFramePosition.Center });
-    setEndCameraAngle(undefined);
-    setEndShotSize(undefined);
-    setEndSubjectView(undefined);
-    setEndSubjectFraming(undefined);
-    setDistanceType(undefined);
-    setDistanceScale(Scale.Medium);
-    setSubjectAwareInterpolation(false);
+  const setMovementEasing = (easing: MovementEasing) => {
+    setFormState((prev) => ({
+      ...prev,
+      movementEasing: easing,
+    }));
+  };
+
+  const setSubjectIndex = (index?: number) => {
+    setFormState((prev) => ({
+      ...prev,
+      subjectIndex: index,
+    }));
+  };
+
+  const setSubjectAwareInterpolation = (aware?: boolean) => {
+    setFormState((prev) => ({
+      ...prev,
+      subjectAwareInterpolation: aware,
+    }));
+  };
+
+  const setAllFramesVisibility = (value: boolean) => {
+    setFormState((prev) => ({
+      ...prev,
+      constraints: {
+        ...prev.constraints,
+        allFramesVisibility: value,
+      },
+    }));
+  };
+
+  const setStaticDistance = (value?: boolean) => {
+    setFormState((prev) => ({
+      ...prev,
+      constraints: {
+        ...prev.constraints,
+        staticDistance: value,
+      },
+    }));
+  };
+
+  const setStaticCameraSubjectRotation = (value?: boolean) => {
+    setFormState((prev) => ({
+      ...prev,
+      constraints: {
+        ...prev.constraints,
+        staticCameraSubjectRotation: value,
+      },
+    }));
+  };
+
+  const setStaticPosition = (value: ConstraintsConfig["staticPosition"]) => {
+    setFormState((prev) => ({
+      ...prev,
+      constraints: {
+        ...prev.constraints,
+        staticPosition: value,
+      },
+    }));
+  };
+
+  const setStaticRotation = (value: ConstraintsConfig["staticRotation"]) => {
+    setFormState((prev) => ({
+      ...prev,
+      constraints: {
+        ...prev.constraints,
+        staticRotation: value,
+      },
+    }));
+  };
+
+  const setImportance = (value: number) => {
+    setFormState((prev) => ({
+      ...prev,
+      constraints: {
+        ...prev.constraints,
+        importance: value,
+      },
+    }));
+  };
+
+  const setMaxAccelerate = (value?: number) => {
+    setFormState((prev) => ({
+      ...prev,
+      constraints: {
+        ...prev.constraints,
+        maxAccelerate: value,
+      },
+    }));
+  };
+
+  const setMaxSpeed = (value?: number) => {
+    setFormState((prev) => ({
+      ...prev,
+      constraints: {
+        ...prev.constraints,
+        maxSpeed: value,
+      },
+    }));
+  };
+
+  const setInitialCameraAngle = (value?: CameraVerticalAngle) => {
+    setFormState((prev) => ({
+      ...prev,
+      initialSetup: {
+        ...prev.initialSetup,
+        cameraAngle: value,
+      },
+    }));
+  };
+
+  const setInitialShotSize = (value?: ShotSize) => {
+    setFormState((prev) => ({
+      ...prev,
+      initialSetup: {
+        ...prev.initialSetup,
+        shotSize: value,
+      },
+    }));
+  };
+
+  const setInitialSubjectView = (value?: SubjectView) => {
+    setFormState((prev) => ({
+      ...prev,
+      initialSetup: {
+        ...prev.initialSetup,
+        subjectView: value,
+      },
+    }));
+  };
+
+  const setInitialSubjectFraming = (framing: any) => {
+    setFormState((prev) => ({
+      ...prev,
+      initialSetup: {
+        ...prev.initialSetup,
+        subjectFraming: framing,
+      },
+    }));
+  };
+
+  const setEndCameraAngle = (value?: CameraVerticalAngle) => {
+    setFormState((prev) => ({
+      ...prev,
+      endSetup: {
+        ...prev.endSetup,
+        cameraAngle: value,
+      },
+    }));
+  };
+
+  const setEndShotSize = (value?: ShotSize) => {
+    setFormState((prev) => ({
+      ...prev,
+      endSetup: {
+        ...prev.endSetup,
+        shotSize: value,
+      },
+    }));
+  };
+
+  const setEndSubjectView = (value?: SubjectView) => {
+    setFormState((prev) => ({
+      ...prev,
+      endSetup: {
+        ...prev.endSetup,
+        subjectView: value,
+      },
+    }));
+  };
+
+  const setEndSubjectFraming = (framing: any) => {
+    setFormState((prev) => ({
+      ...prev,
+      endSetup: {
+        ...prev.endSetup,
+        subjectFraming: framing,
+      },
+    }));
+  };
+
+  const resetForm = (
+    instruction: SimulationInstruction = defaultSimulationInstruction
+  ) => {
+    setFormState({ ...instruction });
   };
 
   return {
-    formState: {
-      frameCount,
-      movementEasing,
-      selectedSubjectIndex,
-      visibilityConstraint,
-      subjectAwareInterpolation,
-      distanceType,
-      distanceScale,
-      initialCameraAngle,
-      initialShotSize,
-      initialSubjectView,
-      initialSubjectFraming,
-      endCameraAngle,
-      endShotSize,
-      endSubjectView,
-      endSubjectFraming,
-    },
+    formState,
     setters: {
+      setFormState,
       setFrameCount,
       setMovementEasing,
-      setSelectedSubjectIndex,
-      setVisibilityConstraint,
+      setSubjectIndex,
       setSubjectAwareInterpolation,
-      setDistanceType,
-      setDistanceScale,
+      setAllFramesVisibility,
+      setStaticDistance,
+      setStaticCameraSubjectRotation,
+      setStaticPosition,
+      setStaticRotation,
+      setImportance,
+      setMaxAccelerate,
+      setMaxSpeed,
       setInitialCameraAngle,
       setInitialShotSize,
       setInitialSubjectView,

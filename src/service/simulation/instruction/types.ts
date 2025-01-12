@@ -19,12 +19,6 @@ export enum ShotSize {
   ExtremeLongShot = "extremeLongShot",
 }
 
-export enum CameraSubjectDistance {
-  Static = "static",
-  DollyIn = "dollyIn",
-  DollyOut = "dollyOut",
-}
-
 export enum Scale {
   Small = "small",
   Medium = "medium",
@@ -112,11 +106,6 @@ export type MovementConfig<T> = {
   scale?: Scale;
 };
 
-export type DistanceConstraint = {
-  type: CameraSubjectDistance;
-  scale?: Scale;
-};
-
 export type SubjectFraming = {
   position: SubjectInFramePosition;
   dutchAngleScale?: Scale;
@@ -136,11 +125,32 @@ export type CameraParameters = {
   aspectRatio: number;
 };
 
+export type StaticPosition = {
+  left: boolean;
+  right: boolean;
+  up: boolean;
+  down: boolean;
+  forward: boolean;
+  backward: boolean;
+};
+
+export type StaticRotation = {
+  left: boolean;
+  right: boolean;
+  up: boolean;
+  down: boolean;
+  rollClockwise: boolean;
+  rollNonClockwise: boolean;
+};
+
 export type ConstraintsConfig = {
   allFramesVisibility?: boolean;
-  distance?: DistanceConstraint;
-  staticPosition?: { x: boolean; y: boolean; z: boolean };
-  staticRotation?: { x: boolean; y: boolean; z: boolean };
+  staticDistance?: boolean;
+  staticCameraSubjectRotation?: boolean;
+  staticPosition?: StaticPosition;
+  staticRotation?: StaticRotation;
+  maxAccelerate?: number;
+  maxSpeed?: number;
   importance?: number;
 };
 

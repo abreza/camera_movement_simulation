@@ -1,13 +1,10 @@
-import {
-  SimulationInstruction,
-  CameraParameters,
-} from "../instruction/types";
+import { SimulationInstruction, CameraParameters } from "../instruction/types";
 import { SubjectInfo } from "../../subjects/types";
 import { getEasedTime } from "../instruction/helpers/movement-easing";
 import { getCameraBySetup } from "./setup";
 import { interpolateParameters } from "./interpolation";
 import { applyVisibilityConstraints } from "./visibility";
-import { applyDistanceConstraint } from "./distance-constraint";
+import { applyStaticDistanceConstraint } from "./distance-constraint";
 
 export const initCameraParameters = (
   instruction: SimulationInstruction,
@@ -48,13 +45,8 @@ export const initCameraParameters = (
     );
   }
 
-  if (instruction.constraints?.distance) {
-    frames = applyDistanceConstraint(
-      frames,
-      subjectInfo,
-      instruction.constraints.distance,
-      instruction.movementEasing
-    );
+  if (instruction.constraints?.staticDistance) {
+    frames = applyStaticDistanceConstraint(frames, subjectInfo);
   }
 
   if (instruction.constraints?.allFramesVisibility) {

@@ -7,8 +7,6 @@ import {
   SetupConfig,
   ConstraintsConfig,
   CinematographySetup,
-  CameraSubjectDistance,
-  Scale,
   ShotSize,
   SubjectView,
 } from "@/service/simulation/instruction/types";
@@ -61,8 +59,22 @@ function buildConstraintsForMovement(
 ): ConstraintsConfig {
   const baseConstraints: ConstraintsConfig = {
     allFramesVisibility: true,
-    staticPosition: { x: false, y: false, z: false },
-    staticRotation: { x: false, y: false, z: false },
+    staticPosition: {
+      left: false,
+      right: false,
+      up: false,
+      down: false,
+      forward: false,
+      backward: false,
+    },
+    staticRotation: {
+      left: false,
+      right: false,
+      up: false,
+      down: false,
+      rollClockwise: false,
+      rollNonClockwise: false,
+    },
     importance: 1,
   };
 
@@ -70,41 +82,65 @@ function buildConstraintsForMovement(
     case CameraMovementType.Static:
       return {
         ...baseConstraints,
-        staticPosition: { x: true, y: true, z: true },
-        staticRotation: { x: true, y: true, z: true },
+        staticPosition: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          forward: true,
+          backward: true,
+        },
+        staticRotation: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          rollClockwise: true,
+          rollNonClockwise: true,
+        },
       };
 
     case CameraMovementType.PanLeft:
     case CameraMovementType.PanRight:
       return {
         ...baseConstraints,
-        staticPosition: { x: true, y: true, z: true },
-        staticRotation: { x: true, y: false, z: true },
+        staticPosition: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          forward: true,
+          backward: true,
+        },
+        staticRotation: {
+          left: movementType === CameraMovementType.PanLeft,
+          right: movementType === CameraMovementType.PanRight,
+          up: true,
+          down: true,
+          rollClockwise: true,
+          rollNonClockwise: true,
+        },
       };
 
     case CameraMovementType.TiltUp:
     case CameraMovementType.TiltDown:
       return {
         ...baseConstraints,
-        staticPosition: { x: true, y: true, z: true },
-        staticRotation: { x: false, y: true, z: true },
-      };
-
-    case CameraMovementType.DollyIn:
-      return {
-        ...baseConstraints,
-        distance: {
-          type: CameraSubjectDistance.DollyIn,
-          scale: Scale.Small,
+        staticPosition: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          forward: true,
+          backward: true,
         },
-      };
-
-    case CameraMovementType.DollyOut:
-      return {
-        ...baseConstraints,
-        distance: {
-          type: CameraSubjectDistance.DollyOut,
-          scale: Scale.Small,
+        staticRotation: {
+          left: true,
+          right: true,
+          up: movementType === CameraMovementType.TiltUp,
+          down: movementType === CameraMovementType.TiltDown,
+          rollClockwise: true,
+          rollNonClockwise: true,
         },
       };
 
@@ -112,16 +148,88 @@ function buildConstraintsForMovement(
     case CameraMovementType.TruckRight:
       return {
         ...baseConstraints,
-        staticPosition: { x: false, y: true, z: true },
-        staticRotation: { x: true, y: true, z: true },
+        staticPosition: {
+          left: movementType === CameraMovementType.TruckLeft,
+          right: movementType === CameraMovementType.TruckRight,
+          up: true,
+          down: true,
+          forward: true,
+          backward: true,
+        },
+        staticRotation: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          rollClockwise: true,
+          rollNonClockwise: true,
+        },
       };
 
     case CameraMovementType.PedestalUp:
     case CameraMovementType.PedestalDown:
       return {
         ...baseConstraints,
-        staticPosition: { x: true, y: false, z: true },
-        staticRotation: { x: true, y: true, z: true },
+        staticPosition: {
+          left: true,
+          right: true,
+          up: movementType === CameraMovementType.PedestalUp,
+          down: movementType === CameraMovementType.PedestalDown,
+          forward: true,
+          backward: true,
+        },
+        staticRotation: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          rollClockwise: true,
+          rollNonClockwise: true,
+        },
+      };
+
+    case CameraMovementType.DollyIn:
+    case CameraMovementType.DollyOut:
+      return {
+        ...baseConstraints,
+        staticPosition: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          forward: movementType === CameraMovementType.DollyIn,
+          backward: movementType === CameraMovementType.DollyOut,
+        },
+        staticRotation: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          rollClockwise: true,
+          rollNonClockwise: true,
+        },
+      };
+
+    case CameraMovementType.DollyInZoomOut:
+    case CameraMovementType.DollyOutZoomIn:
+      return {
+        ...baseConstraints,
+        staticPosition: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          forward: movementType === CameraMovementType.DollyInZoomOut,
+          backward: movementType === CameraMovementType.DollyOutZoomIn,
+        },
+        staticRotation: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          rollClockwise: true,
+          rollNonClockwise: true,
+        },
       };
 
     case CameraMovementType.ArcLeft:
@@ -129,41 +237,6 @@ function buildConstraintsForMovement(
       return {
         ...baseConstraints,
         allFramesVisibility: true,
-      };
-
-    case CameraMovementType.CraneUp:
-    case CameraMovementType.CraneDown:
-      return {
-        ...baseConstraints,
-      };
-
-    case CameraMovementType.DollyOutZoomIn:
-      return {
-        ...baseConstraints,
-        distance: {
-          type: CameraSubjectDistance.DollyOut,
-          scale: Scale.Small,
-        },
-      };
-
-    case CameraMovementType.DollyInZoomOut:
-      return {
-        ...baseConstraints,
-        distance: {
-          type: CameraSubjectDistance.DollyIn,
-          scale: Scale.Small,
-        },
-      };
-
-    case CameraMovementType.DutchLeft:
-    case CameraMovementType.DutchRight:
-      return {
-        ...baseConstraints,
-      };
-
-    case CameraMovementType.Follow:
-      return {
-        ...baseConstraints,
       };
 
     default:

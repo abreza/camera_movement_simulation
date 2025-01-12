@@ -45,73 +45,18 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
   };
 
   const handleAddOrUpdateInstruction = () => {
-    const instruction: SimulationInstruction = {
-      frameCount: formState.frameCount,
-      movementEasing: formState.movementEasing,
-      subjectIndex: formState.selectedSubjectIndex,
-      subjectAwareInterpolation: formState.subjectAwareInterpolation,
-      initialSetup: {
-        cameraAngle: formState.initialCameraAngle,
-        shotSize: formState.initialShotSize,
-        subjectView: formState.initialSubjectView,
-        subjectFraming: formState.initialSubjectFraming,
-      },
-      endSetup:
-        formState.endCameraAngle ||
-        formState.endShotSize ||
-        formState.endSubjectView ||
-        formState.endSubjectFraming
-          ? {
-              cameraAngle: formState.endCameraAngle,
-              shotSize: formState.endShotSize,
-              subjectView: formState.endSubjectView,
-              subjectFraming: formState.endSubjectFraming,
-            }
-          : undefined,
-      constraints: {
-        allFramesVisibility: formState.visibilityConstraint,
-        distance: formState.distanceType
-          ? { type: formState.distanceType, scale: formState.distanceScale }
-          : undefined,
-        staticPosition: { x: false, y: false, z: false },
-        staticRotation: { x: false, y: false, z: false },
-        importance: 1,
-      },
-    };
-
     if (editingIndex !== null) {
-      onEditInstruction(editingIndex, instruction);
+      onEditInstruction(editingIndex, formState);
       setEditingIndex(null);
     } else {
-      onAddInstruction(instruction);
+      onAddInstruction(formState);
     }
 
     resetForm();
   };
 
   const handleEdit = (index: number) => {
-    const instruction = instructions[index];
-    setters.setFrameCount(instruction.frameCount);
-    setters.setMovementEasing(instruction.movementEasing);
-    setters.setSelectedSubjectIndex(instruction.subjectIndex);
-    setters.setVisibilityConstraint(
-      instruction.constraints?.allFramesVisibility
-    );
-
-    setters.setInitialCameraAngle(instruction.initialSetup?.cameraAngle);
-    setters.setInitialShotSize(instruction.initialSetup?.shotSize);
-    setters.setInitialSubjectView(instruction.initialSetup?.subjectView);
-    setters.setInitialSubjectFraming(instruction.initialSetup?.subjectFraming);
-
-    setters.setEndCameraAngle(instruction.endSetup?.cameraAngle);
-    setters.setEndShotSize(instruction.endSetup?.shotSize);
-    setters.setEndSubjectView(instruction.endSetup?.subjectView);
-    setters.setEndSubjectFraming(instruction.endSetup?.subjectFraming);
-
-    setters.setDistanceType(instruction.constraints?.distance?.type);
-    setters.setDistanceScale(instruction.constraints?.distance?.scale);
-    setters.setSubjectAwareInterpolation(instruction.subjectAwareInterpolation);
-
+    resetForm(instructions[index]);
     setEditingIndex(index);
   };
 

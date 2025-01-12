@@ -76,6 +76,7 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
   return (
     <Box>
       <Typography
+        component="div"
         variant="body2"
         sx={{ mb: 2, lineHeight: 2, fontWeight: 300 }}
       >
@@ -111,6 +112,7 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
       </Typography>
 
       <Typography
+        component="div"
         variant="body2"
         sx={{ mb: 2, lineHeight: 2, fontWeight: 300 }}
       >
