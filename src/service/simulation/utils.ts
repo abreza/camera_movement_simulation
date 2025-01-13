@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { SubjectDimensions } from "../subjects/types";
-import { DEFAULT_FOCAL_LENGTH, SENSOR_HEIGHT } from "./constants";
 import { CameraParameters } from "./instruction/types";
+import { SENSOR_WIDTH, SENSOR_HEIGHT } from "./constants";
 
 export const getLookAtAngle = (
   cameraPosition: THREE.Vector3,
@@ -68,4 +68,18 @@ export const projectBoundingBox = (
     height: maxY - minY,
     center: new THREE.Vector2((minX + maxX) / 2, (minY + maxY) / 2),
   };
+};
+
+export const ndcToSensor = (ndc: THREE.Vector2): THREE.Vector2 => {
+  return new THREE.Vector2(
+    ((ndc.x + 1) * SENSOR_WIDTH) / 2,
+    ((ndc.y + 1) * SENSOR_HEIGHT) / 2
+  );
+};
+
+export const sensorToNdc = (sensor: THREE.Vector2): THREE.Vector2 => {
+  return new THREE.Vector2(
+    (sensor.x * 2) / SENSOR_WIDTH - 1,
+    (sensor.y * 2) / SENSOR_HEIGHT - 1
+  );
 };

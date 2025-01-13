@@ -6,6 +6,12 @@ import {
   SubjectView,
   MovementEasing,
   ConstraintsConfig,
+  DynamicMode,
+  InterpolationDynamic,
+  Direction,
+  MovementDynamic,
+  MovementMode,
+  Scale,
 } from "@/service/simulation/instruction/types";
 import { defaultSimulationInstruction } from "@/service/simulation/instruction/constants";
 
@@ -21,10 +27,13 @@ export const useInstructionForm = () => {
     }));
   };
 
-  const setMovementEasing = (easing: MovementEasing) => {
+  const setDynamicEasing = (easing: MovementEasing) => {
     setFormState((prev) => ({
       ...prev,
-      movementEasing: easing,
+      dynamic: {
+        ...prev.dynamic,
+        easing,
+      },
     }));
   };
 
@@ -36,10 +45,17 @@ export const useInstructionForm = () => {
   };
 
   const setSubjectAwareInterpolation = (aware?: boolean) => {
-    setFormState((prev) => ({
-      ...prev,
-      subjectAwareInterpolation: aware,
-    }));
+    setFormState((prev) => {
+      if (prev.dynamic.type !== DynamicMode.Interpolation) return prev;
+
+      return {
+        ...prev,
+        dynamic: {
+          ...prev.dynamic,
+          subjectAwareInterpolation: aware,
+        },
+      };
+    });
   };
 
   const setAllFramesVisibility = (value: boolean) => {
@@ -163,43 +179,93 @@ export const useInstructionForm = () => {
   };
 
   const setEndCameraAngle = (value?: CameraVerticalAngle) => {
-    setFormState((prev) => ({
-      ...prev,
-      endSetup: {
-        ...prev.endSetup,
-        cameraAngle: value,
-      },
-    }));
+    setFormState((prev) => {
+      if (prev.dynamic.type !== DynamicMode.Interpolation) return prev;
+
+      return {
+        ...prev,
+        dynamic: {
+          ...prev.dynamic,
+          endSetup: {
+            ...prev.dynamic.endSetup,
+            cameraAngle: value,
+          },
+        },
+      };
+    });
   };
 
   const setEndShotSize = (value?: ShotSize) => {
-    setFormState((prev) => ({
-      ...prev,
-      endSetup: {
-        ...prev.endSetup,
-        shotSize: value,
-      },
-    }));
+    setFormState((prev) => {
+      if (prev.dynamic.type !== DynamicMode.Interpolation) return prev;
+
+      return {
+        ...prev,
+        dynamic: {
+          ...prev.dynamic,
+          endSetup: {
+            ...prev.dynamic.endSetup,
+            shotSize: value,
+          },
+        },
+      };
+    });
   };
 
   const setEndSubjectView = (value?: SubjectView) => {
-    setFormState((prev) => ({
-      ...prev,
-      endSetup: {
-        ...prev.endSetup,
-        subjectView: value,
-      },
-    }));
+    setFormState((prev) => {
+      if (prev.dynamic.type !== DynamicMode.Interpolation) return prev;
+
+      return {
+        ...prev,
+        dynamic: {
+          ...prev.dynamic,
+          endSetup: {
+            ...prev.dynamic.endSetup,
+            subjectView: value,
+          },
+        },
+      };
+    });
   };
 
   const setEndSubjectFraming = (framing: any) => {
-    setFormState((prev) => ({
-      ...prev,
-      endSetup: {
-        ...prev.endSetup,
-        subjectFraming: framing,
-      },
-    }));
+    setFormState((prev) => {
+      if (prev.dynamic.type !== DynamicMode.Interpolation) return prev;
+
+      return {
+        ...prev,
+        dynamic: {
+          ...prev.dynamic,
+          endSetup: {
+            ...prev.dynamic.endSetup,
+            subjectFraming: framing,
+          },
+        },
+      };
+    });
+  };
+
+  const setDynamicType = (type: DynamicMode) => {
+    setFormState((prev) => {
+      const dynamic =
+        type === DynamicMode.Interpolation
+          ? ({
+              type,
+              easing: prev.dynamic.easing,
+            } as InterpolationDynamic)
+          : ({
+              type: DynamicMode.Movement,
+              direction: Direction.Right,
+              scale: Scale.Medium,
+              movementMode: MovementMode.Transition,
+            } as MovementDynamic);
+
+      return {
+        ...prev,
+        dynamic,
+      };
+    });
   };
 
   const resetForm = (
@@ -212,7 +278,8 @@ export const useInstructionForm = () => {
     formState,
     setters: {
       setFrameCount,
-      setMovementEasing,
+
+      setDynamicEasing,
       setSubjectIndex,
       setSubjectAwareInterpolation,
       setAllFramesVisibility,
@@ -231,6 +298,7 @@ export const useInstructionForm = () => {
       setEndShotSize,
       setEndSubjectView,
       setEndSubjectFraming,
+      setDynamicType,
     },
     resetForm,
   };

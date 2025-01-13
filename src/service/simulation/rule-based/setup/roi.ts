@@ -6,13 +6,13 @@ import {
   SubjectDimensions,
 } from "../../../subjects/types";
 
-export type RegionOfInterest = {
+export type ReginOfInterest = {
   dimensions: SubjectDimensions;
   position: THREE.Vector3;
 };
 
 type ROIResult = {
-  reginOfInterest: RegionOfInterest;
+  reginOfInterest: ReginOfInterest;
   scale: number;
 };
 
@@ -76,8 +76,8 @@ const getShotScale = (shotSize: ShotSize): number => {
 };
 
 const getDefaultAttentionBox = (
-  subjectBox: RegionOfInterest
-): RegionOfInterest => {
+  subjectBox: ReginOfInterest
+): ReginOfInterest => {
   return {
     dimensions: {
       width: subjectBox.dimensions.width,
@@ -100,12 +100,12 @@ export const calculateReginOfInterest = (
   const shotSize = setup.shotSize || ShotSize.MediumShot;
   const scale = getShotScale(shotSize);
 
-  const subjectBox: RegionOfInterest = {
+  const subjectBox: ReginOfInterest = {
     dimensions: subject.dimensions,
     position: frame.position,
   };
 
-  const attentionBox: RegionOfInterest =
+  const attentionBox: ReginOfInterest =
     subject.attentionBox || getDefaultAttentionBox(subjectBox);
 
   const t = getInterpolationFactor(shotSize);

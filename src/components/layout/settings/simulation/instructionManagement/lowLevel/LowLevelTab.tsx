@@ -8,12 +8,16 @@ import {
   Typography,
 } from "@mui/material";
 import { Download } from "@mui/icons-material";
-import { InstructionList } from "./InstructionList";
-import { SetupControls } from "./SetupControls";
+import { InstructionList } from "./components/InstructionList";
+import { SetupControls } from "./components/SetupControls";
 import { GeneralSettings } from "./GeneralSettings";
-import { SimulationInstruction } from "@/service/simulation/instruction/types";
+import {
+  SimulationInstruction,
+  DynamicMode,
+} from "@/service/simulation/instruction/types";
 import { SubjectInfo } from "@/service/subjects/types";
 import { useInstructionForm } from "./useInstructionForm";
+import { Dynamic } from "./Dynamic";
 
 interface LowLevelTabProps {
   instructions: SimulationInstruction[];
@@ -63,23 +67,16 @@ export const LowLevelTab: FC<LowLevelTabProps> = ({
       />
 
       <Divider sx={{ my: 2 }} />
+      <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
+        Dynamic
+      </Typography>
 
-      <SetupControls
-        isInitial={false}
-        cameraAngle={formState.endSetup?.cameraAngle}
-        setCameraAngle={setters.setEndCameraAngle}
-        shotSize={formState.endSetup?.shotSize}
-        setShotSize={setters.setEndShotSize}
-        subjectView={formState.endSetup?.subjectView}
-        setSubjectView={setters.setEndSubjectView}
-        subjectFraming={formState.endSetup?.subjectFraming}
-        setSubjectFraming={setters.setEndSubjectFraming}
-      />
+      <Dynamic dynamic={formState.dynamic} setters={setters} />
 
+      <Divider sx={{ my: 2 }} />
       <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
         General Settings
       </Typography>
-
       <GeneralSettings
         instruction={formState}
         setters={setters}

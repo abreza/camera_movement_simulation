@@ -103,7 +103,6 @@ export function autoGenerateEndSetup(
       break;
 
     case CameraMovementType.TiltUp:
-      endSetup.cameraAngle = CameraVerticalAngle.High;
       endSetup.subjectFraming = {
         ...endSetup.subjectFraming,
         position: SubjectInFramePosition.Bottom,
@@ -111,7 +110,6 @@ export function autoGenerateEndSetup(
       break;
 
     case CameraMovementType.TiltDown:
-      endSetup.cameraAngle = CameraVerticalAngle.Low;
       endSetup.subjectFraming = {
         ...endSetup.subjectFraming,
         position: SubjectInFramePosition.Top,

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { getLookAtAngle, projectBoundingBox } from "../../utils";
-import { RegionOfInterest } from "./roi";
+import { ReginOfInterest } from "./roi";
 import {
   DEFAULT_ASPECT_RATIO,
   DEFAULT_FOCAL_LENGTH,
@@ -10,7 +10,7 @@ import {
 
 export const applyCameraDistance = (
   scale: number,
-  roi: RegionOfInterest,
+  roi: ReginOfInterest,
   initialPosition: THREE.Vector3
 ): THREE.Vector3 => {
   const camera = {

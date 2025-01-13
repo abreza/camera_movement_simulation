@@ -5,27 +5,28 @@ import {
 
 export const highLevelInstructionRules: Record<
   CameraMovementType,
-  { disabledFinalSetup: (keyof SetupConfig)[] }
+  { cameraAware?: boolean; disabledFinalSetup?: (keyof SetupConfig)[] }
 > = {
   static: {
-    disabledFinalSetup: [
-      "cameraAngle",
-      "shotSize",
-      "subjectView",
-      "subjectFraming",
-    ],
+    cameraAware: true,
+  },
+  follow: {
+    disabledFinalSetup: ["cameraAngle", "subjectView"],
+  },
+  track: {
+    disabledFinalSetup: ["cameraAngle", "subjectView"],
   },
   panLeft: {
-    disabledFinalSetup: ["cameraAngle", "shotSize", "subjectView"],
+    cameraAware: true,
   },
   panRight: {
-    disabledFinalSetup: ["cameraAngle", "shotSize", "subjectView"],
+    cameraAware: true,
   },
   tiltUp: {
-    disabledFinalSetup: ["cameraAngle", "shotSize", "subjectView"],
+    cameraAware: true,
   },
   tiltDown: {
-    disabledFinalSetup: ["cameraAngle", "shotSize", "subjectView"],
+    cameraAware: true,
   },
   dollyIn: {
     disabledFinalSetup: ["cameraAngle", "subjectView"],
@@ -33,17 +34,23 @@ export const highLevelInstructionRules: Record<
   dollyOut: {
     disabledFinalSetup: ["cameraAngle", "subjectView"],
   },
+  truckFollow: {
+    cameraAware: true,
+  },
+  pedestalFollow: {
+    cameraAware: true,
+  },
   truckLeft: {
-    disabledFinalSetup: ["cameraAngle", "shotSize"],
+    cameraAware: true,
   },
   truckRight: {
-    disabledFinalSetup: ["cameraAngle", "shotSize"],
+    cameraAware: true,
   },
   pedestalUp: {
-    disabledFinalSetup: ["shotSize", "subjectView"],
+    cameraAware: true,
   },
   pedestalDown: {
-    disabledFinalSetup: ["shotSize", "subjectView"],
+    cameraAware: true,
   },
   arcLeft: {
     disabledFinalSetup: ["subjectView"],
@@ -58,18 +65,15 @@ export const highLevelInstructionRules: Record<
     disabledFinalSetup: ["subjectView"],
   },
   dollyOutZoomIn: {
-    disabledFinalSetup: ["cameraAngle", "shotSize", "subjectView"],
+    disabledFinalSetup: ["cameraAngle", "subjectView"],
   },
   dollyInZoomOut: {
-    disabledFinalSetup: ["cameraAngle", "shotSize", "subjectView"],
+    disabledFinalSetup: ["cameraAngle", "subjectView"],
   },
   dutchLeft: {
     disabledFinalSetup: [],
   },
   dutchRight: {
-    disabledFinalSetup: [],
-  },
-  follow: {
     disabledFinalSetup: [],
   },
 };

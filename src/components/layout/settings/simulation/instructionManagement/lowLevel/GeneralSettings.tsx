@@ -7,10 +7,10 @@ import {
   FormControlLabel,
   Switch,
 } from "@mui/material";
-import { MovementControl } from "./MovementControls";
+import { MovementControl } from "./components/MovementControls";
 import { EasingChart } from "../../../components/EasingChart";
-import { StaticControls } from "./StaticControls";
-import { AdditionalConstraints } from "./AdditionalConstraints";
+import { StaticControls } from "./components/StaticControls";
+import { AdditionalConstraints } from "./components/AdditionalConstraints";
 import {
   MovementEasing,
   SimulationInstruction,
@@ -43,24 +43,9 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
         sx={{ mb: 1, width: "100%" }}
       />
 
-      <FormControlLabel
-        control={
-          <Switch
-            checked={instruction.subjectAwareInterpolation || false}
-            onChange={() =>
-              setters.setSubjectAwareInterpolation(
-                !instruction.subjectAwareInterpolation
-              )
-            }
-          />
-        }
-        label="Subject Aware Interpolation"
-        sx={{ mb: 1, width: "100%" }}
-      />
-
       <MovementControl
-        type={instruction.movementEasing}
-        onTypeChange={setters.setMovementEasing}
+        type={instruction.dynamic.easing}
+        onTypeChange={setters.setDynamicEasing}
         options={Object.values(MovementEasing)}
         label="Movement Easing"
         allowEmpty={false}
@@ -70,7 +55,11 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
       <FormControl fullWidth sx={{ mb: 2 }} size="small">
         <InputLabel>Target Subject</InputLabel>
         <Select
-          value={instruction.subjectIndex}
+          value={
+            typeof instruction.subjectIndex === "number"
+              ? instruction.subjectIndex
+              : "undefined"
+          }
           onChange={(e) =>
             setters.setSubjectIndex(
               e.target.value === "undefined" ? undefined : +e.target.value

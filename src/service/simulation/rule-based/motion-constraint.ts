@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { CameraParameters } from "../instruction/types";
 
-export function applyPositionalConstraints(
+function applyPositionalConstraints(
   frames: CameraParameters[],
   maxSpeed: number,
   maxAcceleration: number
@@ -38,7 +38,7 @@ export function applyPositionalConstraints(
   return frames;
 }
 
-export function applyRotationalConstraints(
+function applyRotationalConstraints(
   frames: CameraParameters[],
   maxAnglePerFrame: number
 ): CameraParameters[] {
@@ -64,3 +64,22 @@ export function applyRotationalConstraints(
 
   return frames;
 }
+
+export const applySpeedConstraints = (
+  frames: CameraParameters[],
+  maxSpeed?: number,
+  maxAcceleration?: number,
+  maxAnglePerFrame: number = (30 * Math.PI) / 180
+) => {
+  const safeMaxSpeed = maxSpeed ?? Number.POSITIVE_INFINITY;
+  const safeMaxAcceleration = maxAcceleration ?? Number.POSITIVE_INFINITY;
+  frames = applyPositionalConstraints(
+    frames,
+    safeMaxSpeed,
+    safeMaxAcceleration
+  );
+
+  frames = applyRotationalConstraints(frames, maxAnglePerFrame);
+
+  return frames;
+};

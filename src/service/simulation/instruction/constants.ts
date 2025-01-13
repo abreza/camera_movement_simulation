@@ -1,7 +1,7 @@
 import { DEFAULT_FRAME_COUNT } from "../constants";
 import {
   CameraVerticalAngle,
-  ConstraintsConfig,
+  DynamicMode,
   MovementEasing,
   Scale,
   ShotSize,
@@ -19,8 +19,25 @@ export const SCALE_FACTORS = {
 
 export const defaultSimulationInstruction: SimulationInstruction = {
   frameCount: DEFAULT_FRAME_COUNT,
-  movementEasing: MovementEasing.Linear,
-  subjectAwareInterpolation: false,
+  initialSetup: {
+    cameraAngle: CameraVerticalAngle.Eye,
+    shotSize: ShotSize.MediumShot,
+    subjectView: SubjectView.Front,
+    subjectFraming: {
+      position: SubjectInFramePosition.Center,
+    },
+  },
+  dynamic: {
+    type: DynamicMode.Interpolation,
+    easing: MovementEasing.Linear,
+    subjectAwareInterpolation: false,
+    endSetup: {
+      cameraAngle: undefined,
+      shotSize: undefined,
+      subjectView: undefined,
+      subjectFraming: undefined,
+    },
+  },
   subjectIndex: 0,
   constraints: {
     allFramesVisibility: true,
@@ -45,19 +62,5 @@ export const defaultSimulationInstruction: SimulationInstruction = {
     maxAccelerate: 2,
     maxSpeed: undefined,
     importance: 1,
-  },
-  initialSetup: {
-    cameraAngle: CameraVerticalAngle.Eye,
-    shotSize: ShotSize.MediumShot,
-    subjectView: SubjectView.Front,
-    subjectFraming: {
-      position: SubjectInFramePosition.Center,
-    },
-  },
-  endSetup: {
-    cameraAngle: undefined,
-    shotSize: undefined,
-    subjectView: undefined,
-    subjectFraming: undefined,
   },
 };

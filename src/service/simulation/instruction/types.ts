@@ -154,18 +154,54 @@ export type ConstraintsConfig = {
   importance?: number;
 };
 
+export enum DynamicMode {
+  Interpolation = "interpolation",
+  Movement = "movement",
+}
+
+export type DynamicBase = {
+  type: DynamicMode;
+  easing: MovementEasing;
+};
+
+export type InterpolationDynamic = DynamicBase & {
+  type: DynamicMode.Interpolation;
+  endSetup: SetupConfig;
+  subjectAwareInterpolation?: boolean;
+};
+
+export enum Direction {
+  Left = "left",
+  Right = "right",
+  Up = "up",
+  Down = "down",
+}
+
+export enum MovementMode {
+  Transition = "transition",
+  Rotation = "rotation",
+}
+
+export type MovementDynamic = DynamicBase & {
+  type: DynamicMode.Movement;
+  scale: Scale;
+  direction: Direction;
+  movementMode: MovementMode;
+};
+
 export type SimulationInstruction = {
   frameCount: number;
   initialSetup: SetupConfig;
-  movementEasing: MovementEasing;
-  subjectAwareInterpolation?: boolean;
+  dynamic: InterpolationDynamic | MovementDynamic;
   subjectIndex?: number;
-  endSetup?: SetupConfig;
   constraints?: ConstraintsConfig;
 };
 
 export enum CameraMovementType {
   Static = "static",
+
+  Follow = "follow",
+  Track = "track",
 
   PanLeft = "panLeft",
   PanRight = "panRight",
@@ -173,6 +209,10 @@ export enum CameraMovementType {
   TiltDown = "tiltDown",
   DollyIn = "dollyIn",
   DollyOut = "dollyOut",
+
+  TruckFollow = "truckFollow",
+  PedestalFollow = "pedestalFollow",
+
   TruckLeft = "truckLeft",
   TruckRight = "truckRight",
   PedestalUp = "pedestalUp",
@@ -189,8 +229,6 @@ export enum CameraMovementType {
 
   DutchLeft = "dutchLeft",
   DutchRight = "dutchRight",
-
-  Follow = "follow",
 }
 
 export enum MovementSpeed {

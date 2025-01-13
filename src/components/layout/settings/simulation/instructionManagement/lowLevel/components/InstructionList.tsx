@@ -25,7 +25,7 @@ export const InstructionList: FC<InstructionListProps> = ({
               : "N/A"
           }
           Frames: ${instruction.frameCount}, Easing: ${
-            instruction.movementEasing
+            instruction.dynamic.easing
           }`}
         />
         <IconButton size="small" onClick={() => onEdit(index)}>

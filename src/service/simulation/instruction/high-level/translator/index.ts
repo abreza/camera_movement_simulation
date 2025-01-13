@@ -1,5 +1,6 @@
 import {
   CinematographyPrompt,
+  DynamicMode,
   SimulationInstruction,
 } from "@/service/simulation/instruction/types";
 import {
@@ -36,10 +37,13 @@ export function translatePromptToSimulationInstruction(
   return {
     frameCount,
     subjectIndex,
-    subjectAwareInterpolation,
-    movementEasing,
     initialSetup,
-    endSetup,
+    dynamic: {
+      type: DynamicMode.Interpolation,
+      easing: movementEasing,
+      endSetup,
+      subjectAwareInterpolation,
+    },
     constraints,
   };
 }

@@ -1,85 +1,84 @@
-import { SimulationInstruction, CameraParameters } from "../instruction/types";
+import {
+  SimulationInstruction,
+  CameraParameters,
+  DynamicMode,
+} from "../instruction/types";
 import { SubjectInfo } from "../../subjects/types";
 import { getEasedTime } from "../instruction/helpers/movement-easing";
-import { getCameraBySetup } from "./setup";
+import { getCameraBySetup, getCameraBySetupConstrained } from "./setup";
 import { interpolateParameters } from "./interpolation";
-import { applyVisibilityConstraints } from "./visibility";
-import { applyStaticDistanceConstraint } from "./distance-constraint";
-import {
-  applyPositionalConstraints,
-  applyRotationalConstraints,
-} from "./motion-constraint";
-import { applyLockedMovementAndRotationOnEndFrame } from "./setup/constraints";
+import { applySpeedConstraints } from "./motion-constraint";
+import { applyConstraintsOnFrame } from "./setup/constraints";
 
 export const initCameraParameters = (
   instruction: SimulationInstruction,
   startCameraParameter: CameraParameters | undefined,
   subjectInfo: SubjectInfo | undefined
 ): CameraParameters[] => {
-  let frames: CameraParameters[] = [];
+  const frames: CameraParameters[] = [];
 
   if (!subjectInfo?.frames?.length) {
     return frames;
   }
 
-  const startFrame = subjectInfo.frames[0];
-  const endFrame = subjectInfo.frames[subjectInfo.frames.length - 1];
+  const startSubjectFrame = subjectInfo.frames[0];
 
   const startParams =
     startCameraParameter ||
-    getCameraBySetup(instruction.initialSetup, subjectInfo.subject, startFrame);
-
-  let endParams = instruction.endSetup
-    ? getCameraBySetup(instruction.endSetup, subjectInfo.subject, endFrame)
-    : startParams;
-
-  endParams = applyLockedMovementAndRotationOnEndFrame(
-    endParams,
-    startParams,
-    instruction.constraints
-  );
-
-  for (let i = 0; i < instruction.frameCount; i++) {
-    const easedT = getEasedTime(
-      i / (instruction.frameCount - 1),
-      instruction.movementEasing
+    getCameraBySetup(
+      instruction.initialSetup,
+      subjectInfo.subject,
+      startSubjectFrame
     );
 
-    frames.push(
-      interpolateParameters(
+  const endSubjectFrame = subjectInfo.frames[subjectInfo.frames.length - 1];
+
+  if (instruction.dynamic.type === DynamicMode.Interpolation) {
+    let endParams = instruction.dynamic.endSetup
+      ? getCameraBySetupConstrained(
+          instruction.dynamic.endSetup,
+          subjectInfo.subject,
+          endSubjectFrame,
+          startParams,
+          instruction.constraints
+        )
+      : startParams;
+
+    for (let i = 0; i < instruction.frameCount; i++) {
+      const easedT = getEasedTime(
+        i / (instruction.frameCount - 1),
+        instruction.dynamic.easing
+      );
+
+      let frameParams = interpolateParameters(
         startParams,
         endParams,
         easedT,
-        instruction.subjectAwareInterpolation,
+        instruction.dynamic.subjectAwareInterpolation,
         subjectInfo
-      )
-    );
+      );
+
+      const prevCameraParams = i > 0 ? frames[i - 1] : startParams;
+      const subjectFrameCurrent =
+        subjectInfo.frames[Math.min(i, subjectInfo.frames.length - 1)];
+
+      frameParams = applyConstraintsOnFrame(
+        frameParams,
+        prevCameraParams,
+        instruction.constraints,
+        subjectFrameCurrent,
+        subjectInfo.subject.dimensions
+      );
+
+      frames.push(frameParams);
+    }
   }
 
-  if (instruction.constraints?.staticDistance) {
-    frames = applyStaticDistanceConstraint(frames, subjectInfo);
-  }
+  const constrainedFrames = applySpeedConstraints(
+    frames,
+    instruction.constraints?.maxSpeed,
+    instruction.constraints?.maxAccelerate
+  );
 
-  if (instruction.constraints?.allFramesVisibility) {
-    frames = applyVisibilityConstraints(frames, subjectInfo);
-  }
-
-  const maxSpeed = instruction.constraints?.maxSpeed;
-  const maxAcceleration = instruction.constraints?.maxAccelerate;
-  if (maxSpeed !== undefined || maxAcceleration !== undefined) {
-    const safeMaxSpeed = maxSpeed ?? Number.POSITIVE_INFINITY;
-    const safeMaxAcceleration = maxAcceleration ?? Number.POSITIVE_INFINITY;
-    frames = applyPositionalConstraints(
-      frames,
-      safeMaxSpeed,
-      safeMaxAcceleration
-    );
-  }
-
-  const maxRotationDegPerFrame = 30;
-  const maxRotationRadPerFrame = (maxRotationDegPerFrame * Math.PI) / 180;
-
-  frames = applyRotationalConstraints(frames, maxRotationRadPerFrame);
-
-  return frames;
+  return constrainedFrames;
 };
