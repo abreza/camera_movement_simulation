@@ -3,6 +3,7 @@ import {
   SimulationInstruction,
   ShotSize,
   SubjectFraming,
+  DynamicMode,
 } from "../../instruction/types";
 import { SubjectInfo } from "../../../subjects/types";
 import * as THREE from "three";
@@ -180,51 +181,54 @@ export const calculateTotalLoss = (
   }
 
   // End setup losses
-  if (instruction.endSetup) {
-    const lastFrame = frames[frames.length - 1];
-    const lastSubjectFrame = subjectInfo.frames[subjectInfo.frames.length - 1];
+  if (instruction.dynamic.type === DynamicMode.Interpolation) {
+    if (instruction.dynamic.endSetup) {
+      const lastFrame = frames[frames.length - 1];
+      const lastSubjectFrame =
+        subjectInfo.frames[subjectInfo.frames.length - 1];
 
-    if (instruction.endSetup.cameraAngle) {
-      losses.endCameraAngle =
-        calculateCameraAngleLoss(
-          lastFrame.position,
-          lastSubjectFrame.position,
-          getDesiredVerticalAngle(instruction.endSetup.cameraAngle)
-        ) * LOSS_SCALE_FACTORS.cameraAngle;
-      totalLoss += losses.endCameraAngle;
-    }
+      if (instruction.dynamic.endSetup.cameraAngle) {
+        losses.endCameraAngle =
+          calculateCameraAngleLoss(
+            lastFrame.position,
+            lastSubjectFrame.position,
+            getDesiredVerticalAngle(instruction.dynamic.endSetup.cameraAngle)
+          ) * LOSS_SCALE_FACTORS.cameraAngle;
+        totalLoss += losses.endCameraAngle;
+      }
 
-    if (instruction.endSetup.shotSize) {
-      losses.endShotSize =
-        calculateShotSizeLoss(
-          lastFrame.position,
-          lastSubjectFrame.position,
-          getDesiredDistance(
-            instruction.endSetup.shotSize,
-            subjectInfo.subject.dimensions
-          )
-        ) * LOSS_SCALE_FACTORS.shotSize;
-      totalLoss += losses.endShotSize;
-    }
+      if (instruction.dynamic.endSetup.shotSize) {
+        losses.endShotSize =
+          calculateShotSizeLoss(
+            lastFrame.position,
+            lastSubjectFrame.position,
+            getDesiredDistance(
+              instruction.dynamic.endSetup.shotSize,
+              subjectInfo.subject.dimensions
+            )
+          ) * LOSS_SCALE_FACTORS.shotSize;
+        totalLoss += losses.endShotSize;
+      }
 
-    if (instruction.endSetup.subjectView) {
-      losses.endSubjectView =
-        calculateSubjectViewLoss(
-          lastFrame.position,
-          lastSubjectFrame.position,
-          getDesiredHorizontalAngle(instruction.endSetup.subjectView)
-        ) * LOSS_SCALE_FACTORS.subjectView;
-      totalLoss += losses.endSubjectView;
-    }
+      if (instruction.dynamic.endSetup.subjectView) {
+        losses.endSubjectView =
+          calculateSubjectViewLoss(
+            lastFrame.position,
+            lastSubjectFrame.position,
+            getDesiredHorizontalAngle(instruction.dynamic.endSetup.subjectView)
+          ) * LOSS_SCALE_FACTORS.subjectView;
+        totalLoss += losses.endSubjectView;
+      }
 
-    if (instruction.endSetup.subjectFraming) {
-      losses.endFraming =
-        calculateFramingLoss(
-          lastFrame,
-          lastSubjectFrame.position,
-          instruction.endSetup.subjectFraming
-        ) * LOSS_SCALE_FACTORS.subjectFraming;
-      totalLoss += losses.endFraming;
+      if (instruction.dynamic.endSetup.subjectFraming) {
+        losses.endFraming =
+          calculateFramingLoss(
+            lastFrame,
+            lastSubjectFrame.position,
+            instruction.dynamic.endSetup.subjectFraming
+          ) * LOSS_SCALE_FACTORS.subjectFraming;
+        totalLoss += losses.endFraming;
+      }
     }
   }
 
