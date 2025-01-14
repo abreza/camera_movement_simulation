@@ -15,7 +15,7 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
     subjectCount: 5,
     instructionCount: 1,
     minFrameCount: 30,
-    maxFrameCount: 120,
+    maxFrameCount: 300,
   });
 
   const handleChange =
@@ -90,7 +90,7 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
         Frame Count Range
       </Typography>
       <Slider
-        value={[options.minFrameCount ?? 30, options.maxFrameCount ?? 120]}
+        value={[options.minFrameCount ?? 30, options.maxFrameCount ?? 300]}
         onChange={(event, newValue) => {
           setOptions((prevOptions: any) => ({
             ...prevOptions,

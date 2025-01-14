@@ -17,11 +17,7 @@ import {
   cameraMovementTypeLabels,
   movementSpeedLabels,
 } from "./enumLabels";
-import { SHOT_SIZE_ORDER } from "./constant";
-
-const getShotSizeIndex = (shotSize: ShotSize): number => {
-  return SHOT_SIZE_ORDER.indexOf(shotSize);
-};
+import { getShotSizeIndex } from "../constants";
 
 const MOVEMENT_VALIDATION_RULES = {
   [CameraMovementType.DollyIn]: {

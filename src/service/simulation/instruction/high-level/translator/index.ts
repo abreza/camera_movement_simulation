@@ -1,6 +1,7 @@
 import {
   CinematographyPrompt,
   DynamicMode,
+  Scale,
   SimulationInstruction,
 } from "@/service/simulation/instruction/types";
 import {
@@ -9,6 +10,11 @@ import {
   mapMovementSpeedToEasing,
 } from "./movement";
 import { mapCinematographySetupToConfig, autoGenerateEndSetup } from "./setup";
+import { highLevelInstructionRules } from "../rules";
+import {
+  getSimpleMovementDirection,
+  getSimpleMovementMode,
+} from "./simple-movement";
 
 export function translatePromptToSimulationInstruction(
   prompt: CinematographyPrompt,
@@ -17,33 +23,50 @@ export function translatePromptToSimulationInstruction(
     subjectIndex?: number;
   }
 ): SimulationInstruction {
-  const { frameCount = 120, subjectIndex = 0 } = options || {};
+  const { frameCount = 66, subjectIndex = 0 } = options || {};
+  const { movement, initial, final } = prompt;
 
-  const movementEasing = mapMovementSpeedToEasing(prompt.movement.speed);
+  const movementEasing = mapMovementSpeedToEasing(movement.speed);
+  const constraints = buildConstraintsForMovement(movement.type);
+  const initialSetup = mapCinematographySetupToConfig(initial);
 
-  const subjectAwareInterpolation = determineSubjectAwareInterpolation(
-    prompt.movement.type
-  );
+  const isSimpleMovement =
+    highLevelInstructionRules[movement.type]?.simpleMovement;
 
-  const constraints = buildConstraintsForMovement(prompt.movement.type);
+  if (isSimpleMovement) {
+    return {
+      frameCount,
+      subjectIndex,
+      initialSetup,
+      constraints,
+      dynamic: {
+        type: DynamicMode.Simple,
+        easing: movementEasing,
+        scale: Scale.Medium,
+        direction: getSimpleMovementDirection(movement.type),
+        movementMode: getSimpleMovementMode(movement.type),
+      },
+    };
+  } else {
+    const subjectAwareInterpolation = determineSubjectAwareInterpolation(
+      movement.type
+    );
+    const endSetup = {
+      ...autoGenerateEndSetup(initial, movement.type),
+      ...mapCinematographySetupToConfig(final),
+    };
 
-  const initialSetup = mapCinematographySetupToConfig(prompt.initial);
-
-  const endSetup = {
-    ...autoGenerateEndSetup(prompt.initial, prompt.movement.type),
-    ...mapCinematographySetupToConfig(prompt.final),
-  };
-
-  return {
-    frameCount,
-    subjectIndex,
-    initialSetup,
-    dynamic: {
-      type: DynamicMode.Interpolation,
-      easing: movementEasing,
-      endSetup,
-      subjectAwareInterpolation,
-    },
-    constraints,
-  };
+    return {
+      frameCount,
+      subjectIndex,
+      initialSetup,
+      constraints,
+      dynamic: {
+        type: DynamicMode.Interpolation,
+        easing: movementEasing,
+        endSetup,
+        subjectAwareInterpolation,
+      },
+    };
+  }
 }

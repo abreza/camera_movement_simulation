@@ -78,8 +78,6 @@ export const cameraMovementTypeLabels: Record<CameraMovementType, string> = {
   [CameraMovementType.DutchRight]: "Dutch Right",
   [CameraMovementType.Follow]: "Follow",
   [CameraMovementType.Track]: "Track",
-  [CameraMovementType.PedestalFollow]: "Pedestal & Follow",
-  [CameraMovementType.TruckFollow]: "Truck & Follow",
 };
 
 export const movementSpeedLabels: Record<MovementSpeed, string> = {

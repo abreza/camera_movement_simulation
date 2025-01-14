@@ -5,10 +5,10 @@ import {
 
 export const highLevelInstructionRules: Record<
   CameraMovementType,
-  { cameraAware?: boolean; disabledFinalSetup?: (keyof SetupConfig)[] }
+  { simpleMovement?: boolean; disabledFinalSetup?: (keyof SetupConfig)[] }
 > = {
   static: {
-    cameraAware: true,
+    simpleMovement: true,
   },
   follow: {
     disabledFinalSetup: ["cameraAngle", "subjectView"],
@@ -17,16 +17,16 @@ export const highLevelInstructionRules: Record<
     disabledFinalSetup: ["cameraAngle", "subjectView"],
   },
   panLeft: {
-    cameraAware: true,
+    simpleMovement: true,
   },
   panRight: {
-    cameraAware: true,
+    simpleMovement: true,
   },
   tiltUp: {
-    cameraAware: true,
+    simpleMovement: true,
   },
   tiltDown: {
-    cameraAware: true,
+    simpleMovement: true,
   },
   dollyIn: {
     disabledFinalSetup: ["cameraAngle", "subjectView"],
@@ -34,23 +34,17 @@ export const highLevelInstructionRules: Record<
   dollyOut: {
     disabledFinalSetup: ["cameraAngle", "subjectView"],
   },
-  truckFollow: {
-    cameraAware: true,
-  },
-  pedestalFollow: {
-    cameraAware: true,
-  },
   truckLeft: {
-    cameraAware: true,
+    simpleMovement: true,
   },
   truckRight: {
-    cameraAware: true,
+    simpleMovement: true,
   },
   pedestalUp: {
-    cameraAware: true,
+    simpleMovement: true,
   },
   pedestalDown: {
-    cameraAware: true,
+    simpleMovement: true,
   },
   arcLeft: {
     disabledFinalSetup: ["subjectView"],

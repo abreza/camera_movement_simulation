@@ -9,10 +9,11 @@ import {
 } from "@/service/simulation/instruction/types";
 
 export function buildConstraintsForMovement(
-  movementType: CameraMovementType
+  movementType: CameraMovementType,
+  hasEndSetup: boolean = false
 ): ConstraintsConfig {
   const baseConstraints: ConstraintsConfig = {
-    allFramesVisibility: true,
+    allFramesVisibility: hasEndSetup,
     lockedMovement: {
       left: false,
       right: false,
@@ -36,6 +37,7 @@ export function buildConstraintsForMovement(
     case CameraMovementType.Static:
       return {
         ...baseConstraints,
+        allFramesVisibility: false,
         lockedMovement: {
           left: true,
           right: true,
@@ -58,6 +60,7 @@ export function buildConstraintsForMovement(
     case CameraMovementType.PanRight:
       return {
         ...baseConstraints,
+        allFramesVisibility: false,
         lockedMovement: {
           left: true,
           right: true,
@@ -80,6 +83,7 @@ export function buildConstraintsForMovement(
     case CameraMovementType.TiltDown:
       return {
         ...baseConstraints,
+        allFramesVisibility: false,
         lockedMovement: {
           left: true,
           right: true,
@@ -144,79 +148,24 @@ export function buildConstraintsForMovement(
 
     case CameraMovementType.CraneUp:
     case CameraMovementType.CraneDown:
-      return {
-        ...baseConstraints,
-        lockedMovement: {
-          left: false,
-          right: false,
-          up: false,
-          down: false,
-          forward: false,
-          backward: false,
-        },
-        lockedRotation: {
-          left: false,
-          right: false,
-          up: false,
-          down: false,
-          rollClockwise: true,
-          rollNonClockwise: true,
-        },
-      };
 
     case CameraMovementType.DollyIn:
     case CameraMovementType.DollyOut:
-      return {
-        ...baseConstraints,
-        lockedMovement: {
-          left: true,
-          right: true,
-          up: true,
-          down: true,
-          forward: movementType === CameraMovementType.DollyOut,
-          backward: movementType === CameraMovementType.DollyIn,
-        },
-        lockedRotation: {
-          left: true,
-          right: true,
-          up: true,
-          down: true,
-          rollClockwise: true,
-          rollNonClockwise: true,
-        },
-      };
 
     case CameraMovementType.DollyInZoomOut:
     case CameraMovementType.DollyOutZoomIn:
-      return {
-        ...baseConstraints,
-        lockedMovement: {
-          left: true,
-          right: true,
-          up: true,
-          down: true,
-          forward: movementType === CameraMovementType.DollyOutZoomIn,
-          backward: movementType === CameraMovementType.DollyInZoomOut,
-        },
-        lockedRotation: {
-          left: true,
-          right: true,
-          up: true,
-          down: true,
-          rollClockwise: true,
-          rollNonClockwise: true,
-        },
-      };
 
     case CameraMovementType.ArcLeft:
     case CameraMovementType.ArcRight:
+
+    case CameraMovementType.DutchLeft:
+    case CameraMovementType.DutchRight:
       return {
         ...baseConstraints,
         allFramesVisibility: true,
       };
 
-    case CameraMovementType.DutchLeft:
-    case CameraMovementType.DutchRight:
+    case CameraMovementType.Follow:
       return {
         ...baseConstraints,
         lockedMovement: {
@@ -227,34 +176,18 @@ export function buildConstraintsForMovement(
           forward: true,
           backward: true,
         },
+      };
+
+    case CameraMovementType.Track:
+      return {
+        ...baseConstraints,
         lockedRotation: {
           left: true,
           right: true,
           up: true,
           down: true,
-          rollClockwise: movementType === CameraMovementType.DutchLeft,
-          rollNonClockwise: movementType === CameraMovementType.DutchRight,
-        },
-      };
-
-    case CameraMovementType.Follow:
-      return {
-        ...baseConstraints,
-        lockedMovement: {
-          left: false,
-          right: false,
-          up: false,
-          down: false,
-          forward: false,
-          backward: false,
-        },
-        lockedRotation: {
-          left: false,
-          right: false,
-          up: false,
-          down: false,
-          rollClockwise: false,
-          rollNonClockwise: false,
+          rollClockwise: true,
+          rollNonClockwise: true,
         },
         staticDistance: true,
       };
@@ -271,6 +204,7 @@ export function determineSubjectAwareInterpolation(
     case CameraMovementType.ArcLeft:
     case CameraMovementType.ArcRight:
     case CameraMovementType.Follow:
+    case CameraMovementType.Track:
     case CameraMovementType.DollyIn:
     case CameraMovementType.DollyInZoomOut:
     case CameraMovementType.DollyOut:

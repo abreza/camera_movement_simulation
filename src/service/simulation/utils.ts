@@ -19,28 +19,44 @@ export interface ProjectedBounds {
   center: THREE.Vector2;
 }
 
+const projectPointUsingThreeJsCamera = (
+  point: THREE.Vector3,
+  camera: THREE.PerspectiveCamera
+): THREE.Vector2 => {
+  debugger;
+  const ndc = point.clone().project(camera);
+
+  return new THREE.Vector2(ndc.x, ndc.y);
+};
+
+export const makeThreeJsCamera = (
+  cameraParams: CameraParameters
+): THREE.PerspectiveCamera => {
+  const tempCamera = new THREE.PerspectiveCamera();
+
+  tempCamera.position.copy(cameraParams.position);
+  tempCamera.rotation.copy(cameraParams.rotation);
+  tempCamera.setFocalLength(cameraParams.focalLength);
+
+  tempCamera.updateMatrixWorld();
+  return tempCamera;
+};
+
 export const projectPoint = (
   point: THREE.Vector3,
   cameraParams: CameraParameters
 ): THREE.Vector2 => {
-  const tempCamera = new THREE.PerspectiveCamera();
-  tempCamera.setFocalLength(cameraParams.focalLength);
-
-  tempCamera.position.copy(cameraParams.position);
-  tempCamera.rotation.copy(cameraParams.rotation);
-
-  tempCamera.updateProjectionMatrix();
-
-  const ndc = point.clone().project(tempCamera);
-
-  return new THREE.Vector2(ndc.x, ndc.y);
+  const tempCamera = makeThreeJsCamera(cameraParams);
+  return projectPointUsingThreeJsCamera(point, tempCamera);
 };
 
 export const projectBoundingBox = (
   dimensions: SubjectDimensions,
   position: THREE.Vector3,
-  camera: CameraParameters
+  cameraParams: CameraParameters
 ): ProjectedBounds => {
+  const tempCamera = makeThreeJsCamera(cameraParams);
+
   const halfWidth = dimensions.width / 2;
   const halfHeight = dimensions.height / 2;
   const halfDepth = dimensions.depth / 2;
@@ -56,7 +72,9 @@ export const projectBoundingBox = (
     new THREE.Vector3(halfWidth, halfHeight, halfDepth).add(position),
   ];
 
-  const projectedPoints = corners.map((corner) => projectPoint(corner, camera));
+  const projectedPoints = corners.map((corner) =>
+    projectPointUsingThreeJsCamera(corner, tempCamera)
+  );
 
   const minX = Math.min(...projectedPoints.map((p) => p.x));
   const maxX = Math.max(...projectedPoints.map((p) => p.x));

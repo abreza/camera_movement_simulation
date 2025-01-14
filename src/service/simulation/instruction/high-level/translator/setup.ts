@@ -10,21 +10,6 @@ import {
 } from "@/service/simulation/instruction/types";
 import { getCloserShotSize, getFartherShotSize } from "./shotSize";
 
-export function getQuarterSideView(currentView: SubjectView): SubjectView {
-  switch (currentView) {
-    case SubjectView.Front:
-      return SubjectView.ThreeQuarterFrontLeft;
-    case SubjectView.Left:
-      return SubjectView.ThreeQuarterFrontLeft;
-    case SubjectView.Right:
-      return SubjectView.ThreeQuarterFrontRight;
-    case SubjectView.Back:
-      return SubjectView.ThreeQuarterBackRight;
-    default:
-      return SubjectView.ThreeQuarterFrontLeft;
-  }
-}
-
 export function mapCinematographySetupToConfig(
   setup: Partial<CinematographySetup>
 ): SetupConfig {
@@ -42,12 +27,7 @@ export function autoGenerateEndSetup(
   initial: CinematographySetup,
   movementType: CameraMovementType
 ): SetupConfig {
-  const endSetup: SetupConfig = {
-    cameraAngle: initial.cameraAngle,
-    shotSize: initial.shotSize,
-    subjectView: initial.subjectView,
-    subjectFraming: { position: initial.subjectFraming },
-  };
+  const endSetup: SetupConfig = {};
 
   switch (movementType) {
     case CameraMovementType.DollyIn:
@@ -61,8 +41,61 @@ export function autoGenerateEndSetup(
       break;
 
     case CameraMovementType.ArcLeft:
+      switch (initial.subjectView) {
+        case SubjectView.Front:
+          endSetup.subjectView = SubjectView.ThreeQuarterFrontLeft;
+          break;
+        case SubjectView.ThreeQuarterFrontLeft:
+          endSetup.subjectView = SubjectView.Left;
+          break;
+        case SubjectView.Left:
+          endSetup.subjectView = SubjectView.ThreeQuarterBackLeft;
+          break;
+        case SubjectView.ThreeQuarterBackLeft:
+          endSetup.subjectView = SubjectView.Back;
+          break;
+        case SubjectView.Back:
+          endSetup.subjectView = SubjectView.ThreeQuarterBackRight;
+          break;
+        case SubjectView.ThreeQuarterBackRight:
+          endSetup.subjectView = SubjectView.Right;
+          break;
+        case SubjectView.Right:
+          endSetup.subjectView = SubjectView.ThreeQuarterFrontRight;
+          break;
+        case SubjectView.ThreeQuarterFrontRight:
+          endSetup.subjectView = SubjectView.Front;
+          break;
+      }
+      break;
+
     case CameraMovementType.ArcRight:
-      endSetup.subjectView = getQuarterSideView(initial.subjectView);
+      switch (initial.subjectView) {
+        case SubjectView.Front:
+          endSetup.subjectView = SubjectView.ThreeQuarterFrontRight;
+          break;
+        case SubjectView.ThreeQuarterFrontRight:
+          endSetup.subjectView = SubjectView.Right;
+          break;
+        case SubjectView.Right:
+          endSetup.subjectView = SubjectView.ThreeQuarterBackRight;
+          break;
+        case SubjectView.ThreeQuarterBackRight:
+          endSetup.subjectView = SubjectView.Back;
+          break;
+        case SubjectView.Back:
+          endSetup.subjectView = SubjectView.ThreeQuarterBackLeft;
+          break;
+        case SubjectView.ThreeQuarterBackLeft:
+          endSetup.subjectView = SubjectView.Left;
+          break;
+        case SubjectView.Left:
+          endSetup.subjectView = SubjectView.ThreeQuarterFrontLeft;
+          break;
+        case SubjectView.ThreeQuarterFrontLeft:
+          endSetup.subjectView = SubjectView.Front;
+          break;
+      }
       break;
 
     case CameraMovementType.DutchLeft:
@@ -74,58 +107,71 @@ export function autoGenerateEndSetup(
       break;
 
     case CameraMovementType.CraneUp:
+      switch (initial.cameraAngle) {
+        case CameraVerticalAngle.Low:
+          endSetup.cameraAngle = CameraVerticalAngle.Eye;
+          break;
+        case CameraVerticalAngle.Eye:
+          endSetup.cameraAngle = CameraVerticalAngle.High;
+          break;
+        case CameraVerticalAngle.High:
+          endSetup.cameraAngle = CameraVerticalAngle.Overhead;
+          break;
+        case CameraVerticalAngle.Overhead:
+          endSetup.cameraAngle = CameraVerticalAngle.BirdsEye;
+          break;
+      }
+      break;
+
     case CameraMovementType.CraneDown:
-      if (
-        movementType === CameraMovementType.CraneUp &&
-        initial.cameraAngle === CameraVerticalAngle.Eye
-      ) {
-        endSetup.cameraAngle = CameraVerticalAngle.High;
-      } else if (
-        movementType === CameraMovementType.CraneDown &&
-        initial.cameraAngle === CameraVerticalAngle.Eye
-      ) {
-        endSetup.cameraAngle = CameraVerticalAngle.Low;
+      switch (initial.cameraAngle) {
+        case CameraVerticalAngle.BirdsEye:
+          endSetup.cameraAngle = CameraVerticalAngle.Overhead;
+          break;
+        case CameraVerticalAngle.Overhead:
+          endSetup.cameraAngle = CameraVerticalAngle.High;
+          break;
+        case CameraVerticalAngle.High:
+          endSetup.cameraAngle = CameraVerticalAngle.Eye;
+          break;
+        case CameraVerticalAngle.Eye:
+          endSetup.cameraAngle = CameraVerticalAngle.Low;
+          break;
       }
       break;
 
     case CameraMovementType.PanLeft:
       endSetup.subjectFraming = {
-        ...endSetup.subjectFraming,
         position: SubjectInFramePosition.Right,
       };
       break;
 
     case CameraMovementType.PanRight:
       endSetup.subjectFraming = {
-        ...endSetup.subjectFraming,
         position: SubjectInFramePosition.Left,
       };
       break;
 
     case CameraMovementType.TiltUp:
       endSetup.subjectFraming = {
-        ...endSetup.subjectFraming,
         position: SubjectInFramePosition.Bottom,
       };
       break;
 
     case CameraMovementType.TiltDown:
       endSetup.subjectFraming = {
-        ...endSetup.subjectFraming,
         position: SubjectInFramePosition.Top,
       };
       break;
 
     case CameraMovementType.TruckLeft:
       endSetup.subjectFraming = {
-        ...endSetup.subjectFraming,
         position: SubjectInFramePosition.Left,
       };
       break;
 
     case CameraMovementType.TruckRight:
       endSetup.subjectFraming = {
-        ...endSetup.subjectFraming,
         position: SubjectInFramePosition.Right,
       };
       break;
@@ -133,7 +179,6 @@ export function autoGenerateEndSetup(
     case CameraMovementType.PedestalUp:
       endSetup.cameraAngle = CameraVerticalAngle.High;
       endSetup.subjectFraming = {
-        ...endSetup.subjectFraming,
         position: SubjectInFramePosition.Bottom,
       };
       break;
@@ -141,11 +186,13 @@ export function autoGenerateEndSetup(
     case CameraMovementType.PedestalDown:
       endSetup.cameraAngle = CameraVerticalAngle.Low;
       endSetup.subjectFraming = {
-        ...endSetup.subjectFraming,
         position: SubjectInFramePosition.Top,
       };
       break;
 
+    case CameraMovementType.Static:
+    case CameraMovementType.Follow:
+    case CameraMovementType.Track:
     default:
       break;
   }

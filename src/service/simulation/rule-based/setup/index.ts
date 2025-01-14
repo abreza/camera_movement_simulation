@@ -2,6 +2,7 @@ import {
   CameraParameters,
   ConstraintsConfig,
   SetupConfig,
+  ShotSize,
 } from "../../instruction/types";
 import { Subject, SubjectFrame } from "../../../subjects/types";
 import { calculatePositionByAngles } from "./angles";
@@ -18,11 +19,10 @@ export const getCameraBySetup = (
   const position = calculatePositionByAngles(setup, frame);
 
   const { scale = 1, reginOfInterest } = calculateReginOfInterest(
-    setup,
+    setup.shotSize,
     subject,
     frame
   );
-
   const updatedPosition = applyCameraDistance(scale, reginOfInterest, position);
 
   return {
@@ -31,14 +31,4 @@ export const getCameraBySetup = (
     focalLength: DEFAULT_FOCAL_LENGTH,
     aspectRatio: DEFAULT_ASPECT_RATIO,
   };
-};
-
-export const getCameraBySetupConstrained = (
-  endSetup: SetupConfig,
-  subject: Subject,
-  endFrame: SubjectFrame,
-  startParams: CameraParameters,
-  constraints?: ConstraintsConfig
-): CameraParameters => {
-  return startParams;
 };

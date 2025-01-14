@@ -55,7 +55,7 @@ export class SceneManager {
       metalness: 0.2,
     });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+    floor.rotation.x = -Math.PI / 2;
     floor.position.y = 0;
     floor.receiveShadow = true;
     this.worldScene.add(floor);
@@ -137,7 +137,6 @@ export class SceneManager {
 
   private cameraMesh: THREE.Group | null = null;
 
-  // Add this method to your SceneManager class:
   private initCameraMesh(): void {
     if (this.cameraMesh) {
       this.worldScene.remove(this.cameraMesh);
@@ -147,14 +146,12 @@ export class SceneManager {
     this.worldScene.add(this.cameraMesh);
   }
 
-  // Modify your updateCamera method to include cameraMesh updates:
   updateCamera(camera: CameraParameters): void {
     this.camera.position.copy(camera.position);
     this.camera.rotation.copy(camera.rotation);
     this.camera.setFocalLength(camera.focalLength);
     this.camera.updateMatrixWorld();
 
-    // Update camera mesh position and rotation
     if (this.cameraMesh) {
       this.cameraMesh.position.copy(camera.position);
       this.cameraMesh.rotation.copy(camera.rotation);

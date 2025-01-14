@@ -9,9 +9,10 @@ import {
   DynamicMode,
   InterpolationDynamic,
   Direction,
-  MovementDynamic,
+  SimpleMovement,
   MovementMode,
   Scale,
+  InstructionDynamic,
 } from "@/service/simulation/instruction/types";
 import { defaultSimulationInstruction } from "@/service/simulation/instruction/constants";
 
@@ -246,6 +247,13 @@ export const useInstructionForm = () => {
     });
   };
 
+  const setDynamic = (dynamic: InstructionDynamic) => {
+    setFormState((prev) => ({
+      ...prev,
+      dynamic,
+    }));
+  };
+
   const setDynamicType = (type: DynamicMode) => {
     setFormState((prev) => {
       const dynamic =
@@ -255,11 +263,11 @@ export const useInstructionForm = () => {
               easing: prev.dynamic.easing,
             } as InterpolationDynamic)
           : ({
-              type: DynamicMode.Movement,
+              type: DynamicMode.Simple,
               direction: Direction.Right,
               scale: Scale.Medium,
               movementMode: MovementMode.Transition,
-            } as MovementDynamic);
+            } as SimpleMovement);
 
       return {
         ...prev,
@@ -298,6 +306,7 @@ export const useInstructionForm = () => {
       setEndShotSize,
       setEndSubjectView,
       setEndSubjectFraming,
+      setDynamic,
       setDynamicType,
     },
     resetForm,

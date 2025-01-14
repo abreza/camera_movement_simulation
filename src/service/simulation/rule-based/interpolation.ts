@@ -1,6 +1,11 @@
 import * as THREE from "three";
-import { CameraParameters } from "../instruction/types";
-import { SubjectInfo, SubjectFrame } from "../../subjects/types";
+import {
+  CameraParameters,
+  ConstraintsConfig,
+  InterpolationDynamic,
+} from "../instruction/types";
+import { SubjectFrame, SubjectDimensions } from "../../subjects/types";
+import { applyConstraintsOnFrame } from "./setup/constraints";
 
 const getFrontVector = (rotation: THREE.Euler): THREE.Vector3 => {
   const direction = new THREE.Vector3(0, 0, -1);
@@ -9,7 +14,7 @@ const getFrontVector = (rotation: THREE.Euler): THREE.Vector3 => {
   return direction.applyMatrix4(rotationMatrix).normalize();
 };
 
-const interpolateNormal = (
+export const normalInterpolate = (
   start: CameraParameters,
   end: CameraParameters,
   t: number
@@ -55,37 +60,49 @@ const getSubjectRelativeParameters = (
   return { distance, relativeAngle };
 };
 
-const interpolateSubjectAware = (
+export const subjectAwareInterpolate = (
   start: CameraParameters,
   end: CameraParameters,
   startSubject: SubjectFrame,
   currentSubject: SubjectFrame,
   endSubject: SubjectFrame,
-  t: number
+  t: number,
+  rotationInterpolation: boolean = true
 ): CameraParameters => {
   const startParams = getSubjectRelativeParameters(start, startSubject);
   const endParams = getSubjectRelativeParameters(end, endSubject);
+  let interpolatedPosition: THREE.Vector3;
+  let interpolatedRotation: THREE.Euler;
 
   const interpolatedDistance =
     startParams.distance + (endParams.distance - startParams.distance) * t;
-  const interpolatedAngle =
-    startParams.relativeAngle +
-    (endParams.relativeAngle - startParams.relativeAngle) * t;
 
-  const subjectFrontVector = getFrontVector(currentSubject.rotation);
-  const rightVector = new THREE.Vector3(1, 0, 0).applyEuler(
-    currentSubject.rotation
-  );
+  let directionToSubject: THREE.Vector3;
 
-  const cameraOffset = new THREE.Vector3();
-  cameraOffset
-    .copy(subjectFrontVector)
-    .multiplyScalar(Math.cos(interpolatedAngle))
-    .add(rightVector.multiplyScalar(Math.sin(interpolatedAngle)));
+  if (!rotationInterpolation) {
+    directionToSubject = new THREE.Vector3()
+      .subVectors(currentSubject.position, start.position)
+      .normalize();
+  } else {
+    const interpolatedAngle =
+      startParams.relativeAngle +
+      (endParams.relativeAngle - startParams.relativeAngle) * t;
+    const rightVector = new THREE.Vector3(1, 0, 0).applyEuler(
+      currentSubject.rotation
+    );
 
-  const interpolatedPosition = currentSubject.position
+    directionToSubject = getFrontVector(currentSubject.rotation)
+      .multiplyScalar(Math.cos(interpolatedAngle))
+      .add(rightVector.multiplyScalar(Math.sin(interpolatedAngle)));
+
+    interpolatedPosition = currentSubject.position
+      .clone()
+      .add(directionToSubject.multiplyScalar(interpolatedDistance));
+  }
+
+  interpolatedPosition = currentSubject.position
     .clone()
-    .add(cameraOffset.multiplyScalar(interpolatedDistance));
+    .sub(directionToSubject.multiplyScalar(interpolatedDistance));
 
   const lookAtMatrix = new THREE.Matrix4();
   lookAtMatrix.lookAt(
@@ -93,9 +110,7 @@ const interpolateSubjectAware = (
     currentSubject.position,
     new THREE.Vector3(0, 1, 0)
   );
-  const interpolatedRotation = new THREE.Euler().setFromRotationMatrix(
-    lookAtMatrix
-  );
+  interpolatedRotation = new THREE.Euler().setFromRotationMatrix(lookAtMatrix);
 
   const interpolatedFocalLength =
     start.focalLength + (end.focalLength - start.focalLength) * t;
@@ -110,24 +125,50 @@ const interpolateSubjectAware = (
   };
 };
 
-export const interpolateParameters = (
-  start: CameraParameters,
-  end: CameraParameters,
-  t: number,
-  subjectAwareInterpolation: boolean = false,
-  subjectInfo?: SubjectInfo
-): CameraParameters => {
-  if (subjectAwareInterpolation && subjectInfo?.frames) {
-    const frameIndex = Math.floor(t * (subjectInfo.frames.length - 1));
-    return interpolateSubjectAware(
-      start,
-      end,
-      subjectInfo.frames[0],
-      subjectInfo.frames[frameIndex],
-      subjectInfo.frames[subjectInfo.frames.length - 1],
-      t
-    );
-  }
+export const interpolateCameraParameters = (
+  startParams: CameraParameters,
+  endParams: CameraParameters,
+  instructionDynamic: InterpolationDynamic,
+  subjectDimensions: SubjectDimensions,
+  subjectFrames: SubjectFrame[],
+  easedT: number[],
+  rotationInterpolation: boolean = true,
+  constraints?: ConstraintsConfig
+): CameraParameters[] => {
+  const frames: CameraParameters[] = [];
+  const subjectAwareInterpolation =
+    instructionDynamic.subjectAwareInterpolation;
+  const startSubjectFrame = subjectFrames[0];
+  const endSubjectFrame = subjectFrames[subjectFrames.length - 1];
+  const fullEndParams: CameraParameters = { ...startParams, ...endParams };
 
-  return interpolateNormal(start, end, t);
+  easedT.forEach((t, i) => {
+    const currentSubjectFrame = subjectFrames[i];
+    const frameParams = subjectAwareInterpolation
+      ? subjectAwareInterpolate(
+          startParams,
+          endParams,
+          startSubjectFrame,
+          currentSubjectFrame,
+          endSubjectFrame,
+          t,
+          rotationInterpolation
+        )
+      : normalInterpolate(startParams, fullEndParams, t);
+
+    const prevCameraParams = i > 0 ? frames[i - 1] : startParams;
+    const subjectFrameCurrent =
+      subjectFrames[Math.min(i, subjectFrames.length - 1)];
+
+    frames.push(
+      applyConstraintsOnFrame(
+        frameParams,
+        prevCameraParams,
+        constraints,
+        subjectFrameCurrent,
+        subjectDimensions
+      )
+    );
+  });
+  return frames;
 };

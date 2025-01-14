@@ -15,7 +15,7 @@ import {
   MovementEasing,
   DynamicMode,
   InterpolationDynamic,
-  MovementDynamic,
+  SimpleMovement,
   Direction,
   MovementMode,
   Scale,
@@ -24,7 +24,7 @@ import { useInstructionForm } from "./useInstructionForm";
 import SetupControls from "./components/SetupControls";
 
 export interface DynamicProps {
-  dynamic: InterpolationDynamic | MovementDynamic;
+  dynamic: InterpolationDynamic | SimpleMovement;
   setters: ReturnType<typeof useInstructionForm>["setters"];
 }
 
@@ -49,7 +49,7 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
         sx={{ mb: 1 }}
         color="primary"
       >
-        <ToggleButton value={DynamicMode.Movement} aria-label="simple movement">
+        <ToggleButton value={DynamicMode.Simple} aria-label="simple movement">
           Simple Movement
         </ToggleButton>
         <ToggleButton
@@ -60,19 +60,18 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
         </ToggleButton>
       </ToggleButtonGroup>
 
-      {dynamic.type === DynamicMode.Movement && (
+      {dynamic.type === DynamicMode.Simple && (
         <>
           <FormControl fullWidth sx={{ mb: 2 }} size="small">
             <InputLabel>Movement Direction</InputLabel>
             <Select
               value={dynamic.direction}
-              onChange={(e) => {
-                const newDynamic = {
+              onChange={(e) =>
+                setters.setDynamic({
                   ...dynamic,
                   direction: e.target.value as Direction,
-                };
-                setters.setDynamicType(DynamicMode.Movement);
-              }}
+                })
+              }
               label="Movement Direction"
             >
               {Object.values(Direction).map((direction) => (
@@ -87,13 +86,12 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
             <InputLabel>Movement Mode</InputLabel>
             <Select
               value={dynamic.movementMode}
-              onChange={(e) => {
-                const newDynamic = {
+              onChange={(e) =>
+                setters.setDynamic({
                   ...dynamic,
                   movementMode: e.target.value as MovementMode,
-                };
-                setters.setDynamicType(DynamicMode.Movement);
-              }}
+                })
+              }
               label="Movement Mode"
             >
               {Object.values(MovementMode).map((mode) => (
@@ -108,13 +106,12 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
             <InputLabel>Movement Scale</InputLabel>
             <Select
               value={dynamic.scale}
-              onChange={(e) => {
-                const newDynamic = {
+              onChange={(e) =>
+                setters.setDynamic({
                   ...dynamic,
                   scale: e.target.value as Scale,
-                };
-                setters.setDynamicType(DynamicMode.Movement);
-              }}
+                })
+              }
               label="Movement Scale"
             >
               {Object.values(Scale).map((scale) => (

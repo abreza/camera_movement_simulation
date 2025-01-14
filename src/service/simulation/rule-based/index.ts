@@ -5,23 +5,24 @@ import {
 } from "../instruction/types";
 import { SubjectInfo } from "../../subjects/types";
 import { getEasedTime } from "../instruction/helpers/movement-easing";
-import { getCameraBySetup, getCameraBySetupConstrained } from "./setup";
-import { interpolateParameters } from "./interpolation";
+import { getCameraBySetup } from "./setup";
+import { interpolateCameraParameters } from "./interpolation";
 import { applySpeedConstraints } from "./motion-constraint";
-import { applyConstraintsOnFrame } from "./setup/constraints";
+import { moveByEasing } from "./simple-movement";
 
 export const initCameraParameters = (
   instruction: SimulationInstruction,
   startCameraParameter: CameraParameters | undefined,
   subjectInfo: SubjectInfo | undefined
 ): CameraParameters[] => {
-  const frames: CameraParameters[] = [];
+  let frames: CameraParameters[] = [];
+  const subjectFrames = subjectInfo?.frames;
 
-  if (!subjectInfo?.frames?.length) {
+  if (!subjectInfo || !subjectFrames?.length) {
     return frames;
   }
 
-  const startSubjectFrame = subjectInfo.frames[0];
+  const startSubjectFrame = subjectFrames[0];
 
   const startParams =
     startCameraParameter ||
@@ -31,47 +32,41 @@ export const initCameraParameters = (
       startSubjectFrame
     );
 
-  const endSubjectFrame = subjectInfo.frames[subjectInfo.frames.length - 1];
+  const endSubjectFrame = subjectFrames[subjectFrames.length - 1];
+
+  const easedT = Array.from(Array(instruction.frameCount), (_, i) =>
+    getEasedTime(i / (instruction.frameCount - 1), instruction.dynamic.easing)
+  );
 
   if (instruction.dynamic.type === DynamicMode.Interpolation) {
     let endParams = instruction.dynamic.endSetup
-      ? getCameraBySetupConstrained(
+      ? getCameraBySetup(
           instruction.dynamic.endSetup,
           subjectInfo.subject,
-          endSubjectFrame,
-          startParams,
-          instruction.constraints
+          endSubjectFrame
         )
       : startParams;
-
-    for (let i = 0; i < instruction.frameCount; i++) {
-      const easedT = getEasedTime(
-        i / (instruction.frameCount - 1),
-        instruction.dynamic.easing
-      );
-
-      let frameParams = interpolateParameters(
-        startParams,
-        endParams,
-        easedT,
-        instruction.dynamic.subjectAwareInterpolation,
-        subjectInfo
-      );
-
-      const prevCameraParams = i > 0 ? frames[i - 1] : startParams;
-      const subjectFrameCurrent =
-        subjectInfo.frames[Math.min(i, subjectInfo.frames.length - 1)];
-
-      frameParams = applyConstraintsOnFrame(
-        frameParams,
-        prevCameraParams,
-        instruction.constraints,
-        subjectFrameCurrent,
-        subjectInfo.subject.dimensions
-      );
-
-      frames.push(frameParams);
-    }
+    const rotationInterpolation =
+      !!instruction.dynamic.endSetup.subjectView ||
+      !!instruction.dynamic.endSetup.cameraAngle;
+    frames = interpolateCameraParameters(
+      startParams,
+      endParams,
+      instruction.dynamic,
+      subjectInfo.subject.dimensions,
+      subjectFrames,
+      easedT,
+      rotationInterpolation,
+      instruction.constraints
+    );
+  } else {
+    frames = moveByEasing(
+      startParams,
+      instruction.dynamic,
+      easedT,
+      subjectFrames,
+      instruction.constraints?.allFramesVisibility
+    );
   }
 
   const constrainedFrames = applySpeedConstraints(

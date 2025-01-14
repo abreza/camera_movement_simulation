@@ -16,40 +16,9 @@ type ROIResult = {
   scale: number;
 };
 
-const interpolateDimensions = (
-  start: SubjectDimensions,
-  end: SubjectDimensions,
-  t: number
-): SubjectDimensions => {
-  if (t < 0) {
-    t = Math.abs(t);
-    return {
-      width: start.width * t,
-      height: start.height * t,
-      depth: start.depth * t,
-    };
-  }
-  return {
-    width: start.width + (end.width - start.width) * t,
-    height: start.height + (end.height - start.height) * t,
-    depth: start.depth + (end.depth - start.depth) * t,
-  };
-};
-
-const interpolateVector3 = (
-  start: THREE.Vector3,
-  end: THREE.Vector3,
-  t: number
-): THREE.Vector3 => {
-  if (t <= 0) {
-    return start;
-  }
-  return new THREE.Vector3().lerpVectors(start, end, t);
-};
-
 const getInterpolationFactor = (shotSize: ShotSize): number => {
   const shotSizeMap: { [key in ShotSize]: number } = {
-    [ShotSize.ExtremeCloseUp]: -0.5,
+    [ShotSize.ExtremeCloseUp]: 0,
     [ShotSize.CloseUp]: 0,
     [ShotSize.MediumCloseUp]: 0.25,
     [ShotSize.MediumShot]: 0.5,
@@ -63,14 +32,14 @@ const getInterpolationFactor = (shotSize: ShotSize): number => {
 
 const getShotScale = (shotSize: ShotSize): number => {
   const scaleMap: { [key in ShotSize]: number } = {
-    [ShotSize.ExtremeCloseUp]: 1,
+    [ShotSize.ExtremeCloseUp]: 2,
     [ShotSize.CloseUp]: 1,
     [ShotSize.MediumCloseUp]: 1,
     [ShotSize.MediumShot]: 1,
     [ShotSize.FullShot]: 1,
-    [ShotSize.LongShot]: 1.5,
-    [ShotSize.VeryLongShot]: 2,
-    [ShotSize.ExtremeLongShot]: 3,
+    [ShotSize.LongShot]: 0.75,
+    [ShotSize.VeryLongShot]: 0.5,
+    [ShotSize.ExtremeLongShot]: 0.3,
   };
   return scaleMap[shotSize];
 };
@@ -80,24 +49,23 @@ const getDefaultAttentionBox = (
 ): ReginOfInterest => {
   return {
     dimensions: {
-      width: subjectBox.dimensions.width,
+      width: subjectBox.dimensions.width * 0.5,
       height: subjectBox.dimensions.height * 0.5,
-      depth: subjectBox.dimensions.depth,
+      depth: subjectBox.dimensions.depth * 0.5,
     },
     position: new THREE.Vector3(
-      subjectBox.position.x,
+      subjectBox.position.x + subjectBox.dimensions.width * 0.25,
       subjectBox.position.y + subjectBox.dimensions.height * 0.25,
-      subjectBox.position.z
+      subjectBox.position.z + subjectBox.dimensions.depth * 0.25
     ),
   };
 };
 
 export const calculateReginOfInterest = (
-  setup: SetupConfig,
+  shotSize: ShotSize = ShotSize.MediumShot,
   subject: Subject,
   frame: SubjectFrame
 ): ROIResult => {
-  const shotSize = setup.shotSize || ShotSize.MediumShot;
   const scale = getShotScale(shotSize);
 
   const subjectBox: ReginOfInterest = {
@@ -112,12 +80,18 @@ export const calculateReginOfInterest = (
 
   return {
     reginOfInterest: {
-      dimensions: interpolateDimensions(
-        attentionBox.dimensions,
-        subjectBox.dimensions,
-        t
-      ),
-      position: interpolateVector3(
+      dimensions: {
+        width:
+          t * subjectBox.dimensions.width +
+          (1 - t) * attentionBox.dimensions.width,
+        height:
+          t * subjectBox.dimensions.height +
+          (1 - t) * attentionBox.dimensions.height,
+        depth:
+          t * subjectBox.dimensions.depth +
+          (1 - t) * attentionBox.dimensions.depth,
+      },
+      position: new THREE.Vector3().lerpVectors(
         attentionBox.position,
         subjectBox.position,
         t

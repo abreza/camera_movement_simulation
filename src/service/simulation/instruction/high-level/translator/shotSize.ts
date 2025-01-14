@@ -1,5 +1,5 @@
 import { ShotSize } from "@/service/simulation/instruction/types";
-import { getShotSizeIndex, SHOT_SIZE_ORDER } from "../constant";
+import { getShotSizeIndex, SHOT_SIZE_ORDER } from "../../constants";
 
 export function getCloserShotSize(currentShot: ShotSize): ShotSize {
   const index = getShotSizeIndex(currentShot);

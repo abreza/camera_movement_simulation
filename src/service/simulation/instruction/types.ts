@@ -156,7 +156,7 @@ export type ConstraintsConfig = {
 
 export enum DynamicMode {
   Interpolation = "interpolation",
-  Movement = "movement",
+  Simple = "simple",
 }
 
 export type DynamicBase = {
@@ -182,17 +182,19 @@ export enum MovementMode {
   Rotation = "rotation",
 }
 
-export type MovementDynamic = DynamicBase & {
-  type: DynamicMode.Movement;
+export type SimpleMovement = DynamicBase & {
+  type: DynamicMode.Simple;
   scale: Scale;
   direction: Direction;
   movementMode: MovementMode;
 };
 
+export type InstructionDynamic = InterpolationDynamic | SimpleMovement;
+
 export type SimulationInstruction = {
   frameCount: number;
   initialSetup: SetupConfig;
-  dynamic: InterpolationDynamic | MovementDynamic;
+  dynamic: InstructionDynamic;
   subjectIndex?: number;
   constraints?: ConstraintsConfig;
 };
@@ -209,9 +211,6 @@ export enum CameraMovementType {
   TiltDown = "tiltDown",
   DollyIn = "dollyIn",
   DollyOut = "dollyOut",
-
-  TruckFollow = "truckFollow",
-  PedestalFollow = "pedestalFollow",
 
   TruckLeft = "truckLeft",
   TruckRight = "truckRight",

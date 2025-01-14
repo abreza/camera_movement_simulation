@@ -81,6 +81,7 @@ export const LowLevelTab: FC<LowLevelTabProps> = ({
         instruction={formState}
         setters={setters}
         subjectsInfo={subjectsInfo}
+        isSimpleMovement={formState.dynamic.type === DynamicMode.Simple}
       />
 
       <Button

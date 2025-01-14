@@ -7,14 +7,9 @@ import {
   FormControlLabel,
   Switch,
 } from "@mui/material";
-import { MovementControl } from "./components/MovementControls";
-import { EasingChart } from "../../../components/EasingChart";
 import { StaticControls } from "./components/StaticControls";
 import { AdditionalConstraints } from "./components/AdditionalConstraints";
-import {
-  MovementEasing,
-  SimulationInstruction,
-} from "@/service/simulation/instruction/types";
+import { SimulationInstruction } from "@/service/simulation/instruction/types";
 import { useInstructionForm } from "./useInstructionForm";
 import { SubjectInfo } from "@/service/subjects/types";
 import { defaultSimulationInstruction } from "@/service/simulation/instruction/constants";
@@ -23,12 +18,14 @@ export interface GeneralSettingsProps {
   instruction: SimulationInstruction;
   setters: ReturnType<typeof useInstructionForm>["setters"];
   subjectsInfo: SubjectInfo[];
+  isSimpleMovement?: boolean;
 }
 
 export const GeneralSettings: FC<GeneralSettingsProps> = ({
   instruction,
   setters,
   subjectsInfo,
+  isSimpleMovement = false,
 }) => {
   return (
     <>
@@ -41,15 +38,6 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
         }
         label="Subject visible at all times"
         sx={{ mb: 1, width: "100%" }}
-      />
-
-      <MovementControl
-        type={instruction.dynamic.easing}
-        onTypeChange={setters.setDynamicEasing}
-        options={Object.values(MovementEasing)}
-        label="Movement Easing"
-        allowEmpty={false}
-        StartAdornmentComponent={EasingChart}
       />
 
       <FormControl fullWidth sx={{ mb: 2 }} size="small">
@@ -75,36 +63,41 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
           ))}
         </Select>
       </FormControl>
+      {!isSimpleMovement && (
+        <>
+          <StaticControls
+            lockedMovement={
+              instruction.constraints?.lockedMovement ||
+              defaultSimulationInstruction.constraints!.lockedMovement!
+            }
+            setLockedPosition={setters.setLockedPosition}
+            lockedRotation={
+              instruction.constraints?.lockedRotation ||
+              defaultSimulationInstruction.constraints!.lockedRotation!
+            }
+            setLockedRotation={setters.setLockedRotation}
+          />
 
-      <StaticControls
-        lockedMovement={
-          instruction.constraints?.lockedMovement ||
-          defaultSimulationInstruction.constraints!.lockedMovement!
-        }
-        setLockedPosition={setters.setLockedPosition}
-        lockedRotation={
-          instruction.constraints?.lockedRotation ||
-          defaultSimulationInstruction.constraints!.lockedRotation!
-        }
-        setLockedRotation={setters.setLockedRotation}
-      />
-
-      <AdditionalConstraints
-        staticDistance={instruction.constraints?.staticDistance}
-        setStaticDistance={setters.setStaticDistance}
-        staticCameraSubjectRotation={
-          instruction.constraints?.staticCameraSubjectRotation
-        }
-        setStaticCameraSubjectRotation={setters.setStaticCameraSubjectRotation}
-        importance={instruction.constraints?.importance || 1}
-        setImportance={setters.setImportance}
-        frameCount={instruction.frameCount}
-        setFrameCount={setters.setFrameCount}
-        maxAccelerate={instruction.constraints?.maxAccelerate}
-        setMaxAccelerate={setters.setMaxAccelerate}
-        maxSpeed={instruction.constraints?.maxSpeed}
-        setMaxSpeed={setters.setMaxSpeed}
-      />
+          <AdditionalConstraints
+            staticDistance={instruction.constraints?.staticDistance}
+            setStaticDistance={setters.setStaticDistance}
+            staticCameraSubjectRotation={
+              instruction.constraints?.staticCameraSubjectRotation
+            }
+            setStaticCameraSubjectRotation={
+              setters.setStaticCameraSubjectRotation
+            }
+            importance={instruction.constraints?.importance || 1}
+            setImportance={setters.setImportance}
+            frameCount={instruction.frameCount}
+            setFrameCount={setters.setFrameCount}
+            maxAccelerate={instruction.constraints?.maxAccelerate}
+            setMaxAccelerate={setters.setMaxAccelerate}
+            maxSpeed={instruction.constraints?.maxSpeed}
+            setMaxSpeed={setters.setMaxSpeed}
+          />
+        </>
+      )}
     </>
   );
 };
