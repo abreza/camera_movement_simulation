@@ -23,9 +23,7 @@ const projectPointUsingThreeJsCamera = (
   point: THREE.Vector3,
   camera: THREE.PerspectiveCamera
 ): THREE.Vector2 => {
-  debugger;
   const ndc = point.clone().project(camera);
-
   return new THREE.Vector2(ndc.x, ndc.y);
 };
 

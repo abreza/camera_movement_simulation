@@ -1,15 +1,11 @@
-import {
-  CameraParameters,
-  ConstraintsConfig,
-  SetupConfig,
-  ShotSize,
-} from "../../instruction/types";
+import { CameraParameters, SetupConfig } from "../../instruction/types";
 import { Subject, SubjectFrame } from "../../../subjects/types";
 import { calculatePositionByAngles } from "./angles";
 import { applyCameraDistance } from "./distance";
 import { calculateReginOfInterest } from "./roi";
 import { getLookAtAngle } from "../../utils";
 import { DEFAULT_ASPECT_RATIO, DEFAULT_FOCAL_LENGTH } from "../../constants";
+import { fixSubjectInView } from "./framing";
 
 export const getCameraBySetup = (
   setup: SetupConfig,
@@ -25,10 +21,17 @@ export const getCameraBySetup = (
   );
   const updatedPosition = applyCameraDistance(scale, reginOfInterest, position);
 
-  return {
+  const camera = {
     position: updatedPosition,
     rotation: getLookAtAngle(updatedPosition, reginOfInterest.position),
     focalLength: DEFAULT_FOCAL_LENGTH,
     aspectRatio: DEFAULT_ASPECT_RATIO,
   };
+
+  return fixSubjectInView(
+    camera,
+    frame.position,
+    subject.dimensions,
+    setup.subjectFraming?.position
+  );
 };

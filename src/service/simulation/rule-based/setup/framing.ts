@@ -1,90 +1,107 @@
 import * as THREE from "three";
-
 import {
   SubjectInFramePosition,
   CameraParameters,
-  LockedMovement,
-  LockedRotation,
 } from "@/service/simulation/instruction/types";
 import {
-  ProjectedBounds,
   projectBoundingBox,
+  ProjectedBounds,
 } from "@/service/simulation/utils";
-import { SubjectFrame, SubjectDimensions } from "@/service/subjects/types";
+import { SubjectDimensions } from "@/service/subjects/types";
+import { DEFAULT_ASPECT_RATIO, SENSOR_HEIGHT } from "../../constants";
 
-function getDesiredScreenPosition(
-  bounds: ProjectedBounds,
-  position?: SubjectInFramePosition
+export function calculateMinOffsetToCenterSection(
+  bounds: ProjectedBounds
 ): THREE.Vector2 {
-  if (!position) {
-    const halfWidth = bounds.width / 2;
-    const halfHeight = bounds.height / 2;
+  const centerSectionWidth = 2 / 3;
+  const centerSectionHeight = 2 / 3;
 
-    const x = Math.max(
-      -1 + halfWidth,
-      Math.min(1 - halfWidth, bounds.center.x)
-    );
-    const y = Math.max(
-      -1 + halfHeight,
-      Math.min(1 - halfHeight, bounds.center.y)
-    );
+  const minX = -centerSectionWidth / 2;
+  const maxX = centerSectionWidth / 2;
+  const minY = -centerSectionHeight / 2;
+  const maxY = centerSectionHeight / 2;
 
-    return new THREE.Vector2(x, y);
-  }
+  const offsetX =
+    bounds.center.x < minX
+      ? minX - bounds.center.x
+      : bounds.center.x > maxX
+      ? maxX - bounds.center.x
+      : 0;
 
-  const x = (() => {
-    switch (position) {
-      case SubjectInFramePosition.Left:
-      case SubjectInFramePosition.TopLeft:
-      case SubjectInFramePosition.BottomLeft:
-        return -0.5;
-      case SubjectInFramePosition.Right:
-      case SubjectInFramePosition.TopRight:
-      case SubjectInFramePosition.BottomRight:
-        return 0.5;
-      case SubjectInFramePosition.OuterLeft:
-        return -1.5;
-      case SubjectInFramePosition.OuterRight:
-        return 1.5;
-      default:
-        return 0;
-    }
-  })();
+  const offsetY =
+    bounds.center.y < minY
+      ? minY - bounds.center.y
+      : bounds.center.y > maxY
+      ? maxY - bounds.center.y
+      : 0;
 
-  const y = (() => {
-    switch (position) {
-      case SubjectInFramePosition.Top:
-      case SubjectInFramePosition.TopLeft:
-      case SubjectInFramePosition.TopRight:
-        return 0.5;
-      case SubjectInFramePosition.Bottom:
-      case SubjectInFramePosition.BottomLeft:
-      case SubjectInFramePosition.BottomRight:
-        return -0.5;
-      case SubjectInFramePosition.OuterTop:
-        return 1.5;
-      case SubjectInFramePosition.OuterBottom:
-        return -1.5;
-      default:
-        return 0;
-    }
-  })();
+  return new THREE.Vector2(offsetX, offsetY);
+}
 
-  return new THREE.Vector2(x, y);
+export function calculateRequiredOffset(
+  bounds: ProjectedBounds,
+  position: SubjectInFramePosition
+): THREE.Vector2 {
+  const sectionWidth = 2 / 3;
+  const sectionHeight = 2 / 3;
+
+  const positions: Record<SubjectInFramePosition, THREE.Vector2> = {
+    [SubjectInFramePosition.Center]: new THREE.Vector2(0, 0),
+    [SubjectInFramePosition.Left]: new THREE.Vector2(-sectionWidth / 2, 0),
+    [SubjectInFramePosition.Right]: new THREE.Vector2(sectionWidth / 2, 0),
+    [SubjectInFramePosition.Top]: new THREE.Vector2(0, sectionHeight / 2),
+    [SubjectInFramePosition.Bottom]: new THREE.Vector2(0, -sectionHeight / 2),
+    [SubjectInFramePosition.TopLeft]: new THREE.Vector2(
+      -sectionWidth / 2,
+      sectionHeight / 2
+    ),
+    [SubjectInFramePosition.TopRight]: new THREE.Vector2(
+      sectionWidth / 2,
+      sectionHeight / 2
+    ),
+    [SubjectInFramePosition.BottomLeft]: new THREE.Vector2(
+      -sectionWidth / 2,
+      -sectionHeight / 2
+    ),
+    [SubjectInFramePosition.BottomRight]: new THREE.Vector2(
+      sectionWidth / 2,
+      -sectionHeight / 2
+    ),
+
+    [SubjectInFramePosition.OuterLeft]: new THREE.Vector2(
+      -1 - bounds.width / 2,
+      0
+    ),
+    [SubjectInFramePosition.OuterRight]: new THREE.Vector2(
+      1 + bounds.width / 2,
+      0
+    ),
+    [SubjectInFramePosition.OuterTop]: new THREE.Vector2(
+      0,
+      1 + bounds.height / 2
+    ),
+    [SubjectInFramePosition.OuterBottom]: new THREE.Vector2(
+      0,
+      -1 - bounds.height / 2
+    ),
+  };
+
+  const targetPosition = positions[position];
+
+  return new THREE.Vector2(
+    targetPosition.x - bounds.center.x,
+    targetPosition.y - bounds.center.y
+  );
 }
 
 export function fixSubjectInView(
   cameraParams: CameraParameters,
   subjectPosition: THREE.Vector3,
-  subjectRotation: THREE.Euler,
   subjectDimensions: SubjectDimensions = { width: 0, height: 0, depth: 0 },
-  subjectInFramePosition?: SubjectInFramePosition,
-  lockedMovement?: LockedMovement,
-  lockedRotation?: LockedRotation
-): void {
+  subjectInFramePosition?: SubjectInFramePosition
+): CameraParameters {
   const tempCamera = new THREE.PerspectiveCamera();
   tempCamera.position.copy(cameraParams.position);
-
   tempCamera.lookAt(subjectPosition);
 
   cameraParams.rotation.x = tempCamera.rotation.x;
@@ -97,20 +114,26 @@ export function fixSubjectInView(
     cameraParams
   );
 
-  // const targetScreenPos = getDesiredScreenPosition(
-  //   bounds,
-  //   subjectInFramePosition
-  // );
+  const offset = subjectInFramePosition
+    ? calculateRequiredOffset(bounds, subjectInFramePosition)
+    : calculateMinOffsetToCenterSection(bounds);
+  const fovY = 2 * Math.atan(SENSOR_HEIGHT / (2 * cameraParams.focalLength));
+  const fovX = 2 * Math.atan(DEFAULT_ASPECT_RATIO * Math.tan(fovY / 2));
 
-  // const dx = targetScreenPos.x - bounds.center.x;
-  // const dy = targetScreenPos.y - bounds.center.y;
+  const rotX = -offset.y * (fovY / 2);
+  const rotY = -offset.x * (fovX / 2);
 
-  // const fovX = 2 * Math.atan(SENSOR_WIDTH / (2 * cameraParams.focalLength));
-  // const fovY = 2 * Math.atan(SENSOR_HEIGHT / (2 * cameraParams.focalLength));
+  const originalMatrix = new THREE.Matrix4().makeRotationFromEuler(
+    cameraParams.rotation
+  );
 
-  // const rotX = -dy * (fovY / 2);
-  // const rotY = dx * (fovX / 2);
+  const adjustMatrix = new THREE.Matrix4()
+    .makeRotationX(rotX)
+    .multiply(new THREE.Matrix4().makeRotationY(rotY));
 
-  // cameraParams.rotation.x += rotX;
-  // cameraParams.rotation.y += rotY;
+  const finalMatrix = originalMatrix.multiply(adjustMatrix);
+
+  cameraParams.rotation.setFromRotationMatrix(finalMatrix);
+
+  return cameraParams;
 }

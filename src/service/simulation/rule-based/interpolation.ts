@@ -72,7 +72,12 @@ export const subjectAwareInterpolate = (
   const startParams = getSubjectRelativeParameters(start, startSubject);
   const endParams = getSubjectRelativeParameters(end, endSubject);
   let interpolatedPosition: THREE.Vector3;
-  let interpolatedRotation: THREE.Euler;
+  let interpolatedRotation = new THREE.Euler(
+    start.rotation.x * t + end.rotation.x * 1 - t,
+    start.rotation.y * t + end.rotation.y * 1 - t,
+    start.rotation.z * t + end.rotation.z * 1 - t,
+    start.rotation.order
+  );
 
   const interpolatedDistance =
     startParams.distance + (endParams.distance - startParams.distance) * t;
@@ -103,14 +108,6 @@ export const subjectAwareInterpolate = (
   interpolatedPosition = currentSubject.position
     .clone()
     .sub(directionToSubject.multiplyScalar(interpolatedDistance));
-
-  const lookAtMatrix = new THREE.Matrix4();
-  lookAtMatrix.lookAt(
-    interpolatedPosition,
-    currentSubject.position,
-    new THREE.Vector3(0, 1, 0)
-  );
-  interpolatedRotation = new THREE.Euler().setFromRotationMatrix(lookAtMatrix);
 
   const interpolatedFocalLength =
     start.focalLength + (end.focalLength - start.focalLength) * t;
@@ -160,15 +157,43 @@ export const interpolateCameraParameters = (
     const subjectFrameCurrent =
       subjectFrames[Math.min(i, subjectFrames.length - 1)];
 
-    frames.push(
-      applyConstraintsOnFrame(
-        frameParams,
-        prevCameraParams,
-        constraints,
-        subjectFrameCurrent,
-        subjectDimensions
-      )
+    const appliedConstraintFrame = applyConstraintsOnFrame(
+      frameParams,
+      prevCameraParams,
+      constraints,
+      subjectFrameCurrent,
+      subjectDimensions
     );
+
+    const constraintsFactor = t > 0.1 && t < 0.9 ? 1 : 5 - Math.abs(10 * t - 5);
+
+    const frame: CameraParameters = {
+      position: frameParams.position
+        .clone()
+        .multiplyScalar(1 - constraintsFactor)
+        .add(
+          appliedConstraintFrame.position
+            .clone()
+            .multiplyScalar(constraintsFactor)
+        ),
+      rotation: new THREE.Euler(
+        frameParams.rotation.x * (1 - constraintsFactor) +
+          appliedConstraintFrame.rotation.x * constraintsFactor,
+        frameParams.rotation.y * (1 - constraintsFactor) +
+          appliedConstraintFrame.rotation.y * constraintsFactor,
+        frameParams.rotation.z * (1 - constraintsFactor) +
+          appliedConstraintFrame.rotation.z * constraintsFactor,
+        frameParams.rotation.order
+      ),
+      focalLength:
+        frameParams.focalLength * (1 - constraintsFactor) +
+        appliedConstraintFrame.focalLength * constraintsFactor,
+      aspectRatio:
+        frameParams.aspectRatio * (1 - constraintsFactor) +
+        appliedConstraintFrame.aspectRatio * constraintsFactor,
+    };
+
+    frames.push(frame);
   });
   return frames;
 };

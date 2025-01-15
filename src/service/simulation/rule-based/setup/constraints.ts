@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { SubjectDimensions, SubjectFrame } from "@/service/subjects/types";
-import { fixSubjectInView } from "../framing";
+import { fixSubjectInView } from "./framing";
 import {
   CameraParameters,
   LockedMovement,
@@ -116,7 +116,6 @@ export function applyConstraintsOnFrame(
     lockedMovement,
     lockedRotation,
     staticDistance,
-    staticCameraSubjectRotation,
     allFramesVisibility,
   } = constraints;
 
@@ -148,23 +147,15 @@ export function applyConstraintsOnFrame(
       .clone()
       .add(currentDir.multiplyScalar(refDistance));
   }
-  if (staticCameraSubjectRotation && subjectFrame) {
-    const lookAtMatrix = new THREE.Matrix4();
-    lookAtMatrix.lookAt(
-      updatedParams.position,
-      subjectFrame.position,
-      new THREE.Vector3(0, 1, 0)
-    );
-    updatedParams.rotation.setFromRotationMatrix(lookAtMatrix);
+
+  if (!allFramesVisibility || !subjectFrame) {
+    return updatedParams;
   }
-  if (allFramesVisibility && subjectFrame) {
-    fixSubjectInView(
-      updatedParams,
-      subjectFrame.position,
-      subjectFrame.rotation,
-      subjectDimensions,
-      subjectInFramePosition
-    );
-  }
-  return updatedParams;
+
+  return fixSubjectInView(
+    updatedParams,
+    subjectFrame.position,
+    subjectDimensions,
+    subjectInFramePosition
+  );
 }
