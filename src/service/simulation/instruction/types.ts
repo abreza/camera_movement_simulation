@@ -192,11 +192,11 @@ export type SimpleMovement = DynamicBase & {
 export type InstructionDynamic = InterpolationDynamic | SimpleMovement;
 
 export type SimulationInstruction = {
-  frameCount: number;
   initialSetup: SetupConfig;
   dynamic: InstructionDynamic;
-  subjectIndex?: number;
   constraints?: ConstraintsConfig;
+  frameCount: number;
+  subjectIndex?: number;
 };
 
 export enum CameraMovementType {
@@ -205,12 +205,13 @@ export enum CameraMovementType {
   Follow = "follow",
   Track = "track",
 
+  DollyIn = "dollyIn",
+  DollyOut = "dollyOut",
+
   PanLeft = "panLeft",
   PanRight = "panRight",
   TiltUp = "tiltUp",
   TiltDown = "tiltDown",
-  DollyIn = "dollyIn",
-  DollyOut = "dollyOut",
 
   TruckLeft = "truckLeft",
   TruckRight = "truckRight",
@@ -234,7 +235,7 @@ export enum MovementSpeed {
   SlowToFast = "slowToFast",
   FastToSlow = "fastToSlow",
   Constant = "constant",
-  DeliberateStartStop = "deliberateStartStop",
+  SmoothStartStop = "smoothStartStop",
 }
 
 export type CinematographySetup = {

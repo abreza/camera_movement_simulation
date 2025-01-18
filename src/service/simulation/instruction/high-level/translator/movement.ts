@@ -221,7 +221,7 @@ export function mapMovementSpeedToEasing(speed: MovementSpeed): MovementEasing {
       return MovementEasing.EaseInQuad;
     case MovementSpeed.FastToSlow:
       return MovementEasing.EaseOutQuad;
-    case MovementSpeed.DeliberateStartStop:
+    case MovementSpeed.SmoothStartStop:
       return MovementEasing.Smooth;
     case MovementSpeed.Constant:
     default:

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { handleDownloadSimulationData } from "@/utils/simulationUtils";
 import {
   CameraParameters,
@@ -7,16 +7,28 @@ import {
 import * as THREE from "three";
 import { Renderer } from "@/service/rendering/Renderer";
 import { calculateCameraPositions } from "@/service/simulation/optimization";
-import { SubjectInfo } from "@/service/subjects/types";
+import { ObjectClass, Subject, SubjectFrame } from "@/service/subjects/types";
+import { generateSubjects } from "@/service/subjects/generateSubjects";
+import { generateFrames } from "@/service/subjects/generateFrames";
 
-const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
+const useSimulation = () => {
   const cameraViewRef = useRef<HTMLDivElement>(null);
   const worldViewRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<Renderer | null>(null);
 
   const [instructions, setInstructions] = useState<SimulationInstruction[]>([]);
-  const [subjectsInfo, setSubjectsInfo] =
-    useState<SubjectInfo[]>(initSubjectsInfo);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjectFrames, setSubjectFrames] = useState<SubjectFrame[][]>([]);
+
+  const subjectsInfo = useMemo(
+    () =>
+      subjects.map((subject, index) => ({
+        subject,
+        frames: subjectFrames[index],
+      })),
+    [subjects, subjectFrames]
+  );
+
   const [cameraFrames, setCameraFrames] = useState<CameraParameters[]>([
     {
       position: new THREE.Vector3(5, 5, 15),
@@ -28,10 +40,6 @@ const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
   const [isRendering, setIsRendering] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [fps, setFps] = useState(30);
-
-  useEffect(() => {
-    setSubjectsInfo(initSubjectsInfo);
-  }, [initSubjectsInfo]);
 
   useEffect(() => {
     if (cameraViewRef.current && worldViewRef.current) {
@@ -48,25 +56,36 @@ const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
     };
   }, []);
 
+  const handleGenerateSubjects = (
+    count: number,
+    probabilityFactors: Record<ObjectClass, number>
+  ) => {
+    const newSubjects = generateSubjects(count, probabilityFactors);
+    setSubjects(newSubjects);
+  };
+
+  const handleUpdateMovements = (movements: Record<string, string>) => {
+    const newFrames = generateFrames(subjects, movements);
+    setSubjectFrames(newFrames);
+  };
+
   const handleAddInstruction = (instruction: SimulationInstruction) => {
-    setInstructions((prevInstructions) => [...prevInstructions, instruction]);
+    setInstructions((prev) => [...prev, instruction]);
   };
 
   const handleEditInstruction = (
     index: number,
     instruction: SimulationInstruction
   ) => {
-    setInstructions((prevInstructions) => {
-      const newInstructions = [...prevInstructions];
+    setInstructions((prev) => {
+      const newInstructions = [...prev];
       newInstructions[index] = instruction;
       return newInstructions;
     });
   };
 
   const handleDeleteInstruction = (index: number) => {
-    setInstructions((prevInstructions) =>
-      prevInstructions.filter((_, i) => i !== index)
-    );
+    setInstructions((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleImportCameraFrames = (
@@ -74,14 +93,10 @@ const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
   ) => {
     setCameraFrames(importedCameraFrames);
     setInstructions([]);
-    setSubjectsInfo([]);
+    setSubjects([]);
+    setSubjectFrames([]);
     setIsRendering(true);
   };
-
-  const addSubject = (subjectInfo: SubjectInfo) => {
-    setSubjectsInfo((prevSubjects) => [...prevSubjects, subjectInfo]);
-  };
-
   const simulate = () => {
     const frames = calculateCameraPositions(instructions, subjectsInfo);
     setCameraFrames(frames);
@@ -93,7 +108,7 @@ const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
   };
 
   useEffect(() => {
-    if (subjectsInfo.length > 0) {
+    if (subjectsInfo.length > 0 && subjectFrames.length > 0) {
       rendererRef.current?.initSubjects(subjectsInfo);
     }
   }, [subjectsInfo]);
@@ -117,13 +132,9 @@ const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
     }, 10);
     const frameCountInterval = setInterval(() => {
       if (isRendering) {
-        setCurrentFrame((prevFrame) => {
-          if (prevFrame < cameraFrames.length - 1) {
-            return prevFrame + 1;
-          } else {
-            return 0;
-          }
-        });
+        setCurrentFrame((prevFrame) =>
+          prevFrame < cameraFrames.length - 1 ? prevFrame + 1 : 0
+        );
       }
     }, 1000 / fps);
 
@@ -148,11 +159,12 @@ const useSimulation = (initSubjectsInfo: SubjectInfo[]) => {
     worldViewRef,
     instructions,
     subjectsInfo,
+    handleGenerateSubjects,
+    handleUpdateMovements,
     handleAddInstruction,
     handleEditInstruction,
     handleDeleteInstruction,
     handleImportCameraFrames,
-    addSubject,
     renderSimulationData,
     downloadSimulationData,
     isRendering,

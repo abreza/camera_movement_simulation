@@ -71,7 +71,9 @@ const validateSetup = ({
   return true;
 };
 
-const getRandomEnumValue = <T extends object>(enumObj: T): T[keyof T] => {
+export const getRandomEnumValue = <T extends object>(
+  enumObj: T
+): T[keyof T] => {
   const values = Object.values(enumObj);
   return values[Math.floor(Math.random() * values.length)];
 };
@@ -199,16 +201,20 @@ const formatInstruction = (
   return text;
 };
 
-const generateRandomInstruction = () => {
+export const generateRandomCinematographyPrompt = () => {
   const initial = generateInitialSetup();
   const movement = generateMovement();
   const final = generateEndSetup(initial, movement.type);
 
-  return formatInstruction(initial, movement, final);
+  return { initial, movement, final };
 };
 
 export const generateRandomTexts = () => {
-  const texts = Array.from({ length: 1000 }, () => generateRandomInstruction());
+  const texts = Array.from({ length: 1000 }, () =>
+    generateRandomCinematographyPrompt()
+  ).map(({ initial, movement, final }) =>
+    formatInstruction(initial, movement, final)
+  );
 
   const blob = new Blob([texts.join("\n\n")], { type: "text/plain" });
   const url = window.URL.createObjectURL(blob);

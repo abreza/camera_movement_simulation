@@ -8,7 +8,12 @@ export const highLevelInstructionRules: Record<
   { simpleMovement?: boolean; disabledFinalSetup?: (keyof SetupConfig)[] }
 > = {
   static: {
-    simpleMovement: true,
+    disabledFinalSetup: [
+      "cameraAngle",
+      "subjectView",
+      "shotSize",
+      "subjectFraming",
+    ],
   },
   follow: {
     disabledFinalSetup: ["cameraAngle", "subjectView"],

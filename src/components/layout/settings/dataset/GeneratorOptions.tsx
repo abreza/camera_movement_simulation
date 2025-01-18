@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Button, TextField, Slider, Typography, Box } from "@mui/material";
+import { GenerateDatasetConfig } from "@/service/dataset/generate";
 
 interface GeneratorOptionsProps {
-  onGenerate: (options: any) => void;
+  onGenerate: (options: GenerateDatasetConfig) => void;
   onClose: () => void;
 }
 
@@ -10,12 +11,12 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
   onGenerate,
   onClose,
 }) => {
-  const [options, setOptions] = useState<any>({
-    simulationCount: 100,
-    subjectCount: 5,
+  const [options, setOptions] = useState<GenerateDatasetConfig>({
+    simulationCount: 1000,
+    subjectCount: 1,
     instructionCount: 1,
     minFrameCount: 30,
-    maxFrameCount: 300,
+    maxFrameCount: 30,
   });
 
   const handleChange =

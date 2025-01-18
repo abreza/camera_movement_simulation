@@ -84,7 +84,7 @@ export const movementSpeedLabels: Record<MovementSpeed, string> = {
   [MovementSpeed.SlowToFast]: "Slow to Fast",
   [MovementSpeed.FastToSlow]: "Fast to Slow",
   [MovementSpeed.Constant]: "Constant",
-  [MovementSpeed.DeliberateStartStop]: "Deliberate Start/Stop",
+  [MovementSpeed.SmoothStartStop]: "Smooth Start/Stop",
 };
 
 export const getEnumLabel = (value: string, enumType: string): string => {

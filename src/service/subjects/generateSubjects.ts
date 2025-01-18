@@ -1,7 +1,6 @@
 import * as THREE from "three";
-import { ObjectClass, Subject, SubjectFrame, SubjectInfo } from "./types";
+import { ObjectClass, Subject } from "./types";
 import { objectSizes } from "./constants";
-import { DEFAULT_FRAME_COUNT } from "../simulation/constants";
 
 function generateRandomGaussian(): number {
   let u = 0,
@@ -20,40 +19,12 @@ function generateDimensions(objectClass: ObjectClass): THREE.Vector3 {
   );
 }
 
-function generateCircularMotion(
-  subject: Subject,
-  index: number,
-  totalSubjects: number
-): SubjectFrame[] {
-  const CIRCLE_RADIUS = 5;
-  const frames: SubjectFrame[] = [];
-
-  const angleOffset = (2 * Math.PI * index) / totalSubjects;
-
-  for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-    const angle = (2 * Math.PI * frame) / DEFAULT_FRAME_COUNT + angleOffset;
-
-    const x = CIRCLE_RADIUS * Math.cos(angle);
-    const z = CIRCLE_RADIUS * Math.sin(angle);
-    const y = subject.dimensions.height / 2;
-
-    const rotation = new THREE.Euler(0, 0, 0);
-
-    frames.push({
-      position: new THREE.Vector3(x, y, z),
-      rotation: rotation,
-    });
-  }
-
-  return frames;
-}
-
 export function generateSubjects(
   count?: number,
   probabilityFactors?: Partial<Record<ObjectClass, number>>
-): SubjectInfo[] {
+): Subject[] {
   const objectCount = count ?? Math.floor(Math.random() * 11) + 5;
-  const subjectsInfo: SubjectInfo[] = [];
+  const subjects: Subject[] = [];
 
   const defaultFactors: Record<ObjectClass, number> = {
     [ObjectClass.Chair]: 1,
@@ -92,13 +63,8 @@ export function generateSubjects(
       },
     };
 
-    const frames = generateCircularMotion(subject, i, objectCount);
-
-    subjectsInfo.push({
-      subject,
-      frames,
-    });
+    subjects.push(subject);
   }
 
-  return subjectsInfo;
+  return subjects;
 }

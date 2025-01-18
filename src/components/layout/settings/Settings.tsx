@@ -14,6 +14,10 @@ import {
   SimulationInstruction,
 } from "@/service/simulation/instruction/types";
 import { ObjectClass, SubjectInfo } from "@/service/subjects/types";
+import {
+  GenerateDatasetConfig,
+  generateRandomDataset,
+} from "@/service/dataset/generate";
 
 interface SettingsProps {
   open: boolean;
@@ -30,6 +34,7 @@ interface SettingsProps {
     count: number,
     probabilityFactors: Record<ObjectClass, number>
   ) => void;
+  onUpdateMovements: (movements: Record<string, string>) => void;
   renderSimulationData: () => void;
   downloadSimulationData: () => void;
   onImportCameraFrames: (cameraFrames: CameraParameters[]) => void;
@@ -44,6 +49,7 @@ export const Settings: FC<SettingsProps> = ({
   onEditInstruction,
   onDeleteInstruction,
   onGenerateSubjects,
+  onUpdateMovements,
   renderSimulationData,
   downloadSimulationData,
   onImportCameraFrames,
@@ -63,8 +69,8 @@ export const Settings: FC<SettingsProps> = ({
     setShowGeneratorOptions(true);
   };
 
-  const handleGenerateDataset = (options: any) => {
-    // generateRandomDataset(options);
+  const handleGenerateDataset = (options: GenerateDatasetConfig) => {
+    generateRandomDataset(options);
     setShowGeneratorOptions(false);
     onClose();
   };
@@ -101,7 +107,6 @@ export const Settings: FC<SettingsProps> = ({
       TransitionComponent={Transition}
       keepMounted
       onClose={onClose}
-      aria-describedby="alert-dialog-slide-description"
       PaperProps={{
         style: {
           position: "fixed",
@@ -158,6 +163,7 @@ export const Settings: FC<SettingsProps> = ({
             onEditInstruction={onEditInstruction}
             onDeleteInstruction={onDeleteInstruction}
             onGenerateSubjects={onGenerateSubjects}
+            onUpdateMovements={onUpdateMovements}
             renderSimulationData={renderSimulationData}
             downloadSimulationData={downloadSimulationData}
             onClose={onClose}

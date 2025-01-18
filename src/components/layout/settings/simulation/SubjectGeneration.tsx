@@ -1,19 +1,6 @@
 import { FC, useState } from "react";
-import {
-  TextField,
-  Button,
-  Slider,
-  Typography,
-  Box,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemButton,
-  IconButton,
-} from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
+import { TextField, Button, Slider, Typography, Box } from "@mui/material";
 import { ObjectClass } from "@/service/subjects/types";
-import CurveEditor from "./CurveEditor";
 
 interface SubjectGenerationProps {
   onGenerateSubjects: (
@@ -21,12 +8,6 @@ interface SubjectGenerationProps {
     probabilityFactors: Record<ObjectClass, number>
   ) => void;
   handleNext: () => void;
-}
-
-interface Curve {
-  id: number;
-  name: string;
-  points: { x: number; y: number }[];
 }
 
 export const SubjectGeneration: FC<SubjectGenerationProps> = ({
@@ -42,10 +23,6 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
       {} as Record<ObjectClass, number>
     )
   );
-  const [curves, setCurves] = useState<Curve[]>([]);
-  const [selectedCurveIndex, setSelectedCurveIndex] = useState<number | null>(
-    null
-  );
 
   const handleGenerateSubjects = () => {
     onGenerateSubjects(subjectCount, probabilityFactors);
@@ -59,38 +36,6 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
         [objectClass]: newValue as number,
       }));
     };
-
-  const addNewCurve = () => {
-    // Create a new curve with a default name and points
-    const newCurve: Curve = {
-      id: curves.length,
-      name: `Curve ${curves.length + 1}`, // Default name
-      points: [
-        { x: -5, y: -5 },
-        { x: 0, y: 0 },
-        { x: 5, y: 5 },
-      ],
-    };
-    setCurves([...curves, newCurve]);
-    setSelectedCurveIndex(curves.length); // Automatically open the newly created curve in the editor
-  };
-
-  const removeCurve = (index: number) => {
-    setCurves((prevCurves) => prevCurves.filter((_, i) => i !== index));
-    setSelectedCurveIndex(null);
-  };
-
-  const handleCurveUpdate = (updatedCurve: Curve) => {
-    setCurves((prevCurves) =>
-      prevCurves.map((curve, index) =>
-        index === selectedCurveIndex ? updatedCurve : curve
-      )
-    );
-  };
-
-  const handleCloseEditor = () => {
-    setSelectedCurveIndex(null);
-  };
 
   return (
     <Box>
@@ -128,40 +73,6 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
       >
         Generate Subjects
       </Button>
-
-      <Box sx={{ mt: 4 }}>
-        <Button variant="outlined" onClick={addNewCurve} sx={{ mb: 2 }}>
-          Add New Curve
-        </Button>
-        <List>
-          {curves.map((curve, index) => (
-            <ListItem
-              key={curve.id}
-              secondaryAction={
-                <IconButton
-                  edge="end"
-                  aria-label="delete"
-                  onClick={() => removeCurve(index)}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              }
-            >
-              <ListItemButton onClick={() => setSelectedCurveIndex(index)}>
-                <ListItemText primary={`${curve.name}`} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Box>
-
-      {selectedCurveIndex !== null && (
-        <CurveEditor
-          curve={curves[selectedCurveIndex]}
-          onUpdate={(updatedCurve) => handleCurveUpdate(updatedCurve)}
-          onClose={handleCloseEditor}
-        />
-      )}
     </Box>
   );
 };
