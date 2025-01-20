@@ -1,4 +1,4 @@
-export const DEFAULT_FRAME_COUNT = 66;
+export const DEFAULT_FRAME_COUNT = 30;
 export const DEFAULT_FOCAL_LENGTH = 37.52;
 export const DEFAULT_ASPECT_RATIO = 16 / 9;
 

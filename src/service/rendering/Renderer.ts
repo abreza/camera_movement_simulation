@@ -1,4 +1,3 @@
-import * as THREE from "three";
 import { SceneManager } from "./SceneManager";
 import { SubjectFrameInfo, SubjectInfo } from "../subjects/types";
 import { CameraParameters } from "../simulation/instruction/types";

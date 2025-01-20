@@ -39,7 +39,6 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
 
   const handleGenerate = () => {
     onGenerate(options);
-    onClose();
   };
 
   return (

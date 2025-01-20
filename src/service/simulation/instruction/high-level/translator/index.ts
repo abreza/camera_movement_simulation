@@ -23,7 +23,7 @@ export function translatePromptToSimulationInstruction(
     subjectIndex?: number;
   }
 ): SimulationInstruction {
-  const { frameCount = 66, subjectIndex = 0 } = options || {};
+  const { frameCount = 30, subjectIndex = 0 } = options || {};
   const { movement, initial, final } = prompt;
 
   const movementEasing = mapMovementSpeedToEasing(movement.speed);

@@ -121,11 +121,35 @@ export function generateSpiralMotion(
   return frames;
 }
 
+export function generateStaticMotion(
+  subject: Subject,
+  index: number,
+  totalSubjects: number
+): SubjectFrame[] {
+  const frames: SubjectFrame[] = [];
+  const CIRCLE_RADIUS = 5;
+
+  const angle = (2 * Math.PI * index) / totalSubjects;
+  const x = CIRCLE_RADIUS * Math.cos(angle);
+  const z = CIRCLE_RADIUS * Math.sin(angle);
+  const y = subject.dimensions.height / 2;
+
+  for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
+    frames.push({
+      position: new THREE.Vector3(x, y, z),
+      rotation: new THREE.Euler(0, angle, 0),
+    });
+  }
+
+  return frames;
+}
+
 export const movementGenerators: Record<string, MovementGenerator> = {
   circular: generateCircularMotion,
   zigzag: generateZigzagMotion,
   linear: generateLinearMotion,
   spiral: generateSpiralMotion,
+  static: generateStaticMotion,
 };
 
 export function generateFrames(

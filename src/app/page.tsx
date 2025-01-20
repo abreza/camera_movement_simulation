@@ -5,8 +5,6 @@ import { Box, Slider, TextField, Button, Stack, Fab } from "@mui/material";
 import useSimulation from "@/hooks/useSimulation";
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { Settings } from "@/components/layout/settings/Settings";
-import { ObjectClass } from "@/service/subjects/types";
-import { generateSubjects } from "@/service/subjects/generateSubjects";
 
 const CameraMovementSimulation: FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
