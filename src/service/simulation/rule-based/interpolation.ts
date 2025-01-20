@@ -73,9 +73,9 @@ export const subjectAwareInterpolate = (
   const endParams = getSubjectRelativeParameters(end, endSubject);
   let interpolatedPosition: THREE.Vector3;
   let interpolatedRotation = new THREE.Euler(
-    start.rotation.x * t + end.rotation.x * 1 - t,
-    start.rotation.y * t + end.rotation.y * 1 - t,
-    start.rotation.z * t + end.rotation.z * 1 - t,
+    start.rotation.x * (1 - t) + end.rotation.x * t,
+    start.rotation.y * (1 - t) + end.rotation.y * t,
+    start.rotation.z * (1 - t) + end.rotation.z * t,
     start.rotation.order
   );
 
@@ -89,20 +89,31 @@ export const subjectAwareInterpolate = (
       .subVectors(currentSubject.position, start.position)
       .normalize();
   } else {
-    const interpolatedAngle =
-      startParams.relativeAngle +
-      (endParams.relativeAngle - startParams.relativeAngle) * t;
-    const rightVector = new THREE.Vector3(1, 0, 0).applyEuler(
-      currentSubject.rotation
+    const startDirection = startSubject.position
+      .clone()
+      .sub(start.position)
+      .normalize();
+    const endDirection = endSubject.position
+      .clone()
+      .sub(end.position)
+      .normalize();
+
+    const startQuaternion = new THREE.Quaternion().setFromUnitVectors(
+      getFrontVector(startSubject.rotation),
+      startDirection
+    );
+    const endQuaternion = new THREE.Quaternion().setFromUnitVectors(
+      getFrontVector(endSubject.rotation),
+      endDirection
     );
 
-    directionToSubject = getFrontVector(currentSubject.rotation)
-      .multiplyScalar(Math.cos(interpolatedAngle))
-      .add(rightVector.multiplyScalar(Math.sin(interpolatedAngle)));
-
-    interpolatedPosition = currentSubject.position
+    const interpolatedQuaternion = startQuaternion
       .clone()
-      .add(directionToSubject.multiplyScalar(interpolatedDistance));
+      .slerp(endQuaternion, t);
+
+    directionToSubject = getFrontVector(currentSubject.rotation)
+      .applyQuaternion(interpolatedQuaternion)
+      .normalize();
   }
 
   interpolatedPosition = currentSubject.position
