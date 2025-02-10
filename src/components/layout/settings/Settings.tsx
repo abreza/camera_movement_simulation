@@ -55,6 +55,7 @@ export const Settings: FC<SettingsProps> = ({
   onImportCameraFrames,
 }) => {
   const [activeStep, setActiveStep] = useState(-1);
+  const [generatingDataset, setGeneratingDataset] = useState(false);
   const [showSimulationSteps, setShowSimulationSteps] = useState(false);
   const [showGeneratorOptions, setShowGeneratorOptions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,7 +71,9 @@ export const Settings: FC<SettingsProps> = ({
   };
 
   const handleGenerateDataset = (options: GenerateDatasetConfig) => {
+    setGeneratingDataset(true);
     generateRandomDataset(options);
+    setGeneratingDataset(false);
     setShowGeneratorOptions(false);
     onClose();
   };
@@ -149,6 +152,7 @@ export const Settings: FC<SettingsProps> = ({
         )}
         {showGeneratorOptions && (
           <GeneratorOptions
+            generatingDataset={generatingDataset}
             onGenerate={handleGenerateDataset}
             onClose={() => setShowGeneratorOptions(false)}
           />

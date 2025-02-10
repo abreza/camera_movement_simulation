@@ -6,9 +6,9 @@ export enum ObjectClass {
   Laptop = "laptop",
   Book = "book",
   Tree = "tree",
-  // Building = "building",
-  // Car = "car",
-  // Bicycle = "bicycle",
+  Building = "building",
+  Car = "car",
+  Bicycle = "bicycle",
 }
 
 export type SubjectDimensions = {

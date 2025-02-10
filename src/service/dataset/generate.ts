@@ -12,6 +12,7 @@ import {
   movementGenerators,
 } from "@/service/subjects/generateFrames";
 import { calculateCameraPositions } from "../simulation/optimization";
+import { encode } from "msgpackr";
 
 export interface GenerateDatasetConfig {
   simulationCount: number;
@@ -42,86 +43,97 @@ function assignRandomMovements(subjects: Subject[]): Record<string, string> {
   return movements;
 }
 
-export function generateRandomDataset(
-  config: GenerateDatasetConfig
-): SimulationData[] {
-  const {
-    simulationCount = 1000,
-    subjectCount = 1,
-    instructionCount = 1,
-    minFrameCount = 30,
-    maxFrameCount = 30,
-    subjectClassProbabilities,
-  } = config;
-
-  const dataset: SimulationData[] = [];
-
-  for (let s = 0; s < simulationCount; s++) {
-    const subjects = generateSubjects(subjectCount, subjectClassProbabilities);
-
-    const subjectMovements = assignRandomMovements(subjects);
-
-    const subjectFrames = generateFrames(subjects, subjectMovements);
-
-    const cinematographyPrompts: CinematographyPrompt[] = [];
-    const simulationInstructions: SimulationInstruction[] = [];
-
-    for (let i = 0; i < instructionCount; i++) {
-      const frameCount =
-        Math.floor(Math.random() * (maxFrameCount - minFrameCount + 1)) +
-        minFrameCount;
-
-      const prompt = generateRandomCinematographyPrompt();
-      cinematographyPrompts.push(prompt);
-
-      const instruction = translatePromptToSimulationInstruction(prompt, {
-        frameCount,
-        subjectIndex: Math.floor(Math.random() * subjects.length),
-      });
-      simulationInstructions.push(instruction);
+function roundFloats(obj: any, factor = 1000): any {
+  if (obj?.isVector3 || obj?.isEuler) {
+    return roundFloats({ x: obj.x, y: obj.y, z: obj.z });
+  } else if (typeof obj === "number") {
+    return Math.round(obj * factor);
+  } else if (Array.isArray(obj)) {
+    return obj.map((item) => roundFloats(item, factor));
+  } else if (obj && typeof obj === "object") {
+    const result: any = {};
+    for (const key of Object.keys(obj)) {
+      result[key] = roundFloats(obj[key], factor);
     }
-
-    const subjectsInfo = subjects.map((subject, index) => ({
-      subject,
-      frames: subjectFrames[index],
-    }));
-
-    const cameraFrames = calculateCameraPositions(
-      simulationInstructions,
-      subjectsInfo
-    );
-
-    dataset.push({
-      subjectsInfo,
-      cinematographyPrompts,
-      simulationInstructions,
-      cameraFrames,
-    });
+    return result;
   }
 
-  const jsonString = JSON.stringify(
-    dataset,
-    (key, value) => {
-      if (value?.isVector3) {
-        return { x: value.x, y: value.y, z: value.z };
-      }
-      if (value?.isEuler) {
-        return { x: value.x, y: value.y, z: value.z };
-      }
-      return value;
-    },
-    2
-  );
+  return obj;
+}
 
-  const blob = new Blob([jsonString], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "cinematography_dataset.json";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+export async function generateRandomDataset(
+  config: GenerateDatasetConfig
+): Promise<void> {
+  return new Promise(() => {
+    const {
+      simulationCount = 1000,
+      subjectCount = 1,
+      instructionCount = 1,
+      minFrameCount = 30,
+      maxFrameCount = 30,
+      subjectClassProbabilities,
+    } = config;
 
-  return dataset;
+    const dataset: SimulationData[] = [];
+
+    for (let s = 0; s < simulationCount; s++) {
+      const subjects = generateSubjects(
+        subjectCount,
+        subjectClassProbabilities
+      );
+
+      const subjectMovements = assignRandomMovements(subjects);
+
+      const subjectFrames = generateFrames(subjects, subjectMovements);
+
+      const cinematographyPrompts: CinematographyPrompt[] = [];
+      const simulationInstructions: SimulationInstruction[] = [];
+
+      for (let i = 0; i < instructionCount; i++) {
+        const frameCount =
+          Math.floor(Math.random() * (maxFrameCount - minFrameCount + 1)) +
+          minFrameCount;
+
+        const prompt = generateRandomCinematographyPrompt();
+        cinematographyPrompts.push(prompt);
+
+        const instruction = translatePromptToSimulationInstruction(prompt, {
+          frameCount,
+          subjectIndex: Math.floor(Math.random() * subjects.length),
+        });
+        simulationInstructions.push(instruction);
+      }
+
+      const subjectsInfo: SubjectInfo[] = subjects.map((subject, index) => ({
+        subject,
+        frames: subjectFrames[index],
+      }));
+
+      const cameraFrames = calculateCameraPositions(
+        simulationInstructions,
+        subjectsInfo
+      );
+
+      dataset.push({
+        subjectsInfo,
+        cinematographyPrompts,
+        simulationInstructions,
+        cameraFrames,
+      });
+    }
+
+    const datasetRounded = roundFloats(dataset);
+
+    const binaryData = encode(datasetRounded);
+
+    const blob = new Blob([binaryData], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "cinematography_dataset.mpack";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  });
 }

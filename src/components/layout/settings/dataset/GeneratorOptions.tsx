@@ -3,11 +3,13 @@ import { Button, TextField, Slider, Typography, Box } from "@mui/material";
 import { GenerateDatasetConfig } from "@/service/dataset/generate";
 
 interface GeneratorOptionsProps {
+  generatingDataset: boolean;
   onGenerate: (options: GenerateDatasetConfig) => void;
   onClose: () => void;
 }
 
 export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
+  generatingDataset,
   onGenerate,
   onClose,
 }) => {
@@ -119,6 +121,7 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
           onClick={handleGenerate}
           sx={{ width: "48%" }}
           size="small"
+          loading={generatingDataset}
         >
           Generate Dataset
         </Button>

@@ -18,7 +18,7 @@ const MOVEMENT_TYPES = {
   static: "Static Position",
 };
 
-// const MOVABLE_CLASSES = [ObjectClass.Car, ObjectClass.Bicycle];
+const MOVABLE_CLASSES = [ObjectClass.Car, ObjectClass.Bicycle];
 
 interface MovementSelectionProps {
   subjectsInfo: SubjectInfo[];
@@ -37,7 +37,9 @@ const MovementSelection: FC<MovementSelectionProps> = ({
     return subjectsInfo.reduce(
       (acc, { subject }) => ({
         ...acc,
-        [subject.id]: "circular",
+        [subject.id]: MOVABLE_CLASSES.includes(subject.class)
+          ? "circular"
+          : "static",
       }),
       {}
     );
@@ -72,7 +74,7 @@ const MovementSelection: FC<MovementSelectionProps> = ({
           key={subject.id}
           fullWidth
           sx={{ mb: 2 }}
-          // disabled={!MOVABLE_CLASSES.includes(subject.class)}
+          disabled={!MOVABLE_CLASSES.includes(subject.class)}
         >
           <InputLabel id={`movement-label-${subject.id}`}>
             {`${subject.class} (${subject.id})`}
@@ -85,7 +87,10 @@ const MovementSelection: FC<MovementSelectionProps> = ({
             size="small"
           >
             {Object.entries(MOVEMENT_TYPES).map(([value, label]) => {
-              if (value === "static") {
+              if (
+                value === "static" ||
+                MOVABLE_CLASSES.includes(subject.class)
+              ) {
                 return (
                   <MenuItem key={value} value={value}>
                     {label}
