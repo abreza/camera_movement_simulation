@@ -29,9 +29,12 @@ export function generateSubjects(
   const defaultFactors: Record<ObjectClass, number> = {
     [ObjectClass.Chair]: 1,
     [ObjectClass.Table]: 0.7,
-    [ObjectClass.Laptop]: 0.5,
-    [ObjectClass.Book]: 0.8,
-    [ObjectClass.Tree]: 0.3,
+    [ObjectClass.Laptop]: 0.3,
+    [ObjectClass.Book]: 0.3,
+    [ObjectClass.Tree]: 0.5,
+    // [ObjectClass.Building]: 0.1,
+    // [ObjectClass.Car]: 1,
+    // [ObjectClass.Bicycle]: 1,
   };
 
   const factors = { ...defaultFactors, ...probabilityFactors };

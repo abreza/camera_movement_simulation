@@ -16,7 +16,7 @@ import {
   DynamicMode,
 } from "@/service/simulation/instruction/types";
 import { SubjectInfo } from "@/service/subjects/types";
-import { useInstructionForm } from "./useInstructionForm";
+import { useInstructionForm } from "@/hooks/useInstructionForm";
 import { Dynamic } from "./Dynamic";
 
 interface LowLevelTabProps {

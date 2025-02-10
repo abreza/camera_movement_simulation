@@ -7,9 +7,10 @@ import {
 import { SubjectInfo } from "@/service/subjects/types";
 import { TextPromptTab } from "./textPrompt/TextPromptTab";
 import LowLevelTab from "./lowLevel/LowLevelTab";
-import { useInstructionForm } from "./lowLevel/useInstructionForm";
+import { useInstructionForm } from "../../../../../hooks/useInstructionForm";
 import { HighLevelTab } from "./highLevel/HighLevelTab";
 import { translatePromptToSimulationInstruction } from "@/service/simulation/instruction/high-level/translator";
+import { defaultCinematographyPrompt } from "@/service/simulation/instruction/high-level/constant";
 
 export interface InstructionManagementProps {
   subjectsInfo: SubjectInfo[];
@@ -35,17 +36,15 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
   renderSimulationData,
   downloadSimulationData,
 }) => {
-  const [activeTab, setActiveTab] = useState(2);
+  const [activeTab, setActiveTab] = useState(0);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [cinematographyPrompt, setCinematographyPrompt] =
+    useState<CinematographyPrompt>(defaultCinematographyPrompt);
 
   const { formState, setters, resetForm } = useInstructionForm();
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
-  };
-
-  const handleTranslateInstruction = () => {
-    setActiveTab(1);
   };
 
   const handleAddOrUpdateInstruction = () => {
@@ -87,9 +86,16 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
 
       <Box sx={{ pt: 1 }}>
         {activeTab === 0 ? (
-          <TextPromptTab onTranslate={handleTranslateInstruction} />
+          <TextPromptTab
+            onTranslateSuccess={(cinPrompt) => {
+              setCinematographyPrompt(cinPrompt);
+              setActiveTab(1);
+            }}
+          />
         ) : activeTab === 1 ? (
           <HighLevelTab
+            cinematographyPrompt={cinematographyPrompt}
+            setCinematographyPrompt={setCinematographyPrompt}
             onTranslate={(cinematographyPrompt: CinematographyPrompt) => {
               const instruction =
                 translatePromptToSimulationInstruction(cinematographyPrompt);

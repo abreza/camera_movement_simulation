@@ -20,12 +20,6 @@ import {
   CinematographyPrompt,
 } from "@/service/simulation/instruction/types";
 
-import {
-  DEFAULT_START_CAMERA_SETUP,
-  DEFAULT_MOVEMENT,
-  DEFAULT_END_CAMERA_SETUP,
-} from "@/service/simulation/instruction/high-level/constant";
-
 import { highLevelInstructionRules } from "@/service/simulation/instruction/high-level/rules";
 import { generateRandomTexts } from "@/service/simulation/instruction/high-level/generator";
 
@@ -34,43 +28,60 @@ import { FinalSetup } from "./FinalSetup";
 
 interface HighLevelTabProps {
   onTranslate: (data: CinematographyPrompt) => void;
+  cinematographyPrompt: CinematographyPrompt;
+  setCinematographyPrompt: (cinematographyPrompt: CinematographyPrompt) => void;
 }
 
-export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
-  const [initial, setInitial] = useState(DEFAULT_START_CAMERA_SETUP);
-  const [movement, setMovement] = useState(DEFAULT_MOVEMENT);
-  const [final, setFinal] = useState(DEFAULT_END_CAMERA_SETUP);
-
+export const HighLevelTab: FC<HighLevelTabProps> = ({
+  onTranslate,
+  cinematographyPrompt,
+  setCinematographyPrompt,
+}) => {
   const disabledFields = useMemo(() => {
-    const movementType =
-      movement.type as keyof typeof highLevelInstructionRules;
+    const movementType = cinematographyPrompt.movement
+      .type as keyof typeof highLevelInstructionRules;
     return (highLevelInstructionRules[movementType]?.disabledFinalSetup ||
       []) as string[];
-  }, [movement.type]);
+  }, [cinematographyPrompt.movement.type]);
 
   useEffect(() => {
-    const newFinal = { ...final } as any;
+    const newFinal = { ...cinematographyPrompt.final } as any;
     disabledFields.forEach((field) => {
       if (field in newFinal) {
         newFinal[field] = undefined;
       }
     });
-    setFinal(newFinal);
-  }, [movement.type]);
+    setCinematographyPrompt({ ...cinematographyPrompt, final: newFinal });
+  }, [cinematographyPrompt.movement.type]);
 
   const handleInitialChange =
     (field: string) => (event: SelectChangeEvent<string>) => {
-      setInitial((prev) => ({ ...prev, [field]: event.target.value }));
+      setCinematographyPrompt({
+        ...cinematographyPrompt,
+        initial: {
+          ...cinematographyPrompt.initial,
+          [field]: event.target.value,
+        },
+      });
     };
 
   const handleMovementChange =
     (field: string) => (event: SelectChangeEvent<string>) => {
-      setMovement((prev) => ({ ...prev, [field]: event.target.value }));
+      setCinematographyPrompt({
+        ...cinematographyPrompt,
+        movement: {
+          ...cinematographyPrompt.movement,
+          [field]: event.target.value,
+        },
+      });
     };
 
   const handleFinalChange =
     (field: string) => (event: SelectChangeEvent<string>) => {
-      setFinal((prev) => ({ ...prev, [field]: event.target.value }));
+      setCinematographyPrompt({
+        ...cinematographyPrompt,
+        final: { ...cinematographyPrompt.final, [field]: event.target.value },
+      });
     };
 
   return (
@@ -80,31 +91,31 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
         variant="body2"
         sx={{ mb: 2, lineHeight: 2, fontWeight: 300 }}
       >
-        Generate cinematography camera trajectory that begins with a{" "}
+        Generate cinematographyPrompt camera trajectory that begins with a{" "}
         <SelectRenderer
           options={Object.values(CameraVerticalAngle)}
-          value={initial.cameraAngle}
+          value={cinematographyPrompt.initial.cameraAngle}
           onChange={handleInitialChange("cameraAngle")}
           enumType="CameraVerticalAngle"
         />{" "}
         camera angle from the{" "}
         <SelectRenderer
           options={Object.values(SubjectView)}
-          value={initial.subjectView}
+          value={cinematographyPrompt.initial.subjectView}
           onChange={handleInitialChange("subjectView")}
           enumType="SubjectView"
         />{" "}
         side of the subject, using a{" "}
         <SelectRenderer
           options={Object.values(ShotSize)}
-          value={initial.shotSize}
+          value={cinematographyPrompt.initial.shotSize}
           onChange={handleInitialChange("shotSize")}
           enumType="ShotSize"
         />{" "}
         shot size and positioning the subject in the{" "}
         <SelectRenderer
           options={Object.values(SubjectInFramePosition)}
-          value={initial.subjectFraming}
+          value={cinematographyPrompt.initial.subjectFraming}
           onChange={handleInitialChange("subjectFraming")}
           enumType="SubjectInFramePosition"
         />{" "}
@@ -119,14 +130,14 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
         Next, apply a{" "}
         <SelectRenderer
           options={Object.values(CameraMovementType)}
-          value={movement.type}
+          value={cinematographyPrompt.movement.type}
           onChange={handleMovementChange("type")}
           enumType="CameraMovementType"
         />{" "}
         movement with{" "}
         <SelectRenderer
           options={Object.values(MovementSpeed)}
-          value={movement.speed}
+          value={cinematographyPrompt.movement.speed}
           onChange={handleMovementChange("speed")}
           enumType="MovementSpeed"
         />{" "}
@@ -153,7 +164,7 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
         <AccordionDetails sx={{ padding: "8px 0" }}>
           <FinalSetup
             disabledFields={disabledFields}
-            final={final}
+            final={cinematographyPrompt.final}
             handleFinalChange={handleFinalChange}
           />
         </AccordionDetails>
@@ -164,12 +175,7 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({ onTranslate }) => {
         color="primary"
         fullWidth
         onClick={() => {
-          const data = {
-            initial,
-            movement,
-            final,
-          };
-          onTranslate(data);
+          onTranslate(cinematographyPrompt);
         }}
       >
         Translate to Low-Level Instructions

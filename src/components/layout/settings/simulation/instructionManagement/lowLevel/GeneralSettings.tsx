@@ -10,7 +10,7 @@ import {
 import { StaticControls } from "./components/StaticControls";
 import { AdditionalConstraints } from "./components/AdditionalConstraints";
 import { SimulationInstruction } from "@/service/simulation/instruction/types";
-import { useInstructionForm } from "./useInstructionForm";
+import { useInstructionForm } from "@/hooks/useInstructionForm";
 import { SubjectInfo } from "@/service/subjects/types";
 import { defaultSimulationInstruction } from "@/service/simulation/instruction/constants";
 

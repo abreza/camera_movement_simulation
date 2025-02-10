@@ -47,42 +47,42 @@ export function calculateRequiredOffset(
 
   const positions: Record<SubjectInFramePosition, THREE.Vector2> = {
     [SubjectInFramePosition.Center]: new THREE.Vector2(0, 0),
-    [SubjectInFramePosition.Left]: new THREE.Vector2(-sectionWidth / 2, 0),
-    [SubjectInFramePosition.Right]: new THREE.Vector2(sectionWidth / 2, 0),
-    [SubjectInFramePosition.Top]: new THREE.Vector2(0, sectionHeight / 2),
-    [SubjectInFramePosition.Bottom]: new THREE.Vector2(0, -sectionHeight / 2),
+    [SubjectInFramePosition.Left]: new THREE.Vector2(sectionWidth / 4, 0),
+    [SubjectInFramePosition.Right]: new THREE.Vector2(-sectionWidth / 4, 0),
+    [SubjectInFramePosition.Top]: new THREE.Vector2(0, sectionHeight / 4),
+    [SubjectInFramePosition.Bottom]: new THREE.Vector2(0, -sectionHeight / 4),
     [SubjectInFramePosition.TopLeft]: new THREE.Vector2(
-      -sectionWidth / 2,
-      sectionHeight / 2
+      sectionWidth / 4,
+      sectionHeight / 4
     ),
     [SubjectInFramePosition.TopRight]: new THREE.Vector2(
-      sectionWidth / 2,
-      sectionHeight / 2
+      -sectionWidth / 4,
+      sectionHeight / 4
     ),
     [SubjectInFramePosition.BottomLeft]: new THREE.Vector2(
-      -sectionWidth / 2,
-      -sectionHeight / 2
+      sectionWidth / 4,
+      -sectionHeight / 4
     ),
     [SubjectInFramePosition.BottomRight]: new THREE.Vector2(
-      sectionWidth / 2,
-      -sectionHeight / 2
+      -sectionWidth / 4,
+      -sectionHeight / 4
     ),
 
     [SubjectInFramePosition.OuterLeft]: new THREE.Vector2(
-      -1 - bounds.width / 2,
+      1 + bounds.width / 4,
       0
     ),
     [SubjectInFramePosition.OuterRight]: new THREE.Vector2(
-      1 + bounds.width / 2,
+      -1 - bounds.width / 4,
       0
     ),
     [SubjectInFramePosition.OuterTop]: new THREE.Vector2(
       0,
-      1 + bounds.height / 2
+      1 + bounds.height / 4
     ),
     [SubjectInFramePosition.OuterBottom]: new THREE.Vector2(
       0,
-      -1 - bounds.height / 2
+      -1 - bounds.height / 4
     ),
   };
 

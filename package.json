@@ -9,27 +9,30 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^1.1.9",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@mui/icons-material": "^6.2.1",
-    "@mui/material": "^6.2.1",
-    "@mui/material-nextjs": "^6.2.1",
+    "@mui/icons-material": "^6.4.3",
+    "@mui/material": "^6.4.3",
+    "@mui/material-nextjs": "^6.4.3",
     "@three-ts/orbit-controls": "^1.4.7",
+    "ai": "^4.1.33",
     "d3": "^7.9.0",
-    "next": "15.1.2",
+    "next": "15.1.6",
     "react": "^19",
     "react-dom": "^19",
-    "recharts": "^2.15.0",
-    "three": "^0.171.0"
+    "recharts": "^2.15.1",
+    "three": "^0.173.0",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/three": "^0.171.0",
+    "@types/three": "^0.173.0",
     "eslint": "^9",
-    "eslint-config-next": "15.1.2",
+    "eslint-config-next": "15.1.6",
     "typescript": "^5"
   }
 }

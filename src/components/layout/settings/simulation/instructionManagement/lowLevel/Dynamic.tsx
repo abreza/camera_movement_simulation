@@ -20,7 +20,7 @@ import {
   MovementMode,
   Scale,
 } from "@/service/simulation/instruction/types";
-import { useInstructionForm } from "./useInstructionForm";
+import { useInstructionForm } from "@/hooks/useInstructionForm";
 import SetupControls from "./components/SetupControls";
 
 export interface DynamicProps {
