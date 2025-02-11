@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import { pack } from "msgpackr";
 import {
   CinematographyPrompt,
   SimulationInstruction,
@@ -132,7 +133,11 @@ export async function generateRandomDataset(
 
     parameterDictionary = newParameterDictionary;
 
-    zip.file(`simulation_${s.toString().padStart(6, "0")}.txt`, formattedData);
+    const packedData = pack(formattedData);
+    zip.file(
+      `simulation_${s.toString().padStart(6, "0")}.msgpack`,
+      new Uint8Array(packedData)
+    );
 
     const totalFramesProcessed = simulationInstructions.reduce(
       (sum, instruction) => sum + instruction.frameCount,
@@ -142,10 +147,8 @@ export async function generateRandomDataset(
     await yieldIfNeeded(operationCount, chunkSize);
   }
 
-  zip.file(
-    "parameter_dictionary.json",
-    JSON.stringify(parameterDictionary || {}, null, 2)
-  );
+  const packedDictionary = pack(parameterDictionary || {});
+  zip.file("parameter_dictionary.msgpack", new Uint8Array(packedDictionary));
 
   const content = await zip.generateAsync({ type: "blob" });
   const url = URL.createObjectURL(content);

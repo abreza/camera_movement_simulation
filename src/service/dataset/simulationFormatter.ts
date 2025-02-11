@@ -70,7 +70,7 @@ export function formatSimulationData(
   data: SimulationData,
   existingParameters: ParameterDictionary = { keys: [], values: [] }
 ): {
-  formattedData: string;
+  formattedData: any;
   parameterDictionary: ParameterDictionary;
 } {
   let parameterDictionary = updateParameterDictionary(
@@ -96,13 +96,12 @@ export function formatSimulationData(
     "simulation"
   );
 
-  const formattedData = `${JSON.stringify(cinematographyRef)}
-*
-${JSON.stringify(simulationRef)}
-*
-${JSON.stringify(compressFormatSubjectInfo(roundFloats(data.subjectsInfo)))}
-*
-${JSON.stringify(compressCameraFrames(roundFloats(data.cameraFrames)))}`;
+  const formattedData = [
+    cinematographyRef,
+    simulationRef,
+    compressFormatSubjectInfo(roundFloats(data.subjectsInfo)),
+    compressCameraFrames(roundFloats(data.cameraFrames)),
+  ];
 
   return {
     formattedData,
