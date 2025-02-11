@@ -23,7 +23,7 @@ export interface GenerateDatasetConfig {
   minFrameCount?: number;
   maxFrameCount?: number;
   subjectClassProbabilities?: Partial<Record<ObjectClass, number>>;
-  onProgress?: (progress: number) => void;
+  onProgress?: (progress: number, phase: "generating" | "zipping") => void;
   chunkSize?: number;
 }
 
@@ -81,7 +81,7 @@ export async function generateRandomDataset(
     operationCount++;
     await yieldIfNeeded(operationCount, chunkSize);
 
-    onProgress?.((s / simulationCount) * 100);
+    onProgress?.((s / simulationCount) * 100, "generating");
 
     const subjects = generateSubjects(subjectCount, subjectClassProbabilities);
     operationCount += subjectCount;
@@ -162,13 +162,18 @@ export async function generateRandomDataset(
     zipOptions
   );
 
-  const content = await zip.generateAsync({
-    type: "blob",
-    compression: "STORE",
-    compressionOptions: {
-      level: 1,
+  const content = await zip.generateAsync(
+    {
+      type: "blob",
+      compression: "STORE",
+      compressionOptions: {
+        level: 1,
+      },
     },
-  });
+    (metadata) => {
+      onProgress?.(metadata.percent, "zipping");
+    }
+  );
 
   const url = URL.createObjectURL(content);
   const link = document.createElement("a");

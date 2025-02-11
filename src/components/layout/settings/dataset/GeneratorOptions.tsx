@@ -20,6 +20,10 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
   onGenerate,
   onClose,
 }) => {
+  const [progressPhase, setProgressPhase] = useState<"generating" | "zipping">(
+    "generating"
+  );
+
   const [options, setOptions] = useState<GenerateDatasetConfig>({
     simulationCount: 1000,
     subjectCount: 1,
@@ -64,9 +68,12 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
 
     const configWithProgress: GenerateDatasetConfig = {
       ...options,
-      onProgress: (value: number) => {
+      onProgress: (value: number, phase: "generating" | "zipping") => {
         if (value > progress) {
           throttledSetProgress(value);
+        }
+        if (phase !== progressPhase) {
+          setProgressPhase(phase);
         }
       },
     };
@@ -151,6 +158,7 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
             sx={{ mb: 1 }}
           />
           <Typography variant="body2" color="text.secondary" align="center">
+            {progressPhase === "generating" ? "Generating: " : "Zipping: "}
             {Math.round(progress)}% Complete
           </Typography>
         </Box>
