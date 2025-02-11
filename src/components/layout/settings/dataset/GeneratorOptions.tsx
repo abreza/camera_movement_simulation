@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   Button,
   TextField,
@@ -28,36 +28,54 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
     maxFrameCount: 30,
   });
   const [progress, setProgress] = useState<number>(0);
+  const lastUpdateTime = useRef<number>(0);
 
-  const handleChange =
-    (name: keyof any) =>
-    (
-      event: React.ChangeEvent<HTMLInputElement> | Event,
-      newValue: number | number[]
-    ) => {
-      setOptions((prevOptions: any) => ({
-        ...prevOptions,
-        [name]:
-          name === "simulationCount"
-            ? parseInt(
-                (event as React.ChangeEvent<HTMLInputElement>).target.value,
-                10
-              )
-            : (newValue as number),
-      }));
-    };
+  const handleChange = useCallback(
+    (name: keyof GenerateDatasetConfig) =>
+      (
+        event: React.ChangeEvent<HTMLInputElement> | Event,
+        newValue: number | number[]
+      ) => {
+        setOptions((prevOptions) => ({
+          ...prevOptions,
+          [name]:
+            name === "simulationCount"
+              ? parseInt(
+                  (event as React.ChangeEvent<HTMLInputElement>).target.value,
+                  10
+                )
+              : (newValue as number),
+        }));
+      },
+    []
+  );
+
+  const throttledSetProgress = useCallback((value: number) => {
+    const now = Date.now();
+    if (now - lastUpdateTime.current > 100) {
+      setProgress(value);
+      lastUpdateTime.current = now;
+    }
+  }, []);
 
   const handleGenerate = async () => {
     setProgress(0);
+    lastUpdateTime.current = 0;
+
     const configWithProgress: GenerateDatasetConfig = {
       ...options,
       onProgress: (value: number) => {
-        if (value > progress + 0.5) {
-          setProgress(value);
+        if (value > progress) {
+          throttledSetProgress(value);
         }
       },
     };
-    await onGenerate(configWithProgress);
+
+    try {
+      await onGenerate(configWithProgress);
+    } catch (error) {
+      console.error("Error generating dataset:", error);
+    }
   };
 
   return (
@@ -111,7 +129,7 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
       <Slider
         value={[options.minFrameCount ?? 30, options.maxFrameCount ?? 300]}
         onChange={(event, newValue) => {
-          setOptions((prevOptions: any) => ({
+          setOptions((prevOptions) => ({
             ...prevOptions,
             minFrameCount: (newValue as number[])[0],
             maxFrameCount: (newValue as number[])[1],

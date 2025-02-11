@@ -1,3 +1,4 @@
+import JSZip from "jszip";
 import {
   CinematographyPrompt,
   SimulationInstruction,
@@ -11,7 +12,8 @@ import {
   movementGenerators,
 } from "@/service/subjects/generateFrames";
 import { calculateCameraPositions } from "../simulation/optimization";
-import { exportDataset, SimulationData } from "./export";
+import { formatSimulationData } from "./simulationFormatter";
+import { ParameterDictionary } from "./parameterDictionary";
 
 export interface GenerateDatasetConfig {
   simulationCount: number;
@@ -62,16 +64,16 @@ export async function generateRandomDataset(
     chunkSize = CHUNK_SIZE,
   } = config;
 
-  const dataset: SimulationData[] = [];
+  const zip = new JSZip();
   let operationCount = 0;
+
+  let parameterDictionary: ParameterDictionary | undefined = undefined;
 
   for (let s = 0; s < simulationCount; s++) {
     operationCount++;
     await yieldIfNeeded(operationCount, chunkSize);
 
-    if (onProgress) {
-      onProgress((s / simulationCount) * 100);
-    }
+    onProgress?.((s / simulationCount) * 100);
 
     const subjects = generateSubjects(subjectCount, subjectClassProbabilities);
     operationCount += subjectCount;
@@ -118,21 +120,40 @@ export async function generateRandomDataset(
       subjectsInfo
     );
 
+    const simulationData = {
+      cinematographyPrompts,
+      simulationInstructions,
+      subjectsInfo,
+      cameraFrames,
+    };
+
+    const { formattedData, parameterDictionary: newParameterDictionary } =
+      formatSimulationData(simulationData, parameterDictionary);
+
+    parameterDictionary = newParameterDictionary;
+
+    zip.file(`simulation_${s.toString().padStart(6, "0")}.txt`, formattedData);
+
     const totalFramesProcessed = simulationInstructions.reduce(
       (sum, instruction) => sum + instruction.frameCount,
       0
     );
     operationCount += totalFramesProcessed;
     await yieldIfNeeded(operationCount, chunkSize);
-
-    dataset.push({
-      subjectsInfo,
-      cinematographyPrompts,
-      simulationInstructions,
-      cameraFrames,
-    });
   }
 
-  await yieldIfNeeded(operationCount, chunkSize);
-  await exportDataset(dataset);
+  zip.file(
+    "parameter_dictionary.json",
+    JSON.stringify(parameterDictionary || {}, null, 2)
+  );
+
+  const content = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(content);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "cinematography_dataset.zip";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
