@@ -7,54 +7,63 @@ import {
   createParameterReference,
 } from "./parameterDictionary";
 
-function formatSubjectInfoToString(subjectsInfo: SubjectInfo[]): string {
-  const lines: string[] = [];
+type SubjectCompressed = {
+  i: string;
+  c: string;
+  d: number[];
+  a?: number[];
+  f: number[][];
+};
 
-  for (const info of subjectsInfo) {
-    const { subject, frames } = info;
-
-    const basicInfo = `${subject.id},${subject.class}`;
-    lines.push(basicInfo);
-
-    const dimensions = `${subject.dimensions.width},${subject.dimensions.height},${subject.dimensions.depth}`;
-    lines.push(dimensions);
+function compressFormatSubjectInfo(
+  subjectsInfo: SubjectInfo[]
+): SubjectCompressed[] {
+  return subjectsInfo.map(({ subject, frames }) => {
+    const formattedInfo: SubjectCompressed = {
+      i: subject.id,
+      c: subject.class,
+      d: [
+        subject.dimensions.width,
+        subject.dimensions.height,
+        subject.dimensions.depth,
+      ],
+      f:
+        frames?.map((frame) => [
+          frame.position.x,
+          frame.position.y,
+          frame.position.z,
+          frame.rotation.x,
+          frame.rotation.y,
+          frame.rotation.z,
+        ]) || [],
+    };
 
     if (subject.attentionBox) {
-      const { position, dimensions } = subject.attentionBox;
-      const attentionBox = `${position.x},${position.y},${position.z},${dimensions.width},${dimensions.height},${dimensions.depth}`;
-      lines.push(attentionBox);
-    } else {
-      lines.push("");
+      formattedInfo.a = [
+        subject.attentionBox.position.x,
+        subject.attentionBox.position.y,
+        subject.attentionBox.position.z,
+        subject.attentionBox.dimensions.width,
+        subject.attentionBox.dimensions.height,
+        subject.attentionBox.dimensions.depth,
+      ];
     }
 
-    if (frames && frames.length > 0) {
-      const frameData = frames
-        .map(
-          (frame) =>
-            `${frame.position.x},${frame.position.y},${frame.position.z},` +
-            `${frame.rotation.x},${frame.rotation.y},${frame.rotation.z}`
-        )
-        .join("|");
-      lines.push(frameData);
-    } else {
-      lines.push("");
-    }
-
-    lines.push("---");
-  }
-
-  return lines.join("\n");
+    return formattedInfo;
+  });
 }
 
-function formatCameraFramesToString(cameraFrames: CameraParameters[]): string {
-  return cameraFrames
-    .map(
-      (frame) =>
-        `${frame.position.x},${frame.position.y},${frame.position.z},` +
-        `${frame.rotation.x},${frame.rotation.y},${frame.rotation.z},` +
-        `${frame.focalLength},${frame.aspectRatio}`
-    )
-    .join("|");
+function compressCameraFrames(cameraFrames: CameraParameters[]): number[][] {
+  return cameraFrames.map((frame) => [
+    frame.position.x,
+    frame.position.y,
+    frame.position.z,
+    frame.rotation.x,
+    frame.rotation.y,
+    frame.rotation.z,
+    frame.focalLength,
+    frame.aspectRatio,
+  ]);
 }
 
 export function formatSimulationData(
@@ -64,28 +73,36 @@ export function formatSimulationData(
   formattedData: string;
   parameterDictionary: ParameterDictionary;
 } {
-  const parameterDictionary = updateParameterDictionary(
-    [...data.cinematographyPrompts, ...data.simulationInstructions],
-    existingParameters
+  let parameterDictionary = updateParameterDictionary(
+    data.cinematographyPrompts,
+    existingParameters,
+    "cinematography"
+  );
+  parameterDictionary = updateParameterDictionary(
+    data.simulationInstructions,
+    parameterDictionary,
+    "simulation"
   );
 
   const cinematographyRef = createParameterReference(
     data.cinematographyPrompts,
-    parameterDictionary
+    parameterDictionary,
+    "cinematography"
   );
 
   const simulationRef = createParameterReference(
     data.simulationInstructions,
-    parameterDictionary
+    parameterDictionary,
+    "simulation"
   );
 
-  const formattedData = `${cinematographyRef}
+  const formattedData = `${JSON.stringify(cinematographyRef)}
 *
-${simulationRef}
+${JSON.stringify(simulationRef)}
 *
-${formatSubjectInfoToString(roundFloats(data.subjectsInfo))}
+${JSON.stringify(compressFormatSubjectInfo(roundFloats(data.subjectsInfo)))}
 *
-${formatCameraFramesToString(roundFloats(data.cameraFrames))}`;
+${JSON.stringify(compressCameraFrames(roundFloats(data.cameraFrames)))}`;
 
   return {
     formattedData,

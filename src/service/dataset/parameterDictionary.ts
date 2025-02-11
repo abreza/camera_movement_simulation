@@ -5,9 +5,10 @@ export type ParameterDictionary = {
 
 export function createParameterReference(
   obj: any,
-  dictionary: ParameterDictionary
-): string {
-  const references: string[] = [];
+  dictionary: ParameterDictionary,
+  path: string = ""
+): number[][] {
+  const references: number[][] = [];
 
   const processValue = (value: any, path: string) => {
     if (typeof value === "string") {
@@ -17,7 +18,7 @@ export function createParameterReference(
       const valueIndex = dictionary.values[keyIndex].indexOf(value);
       if (valueIndex === -1) return;
 
-      references.push(`${keyIndex}:${valueIndex}`);
+      references.push([keyIndex, valueIndex]);
     } else if (Array.isArray(value)) {
       value.forEach((item) => processValue(item, path));
     } else if (
@@ -33,8 +34,8 @@ export function createParameterReference(
     }
   };
 
-  processValue(obj, "");
-  return references.join(",");
+  processValue(obj, path);
+  return references;
 }
 
 export function updateParameterDictionary(
