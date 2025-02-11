@@ -70,6 +70,13 @@ export async function generateRandomDataset(
 
   let parameterDictionary: ParameterDictionary | undefined = undefined;
 
+  const zipOptions: JSZip.JSZipFileOptions = {
+    compression: "STORE",
+    compressionOptions: {
+      level: 1,
+    },
+  };
+
   for (let s = 0; s < simulationCount; s++) {
     operationCount++;
     await yieldIfNeeded(operationCount, chunkSize);
@@ -136,7 +143,8 @@ export async function generateRandomDataset(
     const packedData = pack(formattedData);
     zip.file(
       `simulation_${s.toString().padStart(6, "0")}.msgpack`,
-      new Uint8Array(packedData)
+      new Uint8Array(packedData),
+      zipOptions
     );
 
     const totalFramesProcessed = simulationInstructions.reduce(
@@ -148,9 +156,20 @@ export async function generateRandomDataset(
   }
 
   const packedDictionary = pack(parameterDictionary || {});
-  zip.file("parameter_dictionary.msgpack", new Uint8Array(packedDictionary));
+  zip.file(
+    "parameter_dictionary.msgpack",
+    new Uint8Array(packedDictionary),
+    zipOptions
+  );
 
-  const content = await zip.generateAsync({ type: "blob" });
+  const content = await zip.generateAsync({
+    type: "blob",
+    compression: "STORE",
+    compressionOptions: {
+      level: 1,
+    },
+  });
+
   const url = URL.createObjectURL(content);
   const link = document.createElement("a");
   link.href = url;
