@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { Button, TextField, Slider, Typography, Box } from "@mui/material";
+import {
+  Button,
+  TextField,
+  Slider,
+  Typography,
+  Box,
+  LinearProgress,
+} from "@mui/material";
 import { GenerateDatasetConfig } from "@/service/dataset/generate";
 
 interface GeneratorOptionsProps {
@@ -20,6 +27,7 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
     minFrameCount: 30,
     maxFrameCount: 30,
   });
+  const [progress, setProgress] = useState<number>(0);
 
   const handleChange =
     (name: keyof any) =>
@@ -39,8 +47,17 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
       }));
     };
 
-  const handleGenerate = () => {
-    onGenerate(options);
+  const handleGenerate = async () => {
+    setProgress(0);
+    const configWithProgress: GenerateDatasetConfig = {
+      ...options,
+      onProgress: (value: number) => {
+        if (value > progress + 0.5) {
+          setProgress(value);
+        }
+      },
+    };
+    await onGenerate(configWithProgress);
   };
 
   return (
@@ -107,12 +124,27 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
         valueLabelDisplay="auto"
         size="small"
       />
+
+      {generatingDataset && (
+        <Box sx={{ width: "100%", mt: 2 }}>
+          <LinearProgress
+            variant="determinate"
+            value={progress}
+            sx={{ mb: 1 }}
+          />
+          <Typography variant="body2" color="text.secondary" align="center">
+            {Math.round(progress)}% Complete
+          </Typography>
+        </Box>
+      )}
+
       <Box sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}>
         <Button
           variant="outlined"
           onClick={onClose}
           sx={{ width: "48%" }}
           size="small"
+          disabled={generatingDataset}
         >
           Cancel
         </Button>
@@ -121,9 +153,9 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
           onClick={handleGenerate}
           sx={{ width: "48%" }}
           size="small"
-          loading={generatingDataset}
+          disabled={generatingDataset}
         >
-          Generate Dataset
+          {generatingDataset ? "Generating..." : "Generate Dataset"}
         </Button>
       </Box>
     </Box>

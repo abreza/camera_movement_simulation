@@ -70,9 +70,9 @@ export const Settings: FC<SettingsProps> = ({
     setShowGeneratorOptions(true);
   };
 
-  const handleGenerateDataset = (options: GenerateDatasetConfig) => {
+  const handleGenerateDataset = async (options: GenerateDatasetConfig) => {
     setGeneratingDataset(true);
-    generateRandomDataset(options);
+    await generateRandomDataset(options);
     setGeneratingDataset(false);
     setShowGeneratorOptions(false);
     onClose();

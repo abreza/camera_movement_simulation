@@ -1,5 +1,4 @@
 import {
-  CameraParameters,
   CinematographyPrompt,
   SimulationInstruction,
 } from "@/service/simulation/instruction/types";
@@ -12,7 +11,7 @@ import {
   movementGenerators,
 } from "@/service/subjects/generateFrames";
 import { calculateCameraPositions } from "../simulation/optimization";
-import { encode } from "msgpackr";
+import { exportDataset, SimulationData } from "./export";
 
 export interface GenerateDatasetConfig {
   simulationCount: number;
@@ -21,13 +20,8 @@ export interface GenerateDatasetConfig {
   minFrameCount?: number;
   maxFrameCount?: number;
   subjectClassProbabilities?: Partial<Record<ObjectClass, number>>;
-}
-
-interface SimulationData {
-  subjectsInfo: SubjectInfo[];
-  cinematographyPrompts: CinematographyPrompt[];
-  simulationInstructions: SimulationInstruction[];
-  cameraFrames: CameraParameters[];
+  onProgress?: (progress: number) => void;
+  chunkSize?: number;
 }
 
 function assignRandomMovements(subjects: Subject[]): Record<string, string> {
@@ -43,97 +37,102 @@ function assignRandomMovements(subjects: Subject[]): Record<string, string> {
   return movements;
 }
 
-function roundFloats(obj: any, factor = 1000): any {
-  if (obj?.isVector3 || obj?.isEuler) {
-    return roundFloats({ x: obj.x, y: obj.y, z: obj.z });
-  } else if (typeof obj === "number") {
-    return Math.round(obj * factor);
-  } else if (Array.isArray(obj)) {
-    return obj.map((item) => roundFloats(item, factor));
-  } else if (obj && typeof obj === "object") {
-    const result: any = {};
-    for (const key of Object.keys(obj)) {
-      result[key] = roundFloats(obj[key], factor);
-    }
-    return result;
-  }
+const CHUNK_SIZE = 10000;
 
-  return obj;
+async function yieldIfNeeded(
+  operationCount: number,
+  chunkSize: number = CHUNK_SIZE
+): Promise<void> {
+  if (operationCount % chunkSize === 0) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
 }
 
 export async function generateRandomDataset(
   config: GenerateDatasetConfig
 ): Promise<void> {
-  return new Promise(() => {
-    const {
-      simulationCount = 1000,
-      subjectCount = 1,
-      instructionCount = 1,
-      minFrameCount = 30,
-      maxFrameCount = 30,
-      subjectClassProbabilities,
-    } = config;
+  const {
+    simulationCount = 1000,
+    subjectCount = 1,
+    instructionCount = 1,
+    minFrameCount = 30,
+    maxFrameCount = 30,
+    subjectClassProbabilities,
+    onProgress,
+    chunkSize = CHUNK_SIZE,
+  } = config;
 
-    const dataset: SimulationData[] = [];
+  const dataset: SimulationData[] = [];
+  let operationCount = 0;
 
-    for (let s = 0; s < simulationCount; s++) {
-      const subjects = generateSubjects(
-        subjectCount,
-        subjectClassProbabilities
-      );
+  for (let s = 0; s < simulationCount; s++) {
+    operationCount++;
+    await yieldIfNeeded(operationCount, chunkSize);
 
-      const subjectMovements = assignRandomMovements(subjects);
-
-      const subjectFrames = generateFrames(subjects, subjectMovements);
-
-      const cinematographyPrompts: CinematographyPrompt[] = [];
-      const simulationInstructions: SimulationInstruction[] = [];
-
-      for (let i = 0; i < instructionCount; i++) {
-        const frameCount =
-          Math.floor(Math.random() * (maxFrameCount - minFrameCount + 1)) +
-          minFrameCount;
-
-        const prompt = generateRandomCinematographyPrompt();
-        cinematographyPrompts.push(prompt);
-
-        const instruction = translatePromptToSimulationInstruction(prompt, {
-          frameCount,
-          subjectIndex: Math.floor(Math.random() * subjects.length),
-        });
-        simulationInstructions.push(instruction);
-      }
-
-      const subjectsInfo: SubjectInfo[] = subjects.map((subject, index) => ({
-        subject,
-        frames: subjectFrames[index],
-      }));
-
-      const cameraFrames = calculateCameraPositions(
-        simulationInstructions,
-        subjectsInfo
-      );
-
-      dataset.push({
-        subjectsInfo,
-        cinematographyPrompts,
-        simulationInstructions,
-        cameraFrames,
-      });
+    if (onProgress) {
+      onProgress((s / simulationCount) * 100);
     }
 
-    const datasetRounded = roundFloats(dataset);
+    const subjects = generateSubjects(subjectCount, subjectClassProbabilities);
+    operationCount += subjectCount;
+    await yieldIfNeeded(operationCount, chunkSize);
 
-    const binaryData = encode(datasetRounded);
+    const subjectMovements = assignRandomMovements(subjects);
+    operationCount += subjects.length;
+    await yieldIfNeeded(operationCount, chunkSize);
 
-    const blob = new Blob([binaryData], { type: "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "cinematography_dataset.mpack";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  });
+    const subjectFrames = generateFrames(subjects, subjectMovements);
+    operationCount += subjects.length * (maxFrameCount - minFrameCount + 1);
+    await yieldIfNeeded(operationCount, chunkSize);
+
+    const cinematographyPrompts: CinematographyPrompt[] = [];
+    const simulationInstructions: SimulationInstruction[] = [];
+
+    for (let i = 0; i < instructionCount; i++) {
+      operationCount++;
+      await yieldIfNeeded(operationCount, chunkSize);
+
+      const frameCount =
+        Math.floor(Math.random() * (maxFrameCount - minFrameCount + 1)) +
+        minFrameCount;
+
+      const prompt = generateRandomCinematographyPrompt();
+      cinematographyPrompts.push(prompt);
+
+      const instruction = translatePromptToSimulationInstruction(prompt, {
+        frameCount,
+        subjectIndex: Math.floor(Math.random() * subjects.length),
+      });
+      simulationInstructions.push(instruction);
+    }
+
+    const subjectsInfo: SubjectInfo[] = subjects.map((subject, index) => ({
+      subject,
+      frames: subjectFrames[index],
+    }));
+    operationCount += subjects.length;
+    await yieldIfNeeded(operationCount, chunkSize);
+
+    const cameraFrames = calculateCameraPositions(
+      simulationInstructions,
+      subjectsInfo
+    );
+
+    const totalFramesProcessed = simulationInstructions.reduce(
+      (sum, instruction) => sum + instruction.frameCount,
+      0
+    );
+    operationCount += totalFramesProcessed;
+    await yieldIfNeeded(operationCount, chunkSize);
+
+    dataset.push({
+      subjectsInfo,
+      cinematographyPrompts,
+      simulationInstructions,
+      cameraFrames,
+    });
+  }
+
+  await yieldIfNeeded(operationCount, chunkSize);
+  await exportDataset(dataset);
 }
