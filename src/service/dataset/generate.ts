@@ -64,6 +64,7 @@ export async function generateRandomDataset(
     onProgress,
     chunkSize = CHUNK_SIZE,
   } = config;
+  const paddingLength = Math.floor(Math.log10(simulationCount)) + 1;
 
   const zip = new JSZip();
   let operationCount = 0;
@@ -142,7 +143,7 @@ export async function generateRandomDataset(
 
     const packedData = pack(formattedData);
     zip.file(
-      `simulation_${s.toString().padStart(6, "0")}.msgpack`,
+      `simulation_${s.toString().padStart(paddingLength, "0")}.msgpack`,
       new Uint8Array(packedData),
       zipOptions
     );
