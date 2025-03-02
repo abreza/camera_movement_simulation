@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import React, { FC, useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -7,8 +7,16 @@ import {
   Select,
   MenuItem,
   Button,
+  Grid,
+  Chip,
+  SelectChangeEvent,
+  Paper,
+  Tooltip,
 } from "@mui/material";
 import { SubjectInfo, ObjectClass } from "@/service/subjects/types";
+import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
+import PedalBikeIcon from "@mui/icons-material/PedalBike";
+import ChairIcon from "@mui/icons-material/Chair";
 
 const MOVEMENT_TYPES = {
   circular: "Circular Motion",
@@ -31,23 +39,32 @@ const MovementSelection: FC<MovementSelectionProps> = ({
   onUpdateMovements,
   handleNext,
 }) => {
-  const [selectedMovements, setSelectedMovements] = React.useState<
+  const [selectedMovements, setSelectedMovements] = useState<
     Record<string, string>
-  >(() => {
-    return subjectsInfo.reduce(
-      (acc, { subject }) => ({
-        ...acc,
-        [subject.id]: MOVABLE_CLASSES.includes(subject.class)
-          ? "circular"
-          : "static",
-      }),
-      {}
-    );
-  });
+  >({});
+
+  useEffect(() => {
+    if (Object.keys(selectedMovements).length !== subjectsInfo.length) {
+      const initialMovements = subjectsInfo.reduce(
+        (acc, { subject }) => ({
+          ...acc,
+          [subject.id]: MOVABLE_CLASSES.includes(subject.class)
+            ? "circular"
+            : "static",
+        }),
+        {}
+      );
+      setSelectedMovements(initialMovements);
+    }
+  }, [subjectsInfo]);
 
   const handleMovementChange =
-    (subjectId: string, subjectClass: ObjectClass) => (event: any) => {
-      if (MOVABLE_CLASSES.includes(subjectClass)) {
+    (subjectId: string, subjectClass: ObjectClass) =>
+    (event: SelectChangeEvent) => {
+      if (
+        MOVABLE_CLASSES.includes(subjectClass) ||
+        event.target.value === "static"
+      ) {
         setSelectedMovements((prev) => ({
           ...prev,
           [subjectId]: event.target.value,
@@ -60,54 +77,117 @@ const MovementSelection: FC<MovementSelectionProps> = ({
     handleNext();
   };
 
+  const getSubjectIcon = (subjectClass: ObjectClass) => {
+    switch (subjectClass) {
+      case ObjectClass.Car:
+        return <DirectionsCarIcon />;
+      case ObjectClass.Bicycle:
+        return <PedalBikeIcon />;
+      default:
+        return <ChairIcon />;
+    }
+  };
+
+  const hasMovableSubjects = subjectsInfo.some(({ subject }) =>
+    MOVABLE_CLASSES.includes(subject.class)
+  );
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
         Select Movement Pattern for Each Subject
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Note: Only cars and bicycles can have dynamic movement patterns. Other
-        objects remain static.
+
+      {!hasMovableSubjects && (
+        <Paper sx={{ p: 2, mb: 3, bgcolor: "#fff8e1" }}>
+          <Typography variant="body2" color="warning.dark">
+            Note: None of your generated subjects are capable of movement (only
+            cars and bicycles can move). You may want to go back and generate
+            different subjects.
+          </Typography>
+        </Paper>
+      )}
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        Only cars and bicycles can have dynamic movement patterns. Other objects
+        remain static.
       </Typography>
-      {subjectsInfo.map(({ subject }) => (
-        <FormControl
-          key={subject.id}
-          fullWidth
-          sx={{ mb: 2 }}
-          disabled={!MOVABLE_CLASSES.includes(subject.class)}
-        >
-          <InputLabel id={`movement-label-${subject.id}`}>
-            {`${subject.class} (${subject.id})`}
-          </InputLabel>
-          <Select
-            labelId={`movement-label-${subject.id}`}
-            value={selectedMovements[subject.id]}
-            onChange={handleMovementChange(subject.id, subject.class)}
-            label={`${subject.class} (${subject.id})`}
-            size="small"
-          >
-            {Object.entries(MOVEMENT_TYPES).map(([value, label]) => {
-              if (
-                value === "static" ||
-                MOVABLE_CLASSES.includes(subject.class)
-              ) {
-                return (
-                  <MenuItem key={value} value={value}>
-                    {label}
-                  </MenuItem>
-                );
-              }
-              return null;
-            })}
-          </Select>
-        </FormControl>
-      ))}
+
+      <Grid container spacing={2}>
+        {subjectsInfo.map(({ subject }) => (
+          <Grid item xs={12} sm={6} key={subject.id}>
+            <Paper
+              elevation={2}
+              sx={{
+                p: 2,
+                position: "relative",
+                opacity: MOVABLE_CLASSES.includes(subject.class) ? 1 : 0.8,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                {getSubjectIcon(subject.class)}
+                <Typography variant="subtitle1" sx={{ ml: 1 }}>
+                  {subject.class} ({subject.id.slice(0, 4)}...)
+                </Typography>
+
+                {MOVABLE_CLASSES.includes(subject.class) && (
+                  <Chip
+                    label="Movable"
+                    size="small"
+                    color="success"
+                    sx={{ ml: "auto" }}
+                  />
+                )}
+              </Box>
+
+              <Tooltip
+                title={
+                  MOVABLE_CLASSES.includes(subject.class)
+                    ? "Select movement pattern"
+                    : "This object type cannot move"
+                }
+              >
+                <FormControl
+                  fullWidth
+                  disabled={!MOVABLE_CLASSES.includes(subject.class)}
+                >
+                  <InputLabel id={`movement-label-${subject.id}`}>
+                    Movement Type
+                  </InputLabel>
+                  <Select
+                    labelId={`movement-label-${subject.id}`}
+                    value={selectedMovements[subject.id] || "static"}
+                    onChange={handleMovementChange(subject.id, subject.class)}
+                    label="Movement Type"
+                    size="small"
+                  >
+                    {Object.entries(MOVEMENT_TYPES).map(([value, label]) => {
+                      if (
+                        value === "static" ||
+                        MOVABLE_CLASSES.includes(subject.class)
+                      ) {
+                        return (
+                          <MenuItem key={value} value={value}>
+                            {label}
+                          </MenuItem>
+                        );
+                      }
+                      return null;
+                    })}
+                  </Select>
+                </FormControl>
+              </Tooltip>
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
+
       <Button
         variant="contained"
         color="primary"
         fullWidth
         onClick={handleSubmit}
-        sx={{ mt: 2 }}
+        sx={{ mt: 3 }}
       >
         Apply Movement Patterns
       </Button>

@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import React, { FC, useEffect } from "react";
 import {
   ToggleButton,
   ToggleButtonGroup,
@@ -8,6 +8,8 @@ import {
   MenuItem,
   FormControlLabel,
   Switch,
+  Typography,
+  Box,
 } from "@mui/material";
 import { MovementControl } from "./components/MovementControls";
 import { EasingChart } from "../../../components/EasingChart";
@@ -29,8 +31,59 @@ export interface DynamicProps {
 }
 
 export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
+  useEffect(() => {
+    if (dynamic.type === DynamicMode.Simple) {
+      if (!dynamic.direction) {
+        setters.setDynamic({
+          ...dynamic,
+          direction: Direction.Right,
+          movementMode: MovementMode.Transition,
+          scale: Scale.Medium,
+        });
+      }
+    } else if (dynamic.type === DynamicMode.Interpolation) {
+      if (!dynamic.endSetup) {
+        setters.setDynamic({
+          ...dynamic,
+          endSetup: {},
+          subjectAwareInterpolation: false,
+        });
+      }
+    }
+  }, [dynamic.type]);
+
+  const handleDynamicTypeChange = (
+    _: React.MouseEvent<HTMLElement>,
+    newValue: DynamicMode | null
+  ) => {
+    if (newValue === null) return;
+
+    if (newValue === DynamicMode.Simple) {
+      setters.setDynamicType(DynamicMode.Simple);
+      setters.setDynamic({
+        type: DynamicMode.Simple,
+        easing: dynamic.easing,
+        direction: Direction.Right,
+        movementMode: MovementMode.Transition,
+        scale: Scale.Medium,
+      });
+    } else {
+      setters.setDynamicType(DynamicMode.Interpolation);
+      setters.setDynamic({
+        type: DynamicMode.Interpolation,
+        easing: dynamic.easing,
+        endSetup: {},
+        subjectAwareInterpolation: false,
+      });
+    }
+  };
+
   return (
-    <>
+    <Box>
+      <Typography variant="subtitle2" gutterBottom>
+        Movement Properties
+      </Typography>
+
       <MovementControl
         type={dynamic.easing}
         onTypeChange={setters.setDynamicEasing}
@@ -43,10 +96,10 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
       <ToggleButtonGroup
         value={dynamic?.type}
         exclusive
-        onChange={(_, newValue) => setters.setDynamicType(newValue)}
+        onChange={handleDynamicTypeChange}
         aria-label="movement type"
         fullWidth
-        sx={{ mb: 1 }}
+        sx={{ mb: 2 }}
         color="primary"
       >
         <ToggleButton value={DynamicMode.Simple} aria-label="simple movement">
@@ -65,7 +118,7 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
           <FormControl fullWidth sx={{ mb: 2 }} size="small">
             <InputLabel>Movement Direction</InputLabel>
             <Select
-              value={dynamic.direction}
+              value={dynamic.direction || Direction.Right}
               onChange={(e) =>
                 setters.setDynamic({
                   ...dynamic,
@@ -85,7 +138,7 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
           <FormControl fullWidth sx={{ mb: 2 }} size="small">
             <InputLabel>Movement Mode</InputLabel>
             <Select
-              value={dynamic.movementMode}
+              value={dynamic.movementMode || MovementMode.Transition}
               onChange={(e) =>
                 setters.setDynamic({
                   ...dynamic,
@@ -105,7 +158,7 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
           <FormControl fullWidth sx={{ mb: 2 }} size="small">
             <InputLabel>Movement Scale</InputLabel>
             <Select
-              value={dynamic.scale}
+              value={dynamic.scale || Scale.Medium}
               onChange={(e) =>
                 setters.setDynamic({
                   ...dynamic,
@@ -125,37 +178,39 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
       )}
 
       {dynamic.type === DynamicMode.Interpolation && (
-        <SetupControls
-          isInitial={false}
-          cameraAngle={dynamic.endSetup?.cameraAngle}
-          setCameraAngle={setters.setEndCameraAngle}
-          shotSize={dynamic.endSetup?.shotSize}
-          setShotSize={setters.setEndShotSize}
-          subjectView={dynamic.endSetup?.subjectView}
-          setSubjectView={setters.setEndSubjectView}
-          subjectFraming={dynamic.endSetup?.subjectFraming}
-          setSubjectFraming={setters.setEndSubjectFraming}
-        />
-      )}
+        <>
+          <Typography variant="subtitle2" gutterBottom>
+            End Camera Setup
+          </Typography>
+          <SetupControls
+            isInitial={false}
+            cameraAngle={dynamic.endSetup?.cameraAngle}
+            setCameraAngle={setters.setEndCameraAngle}
+            shotSize={dynamic.endSetup?.shotSize}
+            setShotSize={setters.setEndShotSize}
+            subjectView={dynamic.endSetup?.subjectView}
+            setSubjectView={setters.setEndSubjectView}
+            subjectFraming={dynamic.endSetup?.subjectFraming}
+            setSubjectFraming={setters.setEndSubjectFraming}
+          />
 
-      {dynamic.type === DynamicMode.Interpolation && (
-        <FormControlLabel
-          control={
-            <Switch
-              checked={dynamic.subjectAwareInterpolation || false}
-              onChange={() =>
-                dynamic.type === DynamicMode.Interpolation &&
-                setters.setSubjectAwareInterpolation(
-                  !dynamic.subjectAwareInterpolation
-                )
-              }
-            />
-          }
-          label="Subject Aware Interpolation"
-          sx={{ mb: 1, width: "100%" }}
-        />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={dynamic.subjectAwareInterpolation || false}
+                onChange={() =>
+                  setters.setSubjectAwareInterpolation(
+                    !dynamic.subjectAwareInterpolation
+                  )
+                }
+              />
+            }
+            label="Subject Aware Interpolation"
+            sx={{ mb: 1, width: "100%" }}
+          />
+        </>
       )}
-    </>
+    </Box>
   );
 };
 

@@ -1,5 +1,5 @@
-import React, { FC, useState } from "react";
-import { Box, Tab, Tabs } from "@mui/material";
+import React, { FC, useState, useEffect } from "react";
+import { Box, Tab, Tabs, Alert, Snackbar } from "@mui/material";
 import {
   CinematographyPrompt,
   SimulationInstruction,
@@ -40,14 +40,56 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [cinematographyPrompt, setCinematographyPrompt] =
     useState<CinematographyPrompt>(defaultCinematographyPrompt);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
 
   const { formState, setters, resetForm } = useInstructionForm();
 
+  useEffect(() => {
+    if (subjectsInfo.length === 0 && activeTab > 0) {
+      setActiveTab(0);
+      setSnackbarMessage(
+        "Please generate subjects first before configuring instructions"
+      );
+      setSnackbarOpen(true);
+    }
+  }, [subjectsInfo, activeTab]);
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    if (subjectsInfo.length === 0 && newValue > 0) {
+      setSnackbarMessage(
+        "Please generate subjects first before configuring instructions"
+      );
+      setSnackbarOpen(true);
+      return;
+    }
     setActiveTab(newValue);
   };
 
   const handleAddOrUpdateInstruction = () => {
+    if (
+      !formState.initialSetup.cameraAngle ||
+      !formState.initialSetup.shotSize
+    ) {
+      setSnackbarMessage(
+        "Please set camera angle and shot size in initial setup"
+      );
+      setSnackbarOpen(true);
+      return;
+    }
+
+    if (
+      formState.dynamic.type === "interpolation" &&
+      !formState.dynamic.endSetup?.cameraAngle &&
+      !formState.dynamic.endSetup?.shotSize
+    ) {
+      setSnackbarMessage(
+        "Please set at least one end setup parameter for interpolation"
+      );
+      setSnackbarOpen(true);
+      return;
+    }
+
     if (editingIndex !== null) {
       onEditInstruction(editingIndex, formState);
       setEditingIndex(null);
@@ -56,11 +98,19 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
     }
 
     resetForm();
+    setSnackbarMessage("Instruction added successfully");
+    setSnackbarOpen(true);
   };
 
   const handleEdit = (index: number) => {
     resetForm(instructions[index]);
     setEditingIndex(index);
+
+    setActiveTab(2);
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
   };
 
   return (
@@ -84,7 +134,7 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
         />
       </Tabs>
 
-      <Box sx={{ pt: 1 }}>
+      <Box sx={{ pt: 2 }}>
         {activeTab === 0 ? (
           <TextPromptTab
             onTranslateSuccess={(cinPrompt) => {
@@ -97,10 +147,18 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
             cinematographyPrompt={cinematographyPrompt}
             setCinematographyPrompt={setCinematographyPrompt}
             onTranslate={(cinematographyPrompt: CinematographyPrompt) => {
-              const instruction =
-                translatePromptToSimulationInstruction(cinematographyPrompt);
-              resetForm(instruction);
-              setActiveTab(2);
+              try {
+                const instruction =
+                  translatePromptToSimulationInstruction(cinematographyPrompt);
+                resetForm(instruction);
+                setActiveTab(2);
+              } catch (error) {
+                console.error("Translation error:", error);
+                setSnackbarMessage(
+                  "Error translating to low-level instructions"
+                );
+                setSnackbarOpen(true);
+              }
             }}
           />
         ) : (
@@ -119,6 +177,25 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
           />
         )}
       </Box>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={
+            snackbarMessage.includes("error") ||
+            snackbarMessage.includes("Please")
+              ? "error"
+              : "success"
+          }
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
