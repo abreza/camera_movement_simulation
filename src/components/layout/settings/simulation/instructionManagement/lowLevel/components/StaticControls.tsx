@@ -9,32 +9,39 @@ import {
   LockedMovement,
   LockedRotation,
 } from "@/service/simulation/instruction/types";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { setLockedPosition, setLockedRotation } from "@/redux/slices/formSlice";
+import { defaultSimulationInstruction } from "@/service/simulation/instruction/constants";
 
-interface StaticControlsProps {
-  lockedMovement: LockedMovement;
-  setLockedPosition: (value: LockedMovement) => void;
-  lockedRotation: LockedRotation;
-  setLockedRotation: (value: LockedRotation) => void;
-}
+export const StaticControls: FC = () => {
+  const dispatch = useAppDispatch();
+  const { constraints } = useAppSelector(
+    (state) => state.form.currentInstruction
+  );
 
-export const StaticControls: FC<StaticControlsProps> = ({
-  lockedMovement,
-  setLockedPosition,
-  lockedRotation,
-  setLockedRotation,
-}) => {
+  const lockedMovement =
+    constraints?.lockedMovement ||
+    defaultSimulationInstruction.constraints!.lockedMovement!;
+  const lockedRotation =
+    constraints?.lockedRotation ||
+    defaultSimulationInstruction.constraints!.lockedRotation!;
+
   const handleStaticPositionChange = (key: keyof LockedMovement) => {
-    setLockedPosition({
-      ...lockedMovement,
-      [key]: !lockedMovement[key],
-    });
+    dispatch(
+      setLockedPosition({
+        ...lockedMovement,
+        [key]: !lockedMovement[key],
+      })
+    );
   };
 
   const handleStaticRotationChange = (key: keyof LockedRotation) => {
-    setLockedRotation({
-      ...lockedRotation,
-      [key]: !lockedRotation[key],
-    });
+    dispatch(
+      setLockedRotation({
+        ...lockedRotation,
+        [key]: !lockedRotation[key],
+      })
+    );
   };
 
   return (
@@ -83,3 +90,5 @@ export const StaticControls: FC<StaticControlsProps> = ({
     </>
   );
 };
+
+export default StaticControls;

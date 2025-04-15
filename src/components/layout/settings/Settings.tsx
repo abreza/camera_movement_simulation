@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useState, useRef } from "react";
+import React, { FC, useEffect, useRef } from "react";
 import {
   Button,
   Dialog,
@@ -9,78 +9,39 @@ import {
 import { Transition } from "./Transition";
 import { SimulationSteps } from "./simulation/SimulationSteps";
 import { GeneratorOptions } from "./dataset/GeneratorOptions";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import {
-  CameraParameters,
-  SimulationInstruction,
-} from "@/service/simulation/instruction/types";
-import { ObjectClass, SubjectInfo } from "@/service/subjects/types";
-import {
-  GenerateDatasetConfig,
-  generateRandomDataset,
-} from "@/service/dataset/generate";
+  setSelectedView,
+  setSimulationStepIndex,
+} from "@/redux/slices/uiSlice";
+import { importCameraFrames } from "@/redux/slices/cameraSlice";
 
 interface SettingsProps {
   open: boolean;
-  subjectsInfo: SubjectInfo[];
-  instructions: SimulationInstruction[];
   onClose: () => void;
-  onAddInstruction: (instruction: SimulationInstruction) => void;
-  onEditInstruction: (
-    index: number,
-    instruction: SimulationInstruction
-  ) => void;
-  onDeleteInstruction: (index: number) => void;
-  onGenerateSubjects: (
-    count: number,
-    probabilityFactors: Record<ObjectClass, number>
-  ) => void;
-  onUpdateMovements: (movements: Record<string, string>) => void;
-  renderSimulationData: () => void;
-  downloadSimulationData: () => void;
-  onImportCameraFrames: (cameraFrames: CameraParameters[]) => void;
 }
 
-export const Settings: FC<SettingsProps> = ({
-  open,
-  subjectsInfo,
-  instructions,
-  onClose,
-  onAddInstruction,
-  onEditInstruction,
-  onDeleteInstruction,
-  onGenerateSubjects,
-  onUpdateMovements,
-  renderSimulationData,
-  downloadSimulationData,
-  onImportCameraFrames,
-}) => {
-  const [activeStep, setActiveStep] = useState(-1);
-  const [generatingDataset, setGeneratingDataset] = useState(false);
-  const [showSimulationSteps, setShowSimulationSteps] = useState(false);
-  const [showGeneratorOptions, setShowGeneratorOptions] = useState(false);
+export const Settings: FC<SettingsProps> = ({ open, onClose }) => {
+  const dispatch = useAppDispatch();
+  const { simulationStepIndex, selectedView } = useAppSelector(
+    (state) => state.ui
+  );
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (activeStep === -1) {
-      setShowSimulationSteps(false);
+    if (simulationStepIndex === -1) {
+      dispatch(setSelectedView("none"));
     }
-  }, [activeStep]);
+  }, [simulationStepIndex, dispatch]);
 
   const handleGenerateRandomDataset = () => {
-    setShowGeneratorOptions(true);
-  };
-
-  const handleGenerateDataset = async (options: GenerateDatasetConfig) => {
-    setGeneratingDataset(true);
-    await generateRandomDataset(options);
-    setGeneratingDataset(false);
-    setShowGeneratorOptions(false);
-    onClose();
+    dispatch(setSelectedView("generator"));
   };
 
   const handleRenderSimulation = () => {
-    setShowSimulationSteps(true);
-    setActiveStep(0);
+    dispatch(setSelectedView("simulation"));
+    dispatch(setSimulationStepIndex(0));
   };
 
   const handleImportFile = () => {
@@ -94,7 +55,7 @@ export const Settings: FC<SettingsProps> = ({
       reader.onload = (e) => {
         try {
           const data = JSON.parse(e.target?.result as string);
-          onImportCameraFrames(data);
+          dispatch(importCameraFrames(data));
           onClose();
         } catch (error) {
           console.error("Error parsing JSON file:", error);
@@ -122,7 +83,7 @@ export const Settings: FC<SettingsProps> = ({
     >
       <DialogTitle>Cinematic Camera Movement</DialogTitle>
       <DialogContent>
-        {activeStep === -1 && !showGeneratorOptions && (
+        {selectedView === "none" && (
           <Stack spacing={2} alignItems="center">
             <Button
               variant="contained"
@@ -150,29 +111,8 @@ export const Settings: FC<SettingsProps> = ({
             />
           </Stack>
         )}
-        {showGeneratorOptions && (
-          <GeneratorOptions
-            generatingDataset={generatingDataset}
-            onGenerate={handleGenerateDataset}
-            onClose={() => setShowGeneratorOptions(false)}
-          />
-        )}
-        {showSimulationSteps && (
-          <SimulationSteps
-            activeStep={activeStep}
-            setActiveStep={setActiveStep}
-            subjectsInfo={subjectsInfo}
-            instructions={instructions}
-            onAddInstruction={onAddInstruction}
-            onEditInstruction={onEditInstruction}
-            onDeleteInstruction={onDeleteInstruction}
-            onGenerateSubjects={onGenerateSubjects}
-            onUpdateMovements={onUpdateMovements}
-            renderSimulationData={renderSimulationData}
-            downloadSimulationData={downloadSimulationData}
-            onClose={onClose}
-          />
-        )}
+        {selectedView === "generator" && <GeneratorOptions onClose={onClose} />}
+        {selectedView === "simulation" && <SimulationSteps />}
       </DialogContent>
     </Dialog>
   );

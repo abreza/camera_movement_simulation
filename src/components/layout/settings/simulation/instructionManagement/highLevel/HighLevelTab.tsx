@@ -1,4 +1,4 @@
-import React, { FC, useState, useMemo, useEffect } from "react";
+import React, { FC, useMemo, useEffect } from "react";
 import {
   Box,
   Button,
@@ -17,26 +17,25 @@ import {
   SubjectInFramePosition,
   CameraMovementType,
   MovementSpeed,
-  CinematographyPrompt,
 } from "@/service/simulation/instruction/types";
 
 import { highLevelInstructionRules } from "@/service/simulation/instruction/high-level/rules";
 import { generateRandomTexts } from "@/service/simulation/instruction/high-level/generator";
+import { translatePromptToSimulationInstruction } from "@/service/simulation/instruction/high-level/translator";
 
 import { SelectRenderer } from "./SelectRenderer";
 import { FinalSetup } from "./FinalSetup";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { setCinematographyPrompt } from "@/redux/slices/instructionsSlice";
+import { resetForm } from "@/redux/slices/formSlice";
+import { toast } from "react-toastify";
 
-interface HighLevelTabProps {
-  onTranslate: (data: CinematographyPrompt) => void;
-  cinematographyPrompt: CinematographyPrompt;
-  setCinematographyPrompt: (cinematographyPrompt: CinematographyPrompt) => void;
-}
+export const HighLevelTab: FC = () => {
+  const dispatch = useAppDispatch();
+  const cinematographyPrompt = useAppSelector(
+    (state) => state.instructions.cinematographyPrompt
+  );
 
-export const HighLevelTab: FC<HighLevelTabProps> = ({
-  onTranslate,
-  cinematographyPrompt,
-  setCinematographyPrompt,
-}) => {
   const disabledFields = useMemo(() => {
     const movementType = cinematographyPrompt.movement
       .type as keyof typeof highLevelInstructionRules;
@@ -51,38 +50,57 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({
         newFinal[field] = undefined;
       }
     });
-    setCinematographyPrompt({ ...cinematographyPrompt, final: newFinal });
-  }, [cinematographyPrompt.movement.type]);
+    dispatch(
+      setCinematographyPrompt({ ...cinematographyPrompt, final: newFinal })
+    );
+  }, [cinematographyPrompt.movement.type, disabledFields]);
 
   const handleInitialChange =
     (field: string) => (event: SelectChangeEvent<string>) => {
-      setCinematographyPrompt({
-        ...cinematographyPrompt,
-        initial: {
-          ...cinematographyPrompt.initial,
-          [field]: event.target.value,
-        },
-      });
+      dispatch(
+        setCinematographyPrompt({
+          ...cinematographyPrompt,
+          initial: {
+            ...cinematographyPrompt.initial,
+            [field]: event.target.value,
+          },
+        })
+      );
     };
 
   const handleMovementChange =
     (field: string) => (event: SelectChangeEvent<string>) => {
-      setCinematographyPrompt({
-        ...cinematographyPrompt,
-        movement: {
-          ...cinematographyPrompt.movement,
-          [field]: event.target.value,
-        },
-      });
+      dispatch(
+        setCinematographyPrompt({
+          ...cinematographyPrompt,
+          movement: {
+            ...cinematographyPrompt.movement,
+            [field]: event.target.value,
+          },
+        })
+      );
     };
 
   const handleFinalChange =
     (field: string) => (event: SelectChangeEvent<string>) => {
-      setCinematographyPrompt({
-        ...cinematographyPrompt,
-        final: { ...cinematographyPrompt.final, [field]: event.target.value },
-      });
+      dispatch(
+        setCinematographyPrompt({
+          ...cinematographyPrompt,
+          final: { ...cinematographyPrompt.final, [field]: event.target.value },
+        })
+      );
     };
+
+  const handleTranslate = () => {
+    try {
+      const instruction =
+        translatePromptToSimulationInstruction(cinematographyPrompt);
+      dispatch(resetForm(instruction));
+    } catch (error) {
+      console.error("Translation error:", error);
+      toast.error("Error translating to low-level instructions");
+    }
+  };
 
   return (
     <Box>
@@ -174,9 +192,7 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({
         variant="contained"
         color="primary"
         fullWidth
-        onClick={() => {
-          onTranslate(cinematographyPrompt);
-        }}
+        onClick={handleTranslate}
       >
         Translate to Low-Level Instructions
       </Button>

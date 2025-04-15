@@ -11,36 +11,28 @@ import {
   TextField,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-
-interface AdditionalConstraintsProps {
-  staticDistance?: boolean;
-  setStaticDistance: (staticDistance?: boolean) => void;
-  staticCameraSubjectRotation?: boolean;
-  setStaticCameraSubjectRotation: (value?: boolean) => void;
-  importance: number;
-  setImportance: (value: number) => void;
-  frameCount: number;
-  setFrameCount: (count: number) => void;
-  maxAccelerate?: number;
-  setMaxAccelerate: (value: number) => void;
-  maxSpeed?: number;
-  setMaxSpeed: (value: number) => void;
-}
-
-export const AdditionalConstraints: FC<AdditionalConstraintsProps> = ({
-  staticDistance,
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import {
   setStaticDistance,
-  staticCameraSubjectRotation,
   setStaticCameraSubjectRotation,
-  importance,
   setImportance,
-  frameCount,
   setFrameCount,
-  maxAccelerate,
   setMaxAccelerate,
-  maxSpeed,
   setMaxSpeed,
-}) => {
+} from "@/redux/slices/formSlice";
+
+export const AdditionalConstraints: FC = () => {
+  const dispatch = useAppDispatch();
+  const { constraints, frameCount } = useAppSelector(
+    (state) => state.form.currentInstruction
+  );
+
+  const staticDistance = constraints?.staticDistance;
+  const staticCameraSubjectRotation = constraints?.staticCameraSubjectRotation;
+  const importance = constraints?.importance || 1;
+  const maxAccelerate = constraints?.maxAccelerate;
+  const maxSpeed = constraints?.maxSpeed;
+
   return (
     <Accordion sx={{ my: 2 }}>
       <AccordionSummary
@@ -55,7 +47,7 @@ export const AdditionalConstraints: FC<AdditionalConstraintsProps> = ({
           control={
             <Switch
               checked={staticDistance || false}
-              onChange={() => setStaticDistance(!staticDistance)}
+              onChange={() => dispatch(setStaticDistance(!staticDistance))}
             />
           }
           label="Static Distance"
@@ -66,7 +58,9 @@ export const AdditionalConstraints: FC<AdditionalConstraintsProps> = ({
           control={
             <Switch
               checked={staticCameraSubjectRotation || false}
-              onChange={(e) => setStaticCameraSubjectRotation(e.target.checked)}
+              onChange={(e) =>
+                dispatch(setStaticCameraSubjectRotation(e.target.checked))
+              }
             />
           }
           label="Static Camera-Subject Rotation"
@@ -79,7 +73,9 @@ export const AdditionalConstraints: FC<AdditionalConstraintsProps> = ({
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
           <Slider
             value={importance}
-            onChange={(_, newValue) => setImportance(newValue as number)}
+            onChange={(_, newValue) =>
+              dispatch(setImportance(newValue as number))
+            }
             step={1}
             min={1}
             max={10}
@@ -92,7 +88,7 @@ export const AdditionalConstraints: FC<AdditionalConstraintsProps> = ({
           type="number"
           label="Max Acceleration (m/s²)"
           value={maxAccelerate || ""}
-          onChange={(e) => setMaxAccelerate(Number(e.target.value))}
+          onChange={(e) => dispatch(setMaxAccelerate(Number(e.target.value)))}
           fullWidth
           sx={{ mb: 2 }}
           size="small"
@@ -104,7 +100,7 @@ export const AdditionalConstraints: FC<AdditionalConstraintsProps> = ({
           type="number"
           label="Max Speed (m/s)"
           value={maxSpeed || ""}
-          onChange={(e) => setMaxSpeed(Number(e.target.value))}
+          onChange={(e) => dispatch(setMaxSpeed(Number(e.target.value)))}
           fullWidth
           sx={{ mb: 2 }}
           size="small"
@@ -116,7 +112,7 @@ export const AdditionalConstraints: FC<AdditionalConstraintsProps> = ({
           type="number"
           label="Frame Count"
           value={frameCount}
-          onChange={(e) => setFrameCount(Number(e.target.value))}
+          onChange={(e) => dispatch(setFrameCount(Number(e.target.value)))}
           fullWidth
           sx={{ mb: 2 }}
           size="small"
@@ -127,3 +123,5 @@ export const AdditionalConstraints: FC<AdditionalConstraintsProps> = ({
     </Accordion>
   );
 };
+
+export default AdditionalConstraints;

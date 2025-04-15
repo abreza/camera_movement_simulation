@@ -13,10 +13,13 @@ import {
   Paper,
   Tooltip,
 } from "@mui/material";
-import { SubjectInfo, ObjectClass } from "@/service/subjects/types";
+import { ObjectClass } from "@/service/subjects/types";
 import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
 import PedalBikeIcon from "@mui/icons-material/PedalBike";
 import ChairIcon from "@mui/icons-material/Chair";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { updateMovementsThunk } from "@/redux/thunks/simulationThunks";
+import { setSimulationStepIndex } from "@/redux/slices/uiSlice";
 
 const MOVEMENT_TYPES = {
   circular: "Circular Motion",
@@ -28,20 +31,14 @@ const MOVEMENT_TYPES = {
 
 const MOVABLE_CLASSES = [ObjectClass.Car, ObjectClass.Bicycle];
 
-interface MovementSelectionProps {
-  subjectsInfo: SubjectInfo[];
-  onUpdateMovements: (movements: Record<string, string>) => void;
-  handleNext: () => void;
-}
+const MovementSelection: FC = () => {
+  const dispatch = useAppDispatch();
+  const subjectsInfo = useAppSelector((state) => state.subjects.subjectsInfo);
+  const storeMovements = useAppSelector((state) => state.subjects.movements);
+  const activeStep = useAppSelector((state) => state.ui.simulationStepIndex);
 
-const MovementSelection: FC<MovementSelectionProps> = ({
-  subjectsInfo,
-  onUpdateMovements,
-  handleNext,
-}) => {
-  const [selectedMovements, setSelectedMovements] = useState<
-    Record<string, string>
-  >({});
+  const [selectedMovements, setSelectedMovements] =
+    useState<Record<string, string>>(storeMovements);
 
   useEffect(() => {
     if (Object.keys(selectedMovements).length !== subjectsInfo.length) {
@@ -73,8 +70,8 @@ const MovementSelection: FC<MovementSelectionProps> = ({
     };
 
   const handleSubmit = () => {
-    onUpdateMovements(selectedMovements);
-    handleNext();
+    dispatch(updateMovementsThunk(selectedMovements));
+    dispatch(setSimulationStepIndex(activeStep + 1));
   };
 
   const getSubjectIcon = (subjectClass: ObjectClass) => {
@@ -115,7 +112,7 @@ const MovementSelection: FC<MovementSelectionProps> = ({
 
       <Grid container spacing={2}>
         {subjectsInfo.map(({ subject }) => (
-          <Grid item xs={12} sm={6} key={subject.id}>
+          <Grid size={{ xs: 12, sm: 6 }} key={subject.id}>
             <Paper
               elevation={2}
               sx={{

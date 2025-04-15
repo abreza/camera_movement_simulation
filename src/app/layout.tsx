@@ -1,4 +1,7 @@
+import { ReduxProvider } from "@/redux/provider";
 import ThemeRegistry from "../components/ui/ThemeRegistry";
+
+import { ToastContainer } from "react-toastify";
 
 export default function RootLayout({
   children,
@@ -8,7 +11,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ThemeRegistry>{children}</ThemeRegistry>
+        <ReduxProvider>
+          <ThemeRegistry>{children}</ThemeRegistry>
+          <ToastContainer />
+        </ReduxProvider>
       </body>
     </html>
   );

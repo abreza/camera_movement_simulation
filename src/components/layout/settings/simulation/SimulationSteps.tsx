@@ -16,44 +16,17 @@ import {
 import { SubjectGeneration } from "./SubjectGeneration";
 import MovementSelection from "./MovementSelection";
 import { InstructionManagement } from "./instructionManagement/InstructionManagement";
-import { SimulationInstruction } from "@/service/simulation/instruction/types";
-import { ObjectClass, SubjectInfo } from "@/service/subjects/types";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { setSimulationStepIndex } from "@/redux/slices/uiSlice";
 
-interface SimulationStepsProps {
-  activeStep: number;
-  setActiveStep: React.Dispatch<React.SetStateAction<number>>;
-  subjectsInfo: SubjectInfo[];
-  instructions: SimulationInstruction[];
-  onAddInstruction: (instruction: SimulationInstruction) => void;
-  onEditInstruction: (
-    index: number,
-    instruction: SimulationInstruction
-  ) => void;
-  onDeleteInstruction: (index: number) => void;
-  onGenerateSubjects: (
-    count: number,
-    probabilityFactors: Record<ObjectClass, number>
-  ) => void;
-  onUpdateMovements: (movements: Record<string, string>) => void;
-  renderSimulationData: () => void;
-  downloadSimulationData: () => void;
-  onClose: () => void;
-}
+export const SimulationSteps: FC = () => {
+  const dispatch = useAppDispatch();
+  const activeStep = useAppSelector((state) => state.ui.simulationStepIndex);
+  const subjectsInfo = useAppSelector((state) => state.subjects.subjectsInfo);
+  const instructions = useAppSelector(
+    (state) => state.instructions.instructions
+  );
 
-export const SimulationSteps: FC<SimulationStepsProps> = ({
-  activeStep,
-  setActiveStep,
-  subjectsInfo,
-  instructions,
-  onAddInstruction,
-  onEditInstruction,
-  onDeleteInstruction,
-  onGenerateSubjects,
-  onUpdateMovements,
-  renderSimulationData,
-  downloadSimulationData,
-  onClose,
-}) => {
   const steps = [
     "Generate Subjects",
     "Select Movements",
@@ -74,7 +47,7 @@ export const SimulationSteps: FC<SimulationStepsProps> = ({
       return;
     }
 
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    dispatch(setSimulationStepIndex(activeStep + 1));
   };
 
   const handleBack = () => {
@@ -84,51 +57,29 @@ export const SimulationSteps: FC<SimulationStepsProps> = ({
       if (activeStep === 2 && instructions.length > 0) {
         setConfirmBackOpen(true);
       } else {
-        setActiveStep((prevActiveStep) => prevActiveStep - 1);
+        dispatch(setSimulationStepIndex(activeStep - 1));
       }
     }
   };
 
   const handleConfirmExit = () => {
     setConfirmExitOpen(false);
-    onClose();
+    dispatch(setSimulationStepIndex(-1));
   };
 
   const handleConfirmBack = () => {
     setConfirmBackOpen(false);
-    setActiveStep((prevActiveStep) => prevActiveStep - 1);
+    dispatch(setSimulationStepIndex(activeStep - 1));
   };
 
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
-        return (
-          <SubjectGeneration
-            onGenerateSubjects={onGenerateSubjects}
-            handleNext={handleNext}
-          />
-        );
+        return <SubjectGeneration />;
       case 1:
-        return (
-          <MovementSelection
-            subjectsInfo={subjectsInfo}
-            onUpdateMovements={onUpdateMovements}
-            handleNext={handleNext}
-          />
-        );
+        return <MovementSelection />;
       case 2:
-        return (
-          <InstructionManagement
-            subjectsInfo={subjectsInfo}
-            instructions={instructions}
-            onAddInstruction={onAddInstruction}
-            onEditInstruction={onEditInstruction}
-            onDeleteInstruction={onDeleteInstruction}
-            onClose={onClose}
-            renderSimulationData={renderSimulationData}
-            downloadSimulationData={downloadSimulationData}
-          />
-        );
+        return <InstructionManagement />;
       default:
         return null;
     }

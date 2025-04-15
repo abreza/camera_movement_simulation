@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef } from "react";
 import {
   Button,
   TextField,
@@ -8,30 +8,26 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { GenerateDatasetConfig } from "@/service/dataset/generate";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import {
+  setGeneratingDataset,
+  setGeneratorOptions,
+  setProgress,
+  setProgressPhase,
+} from "@/redux/slices/uiSlice";
+import { generateRandomDataset } from "@/service/dataset/generate";
 
 interface GeneratorOptionsProps {
-  generatingDataset: boolean;
-  onGenerate: (options: GenerateDatasetConfig) => void;
   onClose: () => void;
 }
 
 export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
-  generatingDataset,
-  onGenerate,
   onClose,
 }) => {
-  const [progressPhase, setProgressPhase] = useState<"generating" | "zipping">(
-    "generating"
-  );
+  const dispatch = useAppDispatch();
+  const { generatingDataset, progress, progressPhase, generatorOptions } =
+    useAppSelector((state) => state.ui);
 
-  const [options, setOptions] = useState<GenerateDatasetConfig>({
-    simulationCount: 1000,
-    subjectCount: 1,
-    instructionCount: 1,
-    minFrameCount: 30,
-    maxFrameCount: 30,
-  });
-  const [progress, setProgress] = useState<number>(0);
   const lastUpdateTime = useRef<number>(0);
 
   const handleChange = useCallback(
@@ -40,48 +36,61 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
         event: React.ChangeEvent<HTMLInputElement> | Event,
         newValue: number | number[]
       ) => {
-        setOptions((prevOptions) => ({
-          ...prevOptions,
-          [name]:
-            name === "simulationCount"
-              ? parseInt(
-                  (event as React.ChangeEvent<HTMLInputElement>).target.value,
-                  10
-                )
-              : (newValue as number),
-        }));
+        if (name === "simulationCount") {
+          dispatch(
+            setGeneratorOptions({
+              [name]: parseInt(
+                (event as React.ChangeEvent<HTMLInputElement>).target.value,
+                10
+              ),
+            })
+          );
+        } else {
+          dispatch(
+            setGeneratorOptions({
+              [name]: newValue as number,
+            })
+          );
+        }
       },
-    []
+    [dispatch]
   );
 
-  const throttledSetProgress = useCallback((value: number) => {
-    const now = Date.now();
-    if (now - lastUpdateTime.current > 100) {
-      setProgress(value);
-      lastUpdateTime.current = now;
-    }
-  }, []);
+  const throttledSetProgress = useCallback(
+    (value: number) => {
+      const now = Date.now();
+      if (now - lastUpdateTime.current > 100) {
+        dispatch(setProgress(value));
+        lastUpdateTime.current = now;
+      }
+    },
+    [dispatch]
+  );
 
   const handleGenerate = async () => {
-    setProgress(0);
+    dispatch(setProgress(0));
     lastUpdateTime.current = 0;
 
     const configWithProgress: GenerateDatasetConfig = {
-      ...options,
+      ...generatorOptions,
       onProgress: (value: number, phase: "generating" | "zipping") => {
         if (value > progress) {
           throttledSetProgress(value);
         }
         if (phase !== progressPhase) {
-          setProgressPhase(phase);
+          dispatch(setProgressPhase(phase));
         }
       },
     };
 
     try {
-      await onGenerate(configWithProgress);
+      dispatch(setGeneratingDataset(true));
+      await generateRandomDataset(configWithProgress);
+      dispatch(setGeneratingDataset(false));
+      onClose();
     } catch (error) {
       console.error("Error generating dataset:", error);
+      dispatch(setGeneratingDataset(false));
     }
   };
 
@@ -94,7 +103,7 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
         fullWidth
         label="Simulation Count"
         type="number"
-        value={options.simulationCount}
+        value={generatorOptions.simulationCount}
         onChange={
           handleChange(
             "simulationCount"
@@ -105,10 +114,10 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
         size="small"
       />
       <Typography variant="body2" gutterBottom>
-        Subject Count: {options.subjectCount}
+        Subject Count: {generatorOptions.subjectCount}
       </Typography>
       <Slider
-        value={options.subjectCount ?? 3}
+        value={generatorOptions.subjectCount ?? 3}
         onChange={handleChange("subjectCount")}
         min={1}
         max={10}
@@ -118,10 +127,10 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
         size="small"
       />
       <Typography variant="body2" gutterBottom>
-        Instruction Count: {options.instructionCount}
+        Instruction Count: {generatorOptions.instructionCount}
       </Typography>
       <Slider
-        value={options.instructionCount ?? 3}
+        value={generatorOptions.instructionCount ?? 3}
         onChange={handleChange("instructionCount")}
         min={1}
         max={10}
@@ -134,13 +143,17 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
         Frame Count Range
       </Typography>
       <Slider
-        value={[options.minFrameCount ?? 30, options.maxFrameCount ?? 300]}
+        value={[
+          generatorOptions.minFrameCount ?? 30,
+          generatorOptions.maxFrameCount ?? 30,
+        ]}
         onChange={(event, newValue) => {
-          setOptions((prevOptions) => ({
-            ...prevOptions,
-            minFrameCount: (newValue as number[])[0],
-            maxFrameCount: (newValue as number[])[1],
-          }));
+          dispatch(
+            setGeneratorOptions({
+              minFrameCount: (newValue as number[])[0],
+              maxFrameCount: (newValue as number[])[1],
+            })
+          );
         }}
         min={10}
         max={300}

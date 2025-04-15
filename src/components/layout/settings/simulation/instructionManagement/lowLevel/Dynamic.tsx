@@ -16,66 +16,56 @@ import { EasingChart } from "../../../components/EasingChart";
 import {
   MovementEasing,
   DynamicMode,
-  InterpolationDynamic,
-  SimpleMovement,
   Direction,
   MovementMode,
   Scale,
 } from "@/service/simulation/instruction/types";
-import { useInstructionForm } from "@/hooks/useInstructionForm";
 import SetupControls from "./components/SetupControls";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import {
+  setDynamicType,
+  setDynamic,
+  setDynamicEasing,
+  setSubjectAwareInterpolation,
+} from "@/redux/slices/formSlice";
 
-export interface DynamicProps {
-  dynamic: InterpolationDynamic | SimpleMovement;
-  setters: ReturnType<typeof useInstructionForm>["setters"];
-}
+export const Dynamic: FC = () => {
+  const dispatch = useAppDispatch();
+  const dynamic = useAppSelector(
+    (state) => state.form.currentInstruction.dynamic
+  );
 
-export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
   useEffect(() => {
     if (dynamic.type === DynamicMode.Simple) {
       if (!dynamic.direction) {
-        setters.setDynamic({
-          ...dynamic,
-          direction: Direction.Right,
-          movementMode: MovementMode.Transition,
-          scale: Scale.Medium,
-        });
+        dispatch(
+          setDynamic({
+            ...dynamic,
+            direction: Direction.Right,
+            movementMode: MovementMode.Transition,
+            scale: Scale.Medium,
+          })
+        );
       }
     } else if (dynamic.type === DynamicMode.Interpolation) {
       if (!dynamic.endSetup) {
-        setters.setDynamic({
-          ...dynamic,
-          endSetup: {},
-          subjectAwareInterpolation: false,
-        });
+        dispatch(
+          setDynamic({
+            ...dynamic,
+            endSetup: {},
+            subjectAwareInterpolation: false,
+          })
+        );
       }
     }
-  }, [dynamic.type]);
+  }, [dynamic.type, dispatch]);
 
   const handleDynamicTypeChange = (
     _: React.MouseEvent<HTMLElement>,
     newValue: DynamicMode | null
   ) => {
     if (newValue === null) return;
-
-    if (newValue === DynamicMode.Simple) {
-      setters.setDynamicType(DynamicMode.Simple);
-      setters.setDynamic({
-        type: DynamicMode.Simple,
-        easing: dynamic.easing,
-        direction: Direction.Right,
-        movementMode: MovementMode.Transition,
-        scale: Scale.Medium,
-      });
-    } else {
-      setters.setDynamicType(DynamicMode.Interpolation);
-      setters.setDynamic({
-        type: DynamicMode.Interpolation,
-        easing: dynamic.easing,
-        endSetup: {},
-        subjectAwareInterpolation: false,
-      });
-    }
+    dispatch(setDynamicType(newValue));
   };
 
   return (
@@ -86,7 +76,7 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
 
       <MovementControl
         type={dynamic.easing}
-        onTypeChange={setters.setDynamicEasing}
+        onTypeChange={(value) => dispatch(setDynamicEasing(value))}
         options={Object.values(MovementEasing)}
         label="Movement Easing"
         allowEmpty={false}
@@ -120,10 +110,12 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
             <Select
               value={dynamic.direction || Direction.Right}
               onChange={(e) =>
-                setters.setDynamic({
-                  ...dynamic,
-                  direction: e.target.value as Direction,
-                })
+                dispatch(
+                  setDynamic({
+                    ...dynamic,
+                    direction: e.target.value as Direction,
+                  })
+                )
               }
               label="Movement Direction"
             >
@@ -140,10 +132,12 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
             <Select
               value={dynamic.movementMode || MovementMode.Transition}
               onChange={(e) =>
-                setters.setDynamic({
-                  ...dynamic,
-                  movementMode: e.target.value as MovementMode,
-                })
+                dispatch(
+                  setDynamic({
+                    ...dynamic,
+                    movementMode: e.target.value as MovementMode,
+                  })
+                )
               }
               label="Movement Mode"
             >
@@ -160,10 +154,12 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
             <Select
               value={dynamic.scale || Scale.Medium}
               onChange={(e) =>
-                setters.setDynamic({
-                  ...dynamic,
-                  scale: e.target.value as Scale,
-                })
+                dispatch(
+                  setDynamic({
+                    ...dynamic,
+                    scale: e.target.value as Scale,
+                  })
+                )
               }
               label="Movement Scale"
             >
@@ -182,25 +178,17 @@ export const Dynamic: FC<DynamicProps> = ({ dynamic, setters }) => {
           <Typography variant="subtitle2" gutterBottom>
             End Camera Setup
           </Typography>
-          <SetupControls
-            isInitial={false}
-            cameraAngle={dynamic.endSetup?.cameraAngle}
-            setCameraAngle={setters.setEndCameraAngle}
-            shotSize={dynamic.endSetup?.shotSize}
-            setShotSize={setters.setEndShotSize}
-            subjectView={dynamic.endSetup?.subjectView}
-            setSubjectView={setters.setEndSubjectView}
-            subjectFraming={dynamic.endSetup?.subjectFraming}
-            setSubjectFraming={setters.setEndSubjectFraming}
-          />
+          <SetupControls isInitial={false} />
 
           <FormControlLabel
             control={
               <Switch
                 checked={dynamic.subjectAwareInterpolation || false}
                 onChange={() =>
-                  setters.setSubjectAwareInterpolation(
-                    !dynamic.subjectAwareInterpolation
+                  dispatch(
+                    setSubjectAwareInterpolation(
+                      !dynamic.subjectAwareInterpolation
+                    )
                   )
                 }
               />

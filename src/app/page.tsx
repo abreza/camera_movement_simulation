@@ -1,56 +1,100 @@
 "use client";
 
-import { FC, useState } from "react";
+import { FC, useRef, useEffect, useCallback } from "react";
 import { Box, Slider, TextField, Button, Stack, Fab } from "@mui/material";
-import useSimulation from "@/hooks/useSimulation";
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { Settings } from "@/components/layout/settings/Settings";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { setSidebarOpen } from "@/redux/slices/uiSlice";
+import {
+  setCurrentFrame,
+  setFps,
+  setIsRendering,
+} from "@/redux/slices/cameraSlice";
+import { Renderer } from "@/service/rendering/Renderer";
+import { SubjectFrameInfo } from "@/service/subjects/types";
 
 const CameraMovementSimulation: FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const dispatch = useAppDispatch();
 
-  const {
-    subjectsInfo,
-    cameraViewRef,
-    worldViewRef,
-    instructions,
-    handleAddInstruction,
-    handleEditInstruction,
-    handleDeleteInstruction,
-    handleImportCameraFrames,
-    renderSimulationData,
-    downloadSimulationData,
-    isRendering,
-    setIsRendering,
-    currentFrame,
-    cameraFrames,
-    fps,
-    setFps,
-    setCurrentFrame,
-    handleGenerateSubjects,
-    handleUpdateMovements,
-  } = useSimulation();
+  const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
+  const cameraFrames = useAppSelector((state) => state.camera.cameraFrames);
+  const currentFrame = useAppSelector((state) => state.camera.currentFrame);
+  const fps = useAppSelector((state) => state.camera.fps);
+  const isRendering = useAppSelector((state) => state.camera.isRendering);
+  const subjectsInfo = useAppSelector((state) => state.subjects.subjectsInfo);
+
+  const worldViewRef = useRef<HTMLDivElement>(null);
+  const cameraViewRef = useRef<HTMLDivElement>(null);
+  const rendererRef = useRef<Renderer | null>(null);
+
+  useEffect(() => {
+    if (cameraViewRef.current && worldViewRef.current) {
+      rendererRef.current = new Renderer(
+        cameraViewRef.current,
+        worldViewRef.current
+      );
+    }
+
+    return () => {
+      if (rendererRef.current) {
+        rendererRef.current.unmount();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (subjectsInfo.length > 0 && rendererRef.current) {
+      rendererRef.current.initSubjects(subjectsInfo);
+    }
+  }, [subjectsInfo]);
+
+  const render = useCallback(() => {
+    if (!rendererRef.current) return;
+    const frame = cameraFrames[currentFrame];
+
+    const subjectFrameInfo: SubjectFrameInfo[] = subjectsInfo.map(
+      ({ subject, frames }) => ({
+        subject,
+        frame: frames?.[currentFrame],
+      })
+    );
+
+    rendererRef.current.updateScene(frame, subjectFrameInfo);
+    rendererRef.current.render();
+  }, [cameraFrames, currentFrame, subjectsInfo]);
+
+  useEffect(() => {
+    const renderInterval = setInterval(() => {
+      render();
+    }, 10);
+
+    const frameCountInterval = setInterval(() => {
+      if (isRendering) {
+        dispatch(
+          setCurrentFrame(
+            currentFrame < cameraFrames.length - 1 ? currentFrame + 1 : 0
+          )
+        );
+      }
+    }, 1000 / fps);
+
+    return () => {
+      clearInterval(renderInterval);
+      clearInterval(frameCountInterval);
+    };
+  }, [render, isRendering, fps, cameraFrames.length, dispatch, currentFrame]);
 
   const handleSliderChange = (_: Event, value: number | number[]) => {
-    setIsRendering(false);
-    setCurrentFrame(value as number);
+    dispatch(setIsRendering(false));
+    dispatch(setCurrentFrame(value as number));
   };
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <Settings
         open={sidebarOpen}
-        subjectsInfo={subjectsInfo}
-        instructions={instructions}
-        onClose={() => setSidebarOpen(false)}
-        onAddInstruction={handleAddInstruction}
-        onEditInstruction={handleEditInstruction}
-        onDeleteInstruction={handleDeleteInstruction}
-        onGenerateSubjects={handleGenerateSubjects}
-        onUpdateMovements={handleUpdateMovements}
-        renderSimulationData={renderSimulationData}
-        downloadSimulationData={downloadSimulationData}
-        onImportCameraFrames={handleImportCameraFrames}
+        onClose={() => dispatch(setSidebarOpen(false))}
       />
       <Box ref={worldViewRef} sx={{ height: "calc(100vh - 200px)" }}></Box>
       <Box
@@ -84,7 +128,7 @@ const CameraMovementSimulation: FC = () => {
             type="number"
             label="FPS"
             value={fps}
-            onChange={(e) => setFps(Number(e.target.value))}
+            onChange={(e) => dispatch(setFps(Number(e.target.value)))}
             inputProps={{ min: 1, max: 60 }}
             sx={{ width: 100 }}
             size="small"
@@ -100,7 +144,7 @@ const CameraMovementSimulation: FC = () => {
           />
           <Button
             variant="contained"
-            onClick={() => setIsRendering(!isRendering)}
+            onClick={() => dispatch(setIsRendering(!isRendering))}
           >
             {isRendering ? "Pause" : "Play"}
           </Button>
@@ -112,7 +156,7 @@ const CameraMovementSimulation: FC = () => {
           bottom: 16,
           left: 16,
         }}
-        onClick={() => setSidebarOpen(true)}
+        onClick={() => dispatch(setSidebarOpen(true))}
       >
         <SettingsIcon />
       </Fab>

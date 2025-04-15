@@ -9,31 +9,26 @@ import {
 } from "@mui/material";
 import { StaticControls } from "./components/StaticControls";
 import { AdditionalConstraints } from "./components/AdditionalConstraints";
-import { SimulationInstruction } from "@/service/simulation/instruction/types";
-import { useInstructionForm } from "@/hooks/useInstructionForm";
-import { SubjectInfo } from "@/service/subjects/types";
-import { defaultSimulationInstruction } from "@/service/simulation/instruction/constants";
+import { DynamicMode } from "@/service/simulation/instruction/types";
+import { useAppSelector, useAppDispatch } from "@/redux/hooks";
+import {
+  setAllFramesVisibility,
+  setSubjectIndex,
+} from "@/redux/slices/formSlice";
 
-export interface GeneralSettingsProps {
-  instruction: SimulationInstruction;
-  setters: ReturnType<typeof useInstructionForm>["setters"];
-  subjectsInfo: SubjectInfo[];
-  isSimpleMovement?: boolean;
-}
+export const GeneralSettings: FC = () => {
+  const dispatch = useAppDispatch();
+  const subjectsInfo = useAppSelector((state) => state.subjects.subjectsInfo);
+  const instruction = useAppSelector((state) => state.form.currentInstruction);
+  const isSimpleMovement = instruction.dynamic.type === DynamicMode.Simple;
 
-export const GeneralSettings: FC<GeneralSettingsProps> = ({
-  instruction,
-  setters,
-  subjectsInfo,
-  isSimpleMovement = false,
-}) => {
   return (
     <>
       <FormControlLabel
         control={
           <Switch
             checked={instruction.constraints?.allFramesVisibility || false}
-            onChange={(e) => setters.setAllFramesVisibility(e.target.checked)}
+            onChange={(e) => dispatch(setAllFramesVisibility(e.target.checked))}
           />
         }
         label="Subject visible at all times"
@@ -49,8 +44,10 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
               : "undefined"
           }
           onChange={(e) =>
-            setters.setSubjectIndex(
-              e.target.value === "undefined" ? undefined : +e.target.value
+            dispatch(
+              setSubjectIndex(
+                e.target.value === "undefined" ? undefined : +e.target.value
+              )
             )
           }
           label="Target Subject"
@@ -65,39 +62,12 @@ export const GeneralSettings: FC<GeneralSettingsProps> = ({
       </FormControl>
       {!isSimpleMovement && (
         <>
-          <StaticControls
-            lockedMovement={
-              instruction.constraints?.lockedMovement ||
-              defaultSimulationInstruction.constraints!.lockedMovement!
-            }
-            setLockedPosition={setters.setLockedPosition}
-            lockedRotation={
-              instruction.constraints?.lockedRotation ||
-              defaultSimulationInstruction.constraints!.lockedRotation!
-            }
-            setLockedRotation={setters.setLockedRotation}
-          />
-
-          <AdditionalConstraints
-            staticDistance={instruction.constraints?.staticDistance}
-            setStaticDistance={setters.setStaticDistance}
-            staticCameraSubjectRotation={
-              instruction.constraints?.staticCameraSubjectRotation
-            }
-            setStaticCameraSubjectRotation={
-              setters.setStaticCameraSubjectRotation
-            }
-            importance={instruction.constraints?.importance || 1}
-            setImportance={setters.setImportance}
-            frameCount={instruction.frameCount}
-            setFrameCount={setters.setFrameCount}
-            maxAccelerate={instruction.constraints?.maxAccelerate}
-            setMaxAccelerate={setters.setMaxAccelerate}
-            maxSpeed={instruction.constraints?.maxSpeed}
-            setMaxSpeed={setters.setMaxSpeed}
-          />
+          <StaticControls />
+          <AdditionalConstraints />
         </>
       )}
     </>
   );
 };
+
+export default GeneralSettings;

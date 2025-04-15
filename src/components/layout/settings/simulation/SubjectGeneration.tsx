@@ -1,19 +1,15 @@
 import { FC, useState } from "react";
 import { TextField, Button, Slider, Typography, Box } from "@mui/material";
 import { ObjectClass } from "@/service/subjects/types";
+import { toast } from "react-toastify";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { generateSubjectsThunk } from "@/redux/thunks/simulationThunks";
+import { setSimulationStepIndex } from "@/redux/slices/uiSlice";
 
-interface SubjectGenerationProps {
-  onGenerateSubjects: (
-    count: number,
-    probabilityFactors: Record<ObjectClass, number>
-  ) => void;
-  handleNext: () => void;
-}
+export const SubjectGeneration: FC = () => {
+  const dispatch = useAppDispatch();
+  const activeStep = useAppSelector((state) => state.ui.simulationStepIndex);
 
-export const SubjectGeneration: FC<SubjectGenerationProps> = ({
-  onGenerateSubjects,
-  handleNext,
-}) => {
   const [subjectCount, setSubjectCount] = useState(1);
   const [probabilityFactors, setProbabilityFactors] = useState<
     Record<ObjectClass, number>
@@ -25,8 +21,19 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
   );
 
   const handleGenerateSubjects = () => {
-    onGenerateSubjects(subjectCount, probabilityFactors);
-    handleNext();
+    try {
+      if (subjectCount < 1) {
+        toast.error("Please set at least 1 subject");
+        return;
+      }
+      dispatch(
+        generateSubjectsThunk({ count: subjectCount, probabilityFactors })
+      );
+      dispatch(setSimulationStepIndex(activeStep + 1));
+    } catch (err) {
+      toast.error(`Error generating subjects: ${err}`);
+      console.error("Subject generation error:", err);
+    }
   };
 
   const handleProbabilityChange =
@@ -48,6 +55,8 @@ export const SubjectGeneration: FC<SubjectGenerationProps> = ({
         margin="normal"
         InputProps={{ inputProps: { min: 1, max: 20 } }}
         size="small"
+        error={subjectCount < 1}
+        helperText={subjectCount < 1 ? "Minimum 1 subject required" : ""}
       />
       {Object.values(ObjectClass).map((objectClass) => (
         <Box key={objectClass}>

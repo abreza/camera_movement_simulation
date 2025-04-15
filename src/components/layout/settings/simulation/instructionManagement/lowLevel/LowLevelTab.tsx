@@ -11,84 +11,99 @@ import { Download } from "@mui/icons-material";
 import { InstructionList } from "./components/InstructionList";
 import { SetupControls } from "./components/SetupControls";
 import { GeneralSettings } from "./GeneralSettings";
-import {
-  SimulationInstruction,
-  DynamicMode,
-} from "@/service/simulation/instruction/types";
-import { SubjectInfo } from "@/service/subjects/types";
-import { useInstructionForm } from "@/hooks/useInstructionForm";
 import { Dynamic } from "./Dynamic";
+import { useAppSelector, useAppDispatch } from "@/redux/hooks";
+import { resetForm, setEditingIndex } from "@/redux/slices/formSlice";
+import {
+  renderSimulationDataThunk,
+  downloadSimulationDataThunk,
+} from "@/redux/thunks/simulationThunks";
+import { setSidebarOpen } from "@/redux/slices/uiSlice";
+import {
+  addInstruction,
+  editInstruction,
+} from "@/redux/slices/instructionsSlice";
+import { toast } from "react-toastify";
 
-interface LowLevelTabProps {
-  instructions: SimulationInstruction[];
-  formState: SimulationInstruction;
-  setters: ReturnType<typeof useInstructionForm>["setters"];
-  onEdit: (index: number) => void;
-  onDelete: (index: number) => void;
-  onAddOrUpdate: () => void;
-  editingIndex: number | null;
-  subjectsInfo: SubjectInfo[];
-  onRender: () => void;
-  onClose: () => void;
-  onDownload: () => void;
-}
+export const LowLevelTab: FC = () => {
+  const dispatch = useAppDispatch();
+  const instructions = useAppSelector(
+    (state) => state.instructions.instructions
+  );
+  const editingIndex = useAppSelector((state) => state.form.editingIndex);
+  const currentInstruction = useAppSelector(
+    (state) => state.form.currentInstruction
+  );
 
-export const LowLevelTab: FC<LowLevelTabProps> = ({
-  instructions,
-  formState,
-  setters,
-  onEdit,
-  onDelete,
-  onAddOrUpdate,
-  editingIndex,
-  subjectsInfo,
-  onRender,
-  onClose,
-  onDownload,
-}) => {
+  const handleAddOrUpdate = () => {
+    if (
+      !currentInstruction.initialSetup.cameraAngle ||
+      !currentInstruction.initialSetup.shotSize
+    ) {
+      toast.error("Please set camera angle and shot size in initial setup");
+      return;
+    }
+
+    if (
+      currentInstruction.dynamic.type === "interpolation" &&
+      !currentInstruction.dynamic.endSetup?.cameraAngle &&
+      !currentInstruction.dynamic.endSetup?.shotSize
+    ) {
+      toast.error(
+        "Please set at least one end setup parameter for interpolation"
+      );
+      return;
+    }
+
+    if (editingIndex !== null) {
+      dispatch(
+        editInstruction({
+          index: editingIndex,
+          instruction: currentInstruction,
+        })
+      );
+      dispatch(setEditingIndex(null));
+    } else {
+      dispatch(addInstruction(currentInstruction));
+    }
+
+    dispatch(resetForm());
+    toast.success("Instruction added successfully");
+  };
+
+  const handleRender = () => {
+    dispatch(renderSimulationDataThunk());
+    dispatch(setSidebarOpen(false));
+  };
+
+  const handleDownload = () => {
+    dispatch(downloadSimulationDataThunk());
+  };
+
   return (
     <Box>
-      <InstructionList
-        instructions={instructions}
-        onEdit={onEdit}
-        onDelete={onDelete}
-      />
+      <InstructionList />
 
-      <SetupControls
-        isInitial={true}
-        cameraAngle={formState.initialSetup.cameraAngle}
-        setCameraAngle={setters.setInitialCameraAngle}
-        shotSize={formState.initialSetup.shotSize}
-        setShotSize={setters.setInitialShotSize}
-        subjectView={formState.initialSetup.subjectView}
-        setSubjectView={setters.setInitialSubjectView}
-        subjectFraming={formState.initialSetup.subjectFraming}
-        setSubjectFraming={setters.setInitialSubjectFraming}
-      />
+      <SetupControls isInitial={true} />
 
       <Divider sx={{ my: 2 }} />
       <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
         Dynamic
       </Typography>
 
-      <Dynamic dynamic={formState.dynamic} setters={setters} />
+      <Dynamic />
 
       <Divider sx={{ my: 2 }} />
       <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
         General Settings
       </Typography>
-      <GeneralSettings
-        instruction={formState}
-        setters={setters}
-        subjectsInfo={subjectsInfo}
-        isSimpleMovement={formState.dynamic.type === DynamicMode.Simple}
-      />
+      <GeneralSettings />
 
       <Button
         variant="contained"
         color="primary"
         fullWidth
-        onClick={onAddOrUpdate}
+        onClick={handleAddOrUpdate}
         sx={{ mb: 2 }}
         size="small"
       >
@@ -99,7 +114,7 @@ export const LowLevelTab: FC<LowLevelTabProps> = ({
         <Stack direction="row" spacing={1} alignItems="center">
           <IconButton
             color="primary"
-            onClick={onDownload}
+            onClick={handleDownload}
             size="small"
             aria-label="Download simulation data"
           >
@@ -108,10 +123,7 @@ export const LowLevelTab: FC<LowLevelTabProps> = ({
           <Button
             variant="contained"
             color="warning"
-            onClick={() => {
-              onClose();
-              onRender();
-            }}
+            onClick={handleRender}
             sx={{ flexGrow: 1 }}
             size="small"
           >

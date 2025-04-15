@@ -1,40 +1,50 @@
 import React, { FC } from "react";
 import { IconButton, List, ListItem, ListItemText } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
-import { SimulationInstruction } from "@/service/simulation/instruction/types";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { deleteInstruction } from "@/redux/slices/instructionsSlice";
+import { resetForm, setEditingIndex } from "@/redux/slices/formSlice";
 
-interface InstructionListProps {
-  instructions: SimulationInstruction[];
-  onEdit: (index: number) => void;
-  onDelete: (index: number) => void;
-}
+export const InstructionList: FC = () => {
+  const dispatch = useAppDispatch();
+  const instructions = useAppSelector(
+    (state) => state.instructions.instructions
+  );
 
-export const InstructionList: FC<InstructionListProps> = ({
-  instructions,
-  onEdit,
-  onDelete,
-}) => (
-  <List dense>
-    {instructions.map((instruction, index) => (
-      <ListItem key={index}>
-        <ListItemText
-          primary={`${instruction.initialSetup?.cameraAngle} - ${instruction.initialSetup?.shotSize}`}
-          secondary={`Subject ${
-            instruction.subjectIndex !== undefined
-              ? instruction.subjectIndex + 1
-              : "N/A"
-          }
-          Frames: ${instruction.frameCount}, Easing: ${
-            instruction.dynamic.easing
-          }`}
-        />
-        <IconButton size="small" onClick={() => onEdit(index)}>
-          <Edit fontSize="small" />
-        </IconButton>
-        <IconButton size="small" onClick={() => onDelete(index)}>
-          <Delete fontSize="small" />
-        </IconButton>
-      </ListItem>
-    ))}
-  </List>
-);
+  const handleEdit = (index: number) => {
+    dispatch(resetForm(instructions[index]));
+    dispatch(setEditingIndex(index));
+  };
+
+  const handleDelete = (index: number) => {
+    dispatch(deleteInstruction(index));
+  };
+
+  return (
+    <List dense>
+      {instructions.map((instruction, index) => (
+        <ListItem key={index}>
+          <ListItemText
+            primary={`${instruction.initialSetup?.cameraAngle} - ${instruction.initialSetup?.shotSize}`}
+            secondary={`Subject ${
+              instruction.subjectIndex !== undefined
+                ? instruction.subjectIndex + 1
+                : "N/A"
+            }
+            Frames: ${instruction.frameCount}, Easing: ${
+              instruction.dynamic.easing
+            }`}
+          />
+          <IconButton size="small" onClick={() => handleEdit(index)}>
+            <Edit fontSize="small" />
+          </IconButton>
+          <IconButton size="small" onClick={() => handleDelete(index)}>
+            <Delete fontSize="small" />
+          </IconButton>
+        </ListItem>
+      ))}
+    </List>
+  );
+};
+
+export default InstructionList;

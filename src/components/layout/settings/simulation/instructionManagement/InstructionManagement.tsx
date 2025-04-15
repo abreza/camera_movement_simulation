@@ -1,66 +1,53 @@
 import React, { FC, useState, useEffect } from "react";
-import { Box, Tab, Tabs, Alert, Snackbar } from "@mui/material";
-import {
-  CinematographyPrompt,
-  SimulationInstruction,
-} from "@/service/simulation/instruction/types";
-import { SubjectInfo } from "@/service/subjects/types";
+import { Box, Tab, Tabs, Alert } from "@mui/material";
+import { CinematographyPrompt } from "@/service/simulation/instruction/types";
 import { TextPromptTab } from "./textPrompt/TextPromptTab";
 import LowLevelTab from "./lowLevel/LowLevelTab";
-import { useInstructionForm } from "../../../../../hooks/useInstructionForm";
 import { HighLevelTab } from "./highLevel/HighLevelTab";
-import { translatePromptToSimulationInstruction } from "@/service/simulation/instruction/high-level/translator";
 import { defaultCinematographyPrompt } from "@/service/simulation/instruction/high-level/constant";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import {
+  addInstruction,
+  editInstruction,
+  deleteInstruction,
+} from "@/redux/slices/instructionsSlice";
+import { resetForm, setEditingIndex } from "@/redux/slices/formSlice";
+import { toast } from "react-toastify";
 
-export interface InstructionManagementProps {
-  subjectsInfo: SubjectInfo[];
-  instructions: SimulationInstruction[];
-  onAddInstruction: (instruction: SimulationInstruction) => void;
-  onEditInstruction: (
-    index: number,
-    instruction: SimulationInstruction
-  ) => void;
-  onDeleteInstruction: (index: number) => void;
-  onClose: () => void;
-  renderSimulationData: () => void;
-  downloadSimulationData: () => void;
-}
+export const InstructionManagement: FC = () => {
+  const dispatch = useAppDispatch();
+  const subjectsInfo = useAppSelector((state) => state.subjects.subjectsInfo);
+  const instructions = useAppSelector(
+    (state) => state.instructions.instructions
+  );
+  const reduxCinematographyPrompt = useAppSelector(
+    (state) => state.instructions.cinematographyPrompt
+  );
+  const currentInstruction = useAppSelector(
+    (state) => state.form.currentInstruction
+  );
+  const editingIndex = useAppSelector((state) => state.form.editingIndex);
 
-export const InstructionManagement: FC<InstructionManagementProps> = ({
-  subjectsInfo,
-  instructions,
-  onAddInstruction,
-  onEditInstruction,
-  onDeleteInstruction,
-  onClose,
-  renderSimulationData,
-  downloadSimulationData,
-}) => {
   const [activeTab, setActiveTab] = useState(0);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [cinematographyPrompt, setCinematographyPrompt] =
-    useState<CinematographyPrompt>(defaultCinematographyPrompt);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-
-  const { formState, setters, resetForm } = useInstructionForm();
+  const [cinematographyPrompt, setCinematographyPromptLocal] =
+    useState<CinematographyPrompt>(
+      reduxCinematographyPrompt || defaultCinematographyPrompt
+    );
 
   useEffect(() => {
     if (subjectsInfo.length === 0 && activeTab > 0) {
       setActiveTab(0);
-      setSnackbarMessage(
+      toast.error(
         "Please generate subjects first before configuring instructions"
       );
-      setSnackbarOpen(true);
     }
   }, [subjectsInfo, activeTab]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     if (subjectsInfo.length === 0 && newValue > 0) {
-      setSnackbarMessage(
+      toast.error(
         "Please generate subjects first before configuring instructions"
       );
-      setSnackbarOpen(true);
       return;
     }
     setActiveTab(newValue);
@@ -68,49 +55,48 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
 
   const handleAddOrUpdateInstruction = () => {
     if (
-      !formState.initialSetup.cameraAngle ||
-      !formState.initialSetup.shotSize
+      !currentInstruction.initialSetup.cameraAngle ||
+      !currentInstruction.initialSetup.shotSize
     ) {
-      setSnackbarMessage(
-        "Please set camera angle and shot size in initial setup"
-      );
-      setSnackbarOpen(true);
+      toast.error("Please set camera angle and shot size in initial setup");
       return;
     }
 
     if (
-      formState.dynamic.type === "interpolation" &&
-      !formState.dynamic.endSetup?.cameraAngle &&
-      !formState.dynamic.endSetup?.shotSize
+      currentInstruction.dynamic.type === "interpolation" &&
+      !currentInstruction.dynamic.endSetup?.cameraAngle &&
+      !currentInstruction.dynamic.endSetup?.shotSize
     ) {
-      setSnackbarMessage(
+      toast.error(
         "Please set at least one end setup parameter for interpolation"
       );
-      setSnackbarOpen(true);
       return;
     }
 
     if (editingIndex !== null) {
-      onEditInstruction(editingIndex, formState);
-      setEditingIndex(null);
+      dispatch(
+        editInstruction({
+          index: editingIndex,
+          instruction: currentInstruction,
+        })
+      );
+      dispatch(setEditingIndex(null));
     } else {
-      onAddInstruction(formState);
+      dispatch(addInstruction(currentInstruction));
     }
 
-    resetForm();
-    setSnackbarMessage("Instruction added successfully");
-    setSnackbarOpen(true);
+    dispatch(resetForm());
+    toast.success("Instruction added successfully");
   };
 
   const handleEdit = (index: number) => {
-    resetForm(instructions[index]);
-    setEditingIndex(index);
-
+    dispatch(resetForm(instructions[index]));
+    dispatch(setEditingIndex(index));
     setActiveTab(2);
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbarOpen(false);
+  const handleDelete = (index: number) => {
+    dispatch(deleteInstruction(index));
   };
 
   return (
@@ -136,68 +122,13 @@ export const InstructionManagement: FC<InstructionManagementProps> = ({
 
       <Box sx={{ pt: 2 }}>
         {activeTab === 0 ? (
-          <TextPromptTab
-            onTranslateSuccess={(cinPrompt) => {
-              setCinematographyPrompt(cinPrompt);
-              setActiveTab(1);
-            }}
-          />
+          <TextPromptTab />
         ) : activeTab === 1 ? (
-          <HighLevelTab
-            cinematographyPrompt={cinematographyPrompt}
-            setCinematographyPrompt={setCinematographyPrompt}
-            onTranslate={(cinematographyPrompt: CinematographyPrompt) => {
-              try {
-                const instruction =
-                  translatePromptToSimulationInstruction(cinematographyPrompt);
-                resetForm(instruction);
-                setActiveTab(2);
-              } catch (error) {
-                console.error("Translation error:", error);
-                setSnackbarMessage(
-                  "Error translating to low-level instructions"
-                );
-                setSnackbarOpen(true);
-              }
-            }}
-          />
+          <HighLevelTab />
         ) : (
-          <LowLevelTab
-            instructions={instructions}
-            formState={formState}
-            setters={setters}
-            onEdit={handleEdit}
-            onDelete={onDeleteInstruction}
-            onAddOrUpdate={handleAddOrUpdateInstruction}
-            editingIndex={editingIndex}
-            subjectsInfo={subjectsInfo}
-            onRender={renderSimulationData}
-            onClose={onClose}
-            onDownload={downloadSimulationData}
-          />
+          <LowLevelTab />
         )}
       </Box>
-
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={
-            snackbarMessage.includes("error") ||
-            snackbarMessage.includes("Please")
-              ? "error"
-              : "success"
-          }
-          sx={{ width: "100%" }}
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 };
-
-export default InstructionManagement;

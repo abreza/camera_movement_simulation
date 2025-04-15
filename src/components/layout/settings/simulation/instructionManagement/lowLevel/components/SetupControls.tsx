@@ -15,40 +15,60 @@ import {
   Scale,
   SubjectFraming,
 } from "@/service/simulation/instruction/types";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import {
+  setInitialCameraAngle,
+  setInitialShotSize,
+  setInitialSubjectView,
+  setInitialSubjectFraming,
+  setEndCameraAngle,
+  setEndShotSize,
+  setEndSubjectView,
+  setEndSubjectFraming,
+} from "@/redux/slices/formSlice";
 
 interface SetupControlsProps {
   isInitial: boolean;
-  cameraAngle: CameraVerticalAngle | undefined;
-  setCameraAngle: (angle: CameraVerticalAngle | undefined) => void;
-  shotSize: ShotSize | undefined;
-  setShotSize: (size: ShotSize | undefined) => void;
-  subjectView: SubjectView | undefined;
-  setSubjectView: (view: SubjectView | undefined) => void;
-  subjectFraming: SubjectFraming | undefined;
-  setSubjectFraming: (framing: SubjectFraming | undefined) => void;
 }
 
-export const SetupControls: FC<SetupControlsProps> = ({
-  isInitial,
-  cameraAngle,
-  setCameraAngle,
-  shotSize,
-  setShotSize,
-  subjectView,
-  setSubjectView,
-  subjectFraming,
-  setSubjectFraming,
-}) => {
-  const handleFramingChange = (field: keyof SubjectFraming, value: any) => {
-    if (!value) {
-      setSubjectFraming(undefined);
-      return;
-    }
+export const SetupControls: FC<SetupControlsProps> = ({ isInitial }) => {
+  const dispatch = useAppDispatch();
+  const currentInstruction = useAppSelector(
+    (state) => state.form.currentInstruction
+  );
 
-    setSubjectFraming({
-      ...subjectFraming,
-      [field]: value,
-    } as SubjectFraming);
+  const setup = isInitial
+    ? currentInstruction.initialSetup
+    : currentInstruction.dynamic.type === "interpolation"
+    ? currentInstruction.dynamic.endSetup
+    : undefined;
+
+  const handleCameraAngleChange = (value: CameraVerticalAngle | undefined) => {
+    dispatch(
+      isInitial ? setInitialCameraAngle(value) : setEndCameraAngle(value)
+    );
+  };
+
+  const handleShotSizeChange = (value: ShotSize | undefined) => {
+    dispatch(isInitial ? setInitialShotSize(value) : setEndShotSize(value));
+  };
+
+  const handleSubjectViewChange = (value: SubjectView | undefined) => {
+    dispatch(
+      isInitial ? setInitialSubjectView(value) : setEndSubjectView(value)
+    );
+  };
+
+  const handleFramingChange = (field: keyof SubjectFraming, value: any) => {
+    const updatedFraming = value
+      ? { ...(setup?.subjectFraming || {}), [field]: value }
+      : undefined;
+
+    dispatch(
+      isInitial
+        ? setInitialSubjectFraming(updatedFraming)
+        : setEndSubjectFraming(updatedFraming)
+    );
   };
 
   return (
@@ -60,9 +80,11 @@ export const SetupControls: FC<SetupControlsProps> = ({
       <FormControl fullWidth sx={{ mb: 2 }} size="small">
         <InputLabel>Camera Vertical Angle</InputLabel>
         <Select
-          value={cameraAngle || ""}
+          value={setup?.cameraAngle || ""}
           onChange={(e) =>
-            setCameraAngle((e.target.value as CameraVerticalAngle) || undefined)
+            handleCameraAngleChange(
+              (e.target.value as CameraVerticalAngle) || undefined
+            )
           }
           label="Camera Vertical Angle"
         >
@@ -80,9 +102,9 @@ export const SetupControls: FC<SetupControlsProps> = ({
       <FormControl fullWidth sx={{ mb: 2 }} size="small">
         <InputLabel>Shot Size</InputLabel>
         <Select
-          value={shotSize || ""}
+          value={setup?.shotSize || ""}
           onChange={(e) =>
-            setShotSize((e.target.value as ShotSize) || undefined)
+            handleShotSizeChange((e.target.value as ShotSize) || undefined)
           }
           label="Shot Size"
         >
@@ -100,9 +122,11 @@ export const SetupControls: FC<SetupControlsProps> = ({
       <FormControl fullWidth sx={{ mb: 2 }} size="small">
         <InputLabel>Subject View</InputLabel>
         <Select
-          value={subjectView || ""}
+          value={setup?.subjectView || ""}
           onChange={(e) =>
-            setSubjectView((e.target.value as SubjectView) || undefined)
+            handleSubjectViewChange(
+              (e.target.value as SubjectView) || undefined
+            )
           }
           label="Subject View"
         >
@@ -125,7 +149,7 @@ export const SetupControls: FC<SetupControlsProps> = ({
         <FormControl fullWidth size="small">
           <InputLabel>Frame Position</InputLabel>
           <Select
-            value={subjectFraming?.position || ""}
+            value={setup?.subjectFraming?.position || ""}
             onChange={(e) =>
               handleFramingChange(
                 "position",
@@ -148,7 +172,7 @@ export const SetupControls: FC<SetupControlsProps> = ({
         <FormControl fullWidth size="small">
           <InputLabel>Subject Dutch Angle Scale</InputLabel>
           <Select
-            value={subjectFraming?.dutchAngleScale || ""}
+            value={setup?.subjectFraming?.dutchAngleScale || ""}
             onChange={(e) =>
               handleFramingChange(
                 "dutchAngleScale",

@@ -1,14 +1,11 @@
 import React, { FC, useState } from "react";
 import { Box, TextField, Button } from "@mui/material";
-import { CinematographyPrompt } from "@/service/simulation/instruction/types";
+import { useAppDispatch } from "@/redux/hooks";
+import { setCinematographyPrompt } from "@/redux/slices/instructionsSlice";
+import { toast } from "react-toastify";
 
-interface TextPromptTabProps {
-  onTranslateSuccess: (cinematographyPrompt: CinematographyPrompt) => void;
-}
-
-export const TextPromptTab: FC<TextPromptTabProps> = ({
-  onTranslateSuccess,
-}) => {
+export const TextPromptTab: FC = () => {
+  const dispatch = useAppDispatch();
   const [textPrompt, setTextPrompt] = useState("");
 
   const handleTranslate = async () => {
@@ -32,12 +29,15 @@ export const TextPromptTab: FC<TextPromptTabProps> = ({
 
       if (data.error) {
         console.error("Error in OpenAI response:", data.error);
+        toast.error("Error translating text");
         return;
       }
 
-      onTranslateSuccess(data.cinematographyPrompt);
+      dispatch(setCinematographyPrompt(data.cinematographyPrompt));
+      toast.success("Text translated successfully");
     } catch (err) {
       console.error("Failed to translate text prompt:", err);
+      toast.error("Failed to translate text prompt");
     }
   };
 
