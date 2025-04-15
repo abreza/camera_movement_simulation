@@ -1,4 +1,3 @@
-// src/redux/slices/uiSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { GenerateDatasetConfig } from "@/service/dataset/generate";
 
@@ -25,6 +24,24 @@ const initialState: UIState = {
     instructionCount: 1,
     minFrameCount: 30,
     maxFrameCount: 300,
+    movementDistribution: {
+      circular: 1,
+      zigzag: 1,
+      linear: 1,
+      spiral: 1,
+      static: 1,
+      figureEight: 1,
+      wave: 1,
+      pendulum: 1,
+      orbital: 1,
+      bounce: 1,
+    },
+    noiseConfig: {
+      applyNoise: false,
+      positionAmplitude: 0.1,
+      rotationAmplitude: 0.02,
+      frequency: 0.5,
+    },
   },
 };
 

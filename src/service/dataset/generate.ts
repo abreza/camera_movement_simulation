@@ -23,18 +23,51 @@ export interface GenerateDatasetConfig {
   minFrameCount?: number;
   maxFrameCount?: number;
   subjectClassProbabilities?: Partial<Record<ObjectClass, number>>;
+  movementDistribution?: Record<string, number>;
   onProgress?: (progress: number, phase: "generating" | "zipping") => void;
   chunkSize?: number;
+  noiseConfig?: {
+    applyNoise?: boolean;
+    positionAmplitude?: number;
+    rotationAmplitude?: number;
+    frequency?: number;
+  };
 }
 
-function assignRandomMovements(subjects: Subject[]): Record<string, string> {
+function assignRandomMovements(
+  subjects: Subject[],
+  movementDistribution?: Record<string, number>
+): Record<string, string> {
   const movements: Record<string, string> = {};
   const movementTypes = Object.keys(movementGenerators);
 
+  if (!movementDistribution) {
+    subjects.forEach((subject) => {
+      const randomMovement =
+        movementTypes[Math.floor(Math.random() * movementTypes.length)];
+      movements[subject.id] = randomMovement;
+    });
+    return movements;
+  }
+
+  const totalWeight = Object.values(movementDistribution).reduce(
+    (sum, weight) => sum + weight,
+    0
+  );
+
   subjects.forEach((subject) => {
-    const randomMovement =
-      movementTypes[Math.floor(Math.random() * movementTypes.length)];
-    movements[subject.id] = randomMovement;
+    let random = Math.random() * totalWeight;
+    let selectedMovement = movementTypes[0];
+
+    for (const [movement, weight] of Object.entries(movementDistribution)) {
+      random -= weight;
+      if (random <= 0) {
+        selectedMovement = movement;
+        break;
+      }
+    }
+
+    movements[subject.id] = selectedMovement;
   });
 
   return movements;
@@ -61,8 +94,10 @@ export async function generateRandomDataset(
     minFrameCount = 30,
     maxFrameCount = 30,
     subjectClassProbabilities,
+    movementDistribution,
     onProgress,
     chunkSize = CHUNK_SIZE,
+    noiseConfig,
   } = config;
   const paddingLength = Math.floor(Math.log10(simulationCount)) + 1;
 
@@ -88,11 +123,19 @@ export async function generateRandomDataset(
     operationCount += subjectCount;
     await yieldIfNeeded(operationCount, chunkSize);
 
-    const subjectMovements = assignRandomMovements(subjects);
+    const subjectMovements = assignRandomMovements(
+      subjects,
+      movementDistribution
+    );
+
     operationCount += subjects.length;
     await yieldIfNeeded(operationCount, chunkSize);
 
-    const subjectFrames = generateFrames(subjects, subjectMovements);
+    const subjectFrames = generateFrames(
+      subjects,
+      subjectMovements,
+      noiseConfig
+    );
     operationCount += subjects.length * (maxFrameCount - minFrameCount + 1);
     await yieldIfNeeded(operationCount, chunkSize);
 
