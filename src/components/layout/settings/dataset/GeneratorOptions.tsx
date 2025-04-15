@@ -15,6 +15,7 @@ import {
   IconButton,
   Switch,
   FormControlLabel,
+  Fade,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import { GenerateDatasetConfig } from "@/service/dataset/generate";
@@ -26,7 +27,7 @@ import {
   setProgressPhase,
 } from "@/redux/slices/uiSlice";
 import { generateRandomDataset } from "@/service/dataset/generate";
-import { movementGenerators } from "@/service/subjects/generateFrames";
+import { movementGenerators } from "@/service/subjects/movements";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { MovementPreview } from "./MovementPreview";
 
@@ -492,6 +493,8 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
                       }
                       arrow
                       placement="right"
+                      TransitionComponent={Fade}
+                      TransitionProps={{ unmountOnExit: true }}
                     >
                       <IconButton size="small" sx={{ ml: 1 }}>
                         <InfoIcon fontSize="small" />

@@ -1,8 +1,5 @@
 import React, { useMemo, forwardRef, useState, useEffect } from "react";
-import {
-  movementGenerators,
-  addMovementNoise,
-} from "@/service/subjects/generateFrames";
+import { generateFrames } from "@/service/subjects/movements";
 import { ObjectClass, Subject } from "@/service/subjects/types";
 
 interface MovementPreviewProps {
@@ -34,17 +31,19 @@ export const MovementPreview = forwardRef<HTMLDivElement, MovementPreviewProps>(
     );
 
     const frames = useMemo(() => {
-      const generator = movementGenerators[movementType];
-      if (!generator) return [];
+      const movements = {
+        [dummySubject.id]: movementType,
+      };
 
-      const baseFrames = generator(dummySubject, 0, 1);
+      const framesArray = generateFrames([dummySubject], movements, {
+        applyNoise: !!noiseConfig,
+        positionAmplitude: noiseConfig?.positionAmplitude,
+        rotationAmplitude: noiseConfig?.rotationAmplitude,
+        frequency: noiseConfig?.frequency,
+        randomize: true,
+      });
 
-      // Apply noise if noiseConfig is provided
-      if (noiseConfig) {
-        return addMovementNoise(baseFrames, noiseConfig);
-      }
-
-      return baseFrames;
+      return framesArray[0] || [];
     }, [movementType, dummySubject, noiseConfig]);
 
     const { svgPath, points, rotations } = useMemo(() => {
@@ -56,7 +55,6 @@ export const MovementPreview = forwardRef<HTMLDivElement, MovementPreviewProps>(
         z: frame.position.z,
       }));
 
-      // Extract rotations
       const rotations = frames.map((frame) => frame.rotation.y);
 
       const minX = Math.min(...coordinates.map((c) => c.x));
@@ -91,7 +89,6 @@ export const MovementPreview = forwardRef<HTMLDivElement, MovementPreviewProps>(
       };
     }, [frames, width, height]);
 
-    // Calculate trail points
     const trailPoints = useMemo(() => {
       if (points.length === 0) return [];
 
@@ -107,7 +104,6 @@ export const MovementPreview = forwardRef<HTMLDivElement, MovementPreviewProps>(
       });
     }, [points, currentFrameIndex]);
 
-    // Animation effect
     useEffect(() => {
       if (points.length === 0) return;
 
@@ -115,7 +111,7 @@ export const MovementPreview = forwardRef<HTMLDivElement, MovementPreviewProps>(
         setCurrentFrameIndex((prevIndex) =>
           prevIndex >= points.length - 1 ? 0 : prevIndex + 1
         );
-      }, 50); // Update every 50ms for smooth animation
+      }, 50);
 
       return () => clearInterval(intervalId);
     }, [points]);

@@ -2,7 +2,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 import { ObjectClass, SubjectFrame } from "@/service/subjects/types";
 import { generateSubjects } from "@/service/subjects/generateSubjects";
-import { generateFrames } from "@/service/subjects/generateFrames";
+import { generateFrames } from "@/service/subjects/movements";
 import { calculateCameraPositions } from "@/service/simulation/optimization";
 import { handleDownloadSimulationData } from "@/utils/simulationUtils";
 import {

@@ -41,3 +41,28 @@ export type SubjectFrameInfo = {
   subject: Subject;
   frame?: SubjectFrame;
 };
+
+export type MovementGenerator = (
+  subject: Subject,
+  index: number,
+  totalSubjects: number,
+  randomSettings?: RandomizationSettings
+) => SubjectFrame[];
+
+export interface RandomizationSettings {
+  enabled: boolean;
+  positionOffset?: {
+    x?: number;
+    y?: number;
+    z?: number;
+    radius?: number;
+  };
+  rotationOffset?: number;
+  speedFactor?: {
+    min: number;
+    max: number;
+  };
+  directionReversalProbability?: number;
+  phaseOffset?: number;
+  seed: number;
+}

@@ -11,7 +11,7 @@ import { generateRandomCinematographyPrompt } from "../simulation/instruction/hi
 import {
   generateFrames,
   movementGenerators,
-} from "@/service/subjects/generateFrames";
+} from "@/service/subjects/movements";
 import { calculateCameraPositions } from "../simulation/optimization";
 import { formatSimulationData } from "./simulationFormatter";
 import { ParameterDictionary } from "./parameterDictionary";
