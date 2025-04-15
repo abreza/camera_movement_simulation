@@ -69,10 +69,10 @@ export const highLevelInstructionRules: Record<
   dollyInZoomOut: {
     disabledFinalSetup: ["cameraAngle", "subjectView"],
   },
-  dutchLeft: {
-    disabledFinalSetup: [],
-  },
-  dutchRight: {
-    disabledFinalSetup: [],
-  },
+  // dutchLeft: {
+  //   disabledFinalSetup: [],
+  // },
+  // dutchRight: {
+  //   disabledFinalSetup: [],
+  // },
 };

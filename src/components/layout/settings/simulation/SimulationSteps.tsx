@@ -5,11 +5,6 @@ import {
   StepLabel,
   Button,
   Stack,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   Box,
   Alert,
 } from "@mui/material";
@@ -23,9 +18,6 @@ export const SimulationSteps: FC = () => {
   const dispatch = useAppDispatch();
   const activeStep = useAppSelector((state) => state.ui.simulationStepIndex);
   const subjectsInfo = useAppSelector((state) => state.subjects.subjectsInfo);
-  const instructions = useAppSelector(
-    (state) => state.instructions.instructions
-  );
 
   const steps = [
     "Generate Subjects",
@@ -33,8 +25,6 @@ export const SimulationSteps: FC = () => {
     "Manage Instructions",
   ];
 
-  const [confirmExitOpen, setConfirmExitOpen] = useState(false);
-  const [confirmBackOpen, setConfirmBackOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,24 +42,10 @@ export const SimulationSteps: FC = () => {
 
   const handleBack = () => {
     if (activeStep === 0) {
-      setConfirmExitOpen(true);
+      dispatch(setSimulationStepIndex(-1));
     } else {
-      if (activeStep === 2 && instructions.length > 0) {
-        setConfirmBackOpen(true);
-      } else {
-        dispatch(setSimulationStepIndex(activeStep - 1));
-      }
+      dispatch(setSimulationStepIndex(activeStep - 1));
     }
-  };
-
-  const handleConfirmExit = () => {
-    setConfirmExitOpen(false);
-    dispatch(setSimulationStepIndex(-1));
-  };
-
-  const handleConfirmBack = () => {
-    setConfirmBackOpen(false);
-    dispatch(setSimulationStepIndex(activeStep - 1));
   };
 
   const renderStepContent = () => {
@@ -127,40 +103,6 @@ export const SimulationSteps: FC = () => {
           </Button>
         )}
       </Stack>
-
-      <Dialog open={confirmExitOpen} onClose={() => setConfirmExitOpen(false)}>
-        <DialogTitle>Confirm Exit</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to exit? Any unsaved changes will be lost.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmExitOpen(false)} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleConfirmExit} color="error">
-            Exit
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={confirmBackOpen} onClose={() => setConfirmBackOpen(false)}>
-        <DialogTitle>Go Back</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Going back may require you to reconfigure instructions. Continue?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmBackOpen(false)} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleConfirmBack} color="warning">
-            Go Back
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 };

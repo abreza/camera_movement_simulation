@@ -111,7 +111,11 @@ export const Settings: FC<SettingsProps> = ({ open, onClose }) => {
             />
           </Stack>
         )}
-        {selectedView === "generator" && <GeneratorOptions onClose={onClose} />}
+        {selectedView === "generator" && (
+          <GeneratorOptions
+            onClose={() => dispatch(setSimulationStepIndex(-1))}
+          />
+        )}
         {selectedView === "simulation" && <SimulationSteps />}
       </DialogContent>
     </Dialog>

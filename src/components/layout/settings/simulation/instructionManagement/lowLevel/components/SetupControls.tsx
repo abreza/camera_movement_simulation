@@ -169,7 +169,7 @@ export const SetupControls: FC<SetupControlsProps> = ({ isInitial }) => {
           </Select>
         </FormControl>
 
-        <FormControl fullWidth size="small">
+        {/* <FormControl fullWidth size="small">
           <InputLabel>Subject Dutch Angle Scale</InputLabel>
           <Select
             value={setup?.subjectFraming?.dutchAngleScale || ""}
@@ -190,7 +190,7 @@ export const SetupControls: FC<SetupControlsProps> = ({ isInitial }) => {
               </MenuItem>
             ))}
           </Select>
-        </FormControl>
+        </FormControl> */}
       </Stack>
     </>
   );

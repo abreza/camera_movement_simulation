@@ -158,12 +158,12 @@ export function buildConstraintsForMovement(
     case CameraMovementType.ArcLeft:
     case CameraMovementType.ArcRight:
 
-    case CameraMovementType.DutchLeft:
-    case CameraMovementType.DutchRight:
-      return {
-        ...baseConstraints,
-        allFramesVisibility: true,
-      };
+    // case CameraMovementType.DutchLeft:
+    // case CameraMovementType.DutchRight:
+    //   return {
+    //     ...baseConstraints,
+    //     allFramesVisibility: true,
+    //   };
 
     case CameraMovementType.Follow:
       return {

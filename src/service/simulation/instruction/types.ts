@@ -227,8 +227,8 @@ export enum CameraMovementType {
   DollyOutZoomIn = "dollyOutZoomIn",
   DollyInZoomOut = "dollyInZoomOut",
 
-  DutchLeft = "dutchLeft",
-  DutchRight = "dutchRight",
+  // DutchLeft = "dutchLeft",
+  // DutchRight = "dutchRight",
 }
 
 export enum MovementSpeed {

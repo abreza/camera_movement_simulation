@@ -98,13 +98,13 @@ export function autoGenerateEndSetup(
       }
       break;
 
-    case CameraMovementType.DutchLeft:
-    case CameraMovementType.DutchRight:
-      endSetup.subjectFraming = {
-        ...endSetup.subjectFraming,
-        dutchAngleScale: Scale.Medium,
-      };
-      break;
+    // case CameraMovementType.DutchLeft:
+    // case CameraMovementType.DutchRight:
+    //   endSetup.subjectFraming = {
+    //     ...endSetup.subjectFraming,
+    //     dutchAngleScale: Scale.Medium,
+    //   };
+    //   break;
 
     case CameraMovementType.CraneUp:
       switch (initial.cameraAngle) {
