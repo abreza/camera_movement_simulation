@@ -163,6 +163,7 @@ export async function generateRandomDataset(
     const subjectsInfo: SubjectInfo[] = subjects.map((subject, index) => ({
       subject,
       frames: subjectFrames[index],
+      movementType: subjectMovements[subject.id],
     }));
     operationCount += subjects.length;
     await yieldIfNeeded(operationCount, chunkSize);

@@ -35,6 +35,7 @@ export type SubjectFrame = {
 export type SubjectInfo = {
   subject: Subject;
   frames?: SubjectFrame[];
+  movementType: string;
 };
 
 export type SubjectFrameInfo = {

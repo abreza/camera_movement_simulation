@@ -13,12 +13,13 @@ type SubjectCompressed = {
   d: number[];
   a?: number[];
   f: number[][];
+  m: string;
 };
 
 function compressFormatSubjectInfo(
   subjectsInfo: SubjectInfo[]
 ): SubjectCompressed[] {
-  return subjectsInfo.map(({ subject, frames }) => {
+  return subjectsInfo.map(({ subject, frames, movementType }) => {
     const formattedInfo: SubjectCompressed = {
       i: subject.id,
       c: subject.class,
@@ -36,6 +37,7 @@ function compressFormatSubjectInfo(
           frame.rotation.y,
           frame.rotation.z,
         ]) || [],
+      m: movementType,
     };
 
     if (subject.attentionBox) {
