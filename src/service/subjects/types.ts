@@ -6,7 +6,7 @@ export enum ObjectClass {
   Laptop = "laptop",
   Book = "book",
   Tree = "tree",
-  Building = "building",
+  // Building = "building",
   Car = "car",
   Bicycle = "bicycle",
 }

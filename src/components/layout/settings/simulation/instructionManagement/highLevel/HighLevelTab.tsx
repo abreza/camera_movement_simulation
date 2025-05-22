@@ -30,7 +30,13 @@ import { setCinematographyPrompt } from "@/redux/slices/instructionsSlice";
 import { resetForm } from "@/redux/slices/formSlice";
 import { toast } from "react-toastify";
 
-export const HighLevelTab: FC = () => {
+interface HighLevelTabProps {
+  onNavigateToLowLevel: () => void;
+}
+
+export const HighLevelTab: FC<HighLevelTabProps> = ({
+  onNavigateToLowLevel,
+}) => {
   const dispatch = useAppDispatch();
   const cinematographyPrompt = useAppSelector(
     (state) => state.instructions.cinematographyPrompt
@@ -96,6 +102,8 @@ export const HighLevelTab: FC = () => {
       const instruction =
         translatePromptToSimulationInstruction(cinematographyPrompt);
       dispatch(resetForm(instruction));
+      onNavigateToLowLevel(); // Navigate to low-level tab after translation
+      toast.success("Translated to low-level instructions successfully");
     } catch (error) {
       console.error("Translation error:", error);
       toast.error("Error translating to low-level instructions");

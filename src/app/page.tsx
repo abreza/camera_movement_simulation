@@ -14,6 +14,8 @@ import {
 import { Renderer } from "@/service/rendering/Renderer";
 import { SubjectFrameInfo } from "@/service/subjects/types";
 
+import { InferenceInfo } from "@/components/layout/inference/info";
+
 const CameraMovementSimulation: FC = () => {
   const dispatch = useAppDispatch();
 
@@ -23,6 +25,7 @@ const CameraMovementSimulation: FC = () => {
   const fps = useAppSelector((state) => state.camera.fps);
   const isRendering = useAppSelector((state) => state.camera.isRendering);
   const subjectsInfo = useAppSelector((state) => state.subjects.subjectsInfo);
+  const sourceData = useAppSelector((state) => state.camera.sourceData);
 
   const worldViewRef = useRef<HTMLDivElement>(null);
   const cameraViewRef = useRef<HTMLDivElement>(null);
@@ -45,9 +48,23 @@ const CameraMovementSimulation: FC = () => {
 
   useEffect(() => {
     if (subjectsInfo.length > 0 && rendererRef.current) {
+      console.log("Initializing subjects in renderer:", subjectsInfo);
       rendererRef.current.initSubjects(subjectsInfo);
     }
   }, [subjectsInfo]);
+
+  useEffect(() => {
+    if (cameraFrames.length > 0 && rendererRef.current) {
+      console.log(
+        "Updating camera frames for trajectory:",
+        cameraFrames.length
+      );
+
+      (rendererRef.current as any).sceneManager?.updateCameraFrames(
+        cameraFrames
+      );
+    }
+  }, [cameraFrames]);
 
   const render = useCallback(() => {
     if (!rendererRef.current) return;
@@ -112,6 +129,9 @@ const CameraMovementSimulation: FC = () => {
           display: cameraFrames.length > 1 ? "block" : "none",
         }}
       ></Box>
+
+      {sourceData?.trajectories && <InferenceInfo />}
+
       {cameraFrames.length > 1 && (
         <Stack
           sx={{

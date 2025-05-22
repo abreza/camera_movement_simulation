@@ -5,7 +5,7 @@ import { CameraParameters } from "../simulation/instruction/types";
 export class Renderer {
   private cameraViewElement: HTMLDivElement;
   private worldViewElement: HTMLDivElement;
-  private sceneManager: SceneManager;
+  public sceneManager: SceneManager;
   private resizeHandler: () => void;
 
   constructor(
@@ -34,6 +34,10 @@ export class Renderer {
 
   initSubjects(subjectsInfo: SubjectInfo[]): void {
     this.sceneManager.initSubjects(subjectsInfo);
+  }
+
+  updateCameraFrames(cameraFrames: CameraParameters[]): void {
+    this.sceneManager.updateCameraFrames(cameraFrames);
   }
 
   render(): void {

@@ -24,6 +24,7 @@
     "next": "15.2.4",
     "react": "^19",
     "react-dom": "^19",
+    "react-reconciler": "^0.32.0",
     "react-redux": "^9.2.0",
     "react-toastify": "^11.0.5",
     "recharts": "^2.15.2",

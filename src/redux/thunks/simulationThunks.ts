@@ -1,21 +1,16 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState } from "../store";
-import { ObjectClass, SubjectFrame } from "@/service/subjects/types";
+import { ObjectClass } from "@/service/subjects/types";
 import { generateSubjects } from "@/service/subjects/generateSubjects";
 import { generateFrames } from "@/service/subjects/movements";
 import { calculateCameraPositions } from "@/service/simulation/optimization";
 import { handleDownloadSimulationData } from "@/utils/simulationUtils";
 import {
   setSubjects,
-  setSubjectFrames,
   setSubjectsInfo,
   setMovements,
 } from "../slices/subjectsSlice";
 import { setCameraFrames, setIsRendering } from "../slices/cameraSlice";
-
-const processFramesForRedux = (frames: SubjectFrame[][]) => {
-  return frames;
-};
 
 export const generateSubjectsThunk = createAsyncThunk(
   "subjects/generateSubjects",
@@ -37,6 +32,7 @@ export const generateSubjectsThunk = createAsyncThunk(
       const newSubjectsInfo = newSubjects.map((subject) => ({
         subject,
         frames: [],
+        movementType: "default",
       }));
 
       dispatch(setSubjectsInfo(newSubjectsInfo));
@@ -59,17 +55,14 @@ export const updateMovementsThunk = createAsyncThunk(
       dispatch(setMovements(movements));
 
       const newFrames = generateFrames(subjects, movements);
-      const processedFrames = processFramesForRedux(newFrames);
-      dispatch(setSubjectFrames(processedFrames));
 
       const newSubjectsInfo = subjects.map((subject, index) => ({
         subject,
         frames: newFrames[index],
+        movementType: movements[subject.id] || "default",
       }));
 
       dispatch(setSubjectsInfo(newSubjectsInfo));
-
-      return processedFrames;
     } catch (error) {
       console.error("Error updating movements:", error);
       throw error;

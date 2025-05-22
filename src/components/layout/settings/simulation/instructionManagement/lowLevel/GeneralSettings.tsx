@@ -53,9 +53,9 @@ export const GeneralSettings: FC = () => {
           label="Target Subject"
         >
           <MenuItem value="undefined">No subject</MenuItem>
-          {subjectsInfo.map((_, index) => (
-            <MenuItem key={index} value={index}>
-              {`Subject ${index + 1}`}
+          {subjectsInfo.map(({ subject }, index) => (
+            <MenuItem key={subject.id} value={index}>
+              {subject.id}
             </MenuItem>
           ))}
         </Select>

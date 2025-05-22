@@ -3,14 +3,12 @@ import { Subject, SubjectFrame, SubjectInfo } from "@/service/subjects/types";
 
 interface SubjectsState {
   subjects: Subject[];
-  subjectFrames: SubjectFrame[][];
   subjectsInfo: SubjectInfo[];
   movements: Record<string, string>;
 }
 
 const initialState: SubjectsState = {
   subjects: [],
-  subjectFrames: [],
   subjectsInfo: [],
   movements: {},
 };
@@ -21,9 +19,6 @@ export const subjectsSlice = createSlice({
   reducers: {
     setSubjects: (state, action: PayloadAction<Subject[]>) => {
       state.subjects = action.payload;
-    },
-    setSubjectFrames: (state, action: PayloadAction<SubjectFrame[][]>) => {
-      state.subjectFrames = action.payload;
     },
     setSubjectsInfo: (state, action: PayloadAction<SubjectInfo[]>) => {
       state.subjectsInfo = action.payload;
@@ -39,7 +34,6 @@ export const subjectsSlice = createSlice({
 
 export const {
   setSubjects,
-  setSubjectFrames,
   setSubjectsInfo,
   setMovements,
   resetSubjectsState,

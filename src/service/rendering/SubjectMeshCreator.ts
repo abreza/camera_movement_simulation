@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Subject, SubjectDimensions } from "../subjects/types";
+import { Subject, SubjectDimensions, ObjectClass } from "../subjects/types";
 import { objectModels } from "./ModelLoader";
 
 export const createSubjectMesh = async (
@@ -9,7 +9,7 @@ export const createSubjectMesh = async (
   let model: THREE.Object3D;
 
   try {
-    model = await objectModels.get(subject.class);
+    model = await objectModels.get(subject.class as ObjectClass);
   } catch (error) {
     console.warn(
       `Error loading model for ${subject.class}. Using fallback cube.`,

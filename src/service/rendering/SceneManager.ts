@@ -21,6 +21,11 @@ export class SceneManager {
   private worldSubjectMeshes: THREE.Object3D[];
   private cameraHelper: THREE.CameraHelper | null;
 
+  private cameraTrajectoryGroup: THREE.Group;
+  private subjectTrajectoryGroups: THREE.Group[];
+  private cameraFrames: CameraParameters[];
+  private subjectsInfo: SubjectInfo[];
+
   constructor(
     cameraViewElement: HTMLDivElement,
     worldViewElement: HTMLDivElement
@@ -40,11 +45,17 @@ export class SceneManager {
     this.worldSubjectMeshes = [];
     this.cameraHelper = null;
 
+    this.cameraTrajectoryGroup = new THREE.Group();
+    this.subjectTrajectoryGroups = [];
+    this.cameraFrames = [];
+    this.subjectsInfo = [];
+
     this.setupMainScene(cameraViewElement);
     this.setupWorldScene(worldViewElement);
     this.setupFloor();
     this.setupLighting();
     this.initCameraMesh();
+    this.setupTrajectoryVisualization();
   }
 
   private setupFloor(): void {
@@ -56,7 +67,7 @@ export class SceneManager {
     });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
     floor.rotation.x = -Math.PI / 2;
-    floor.position.y = 0;
+    floor.position.y = -10;
     floor.receiveShadow = true;
     this.worldScene.add(floor);
     this.scene.add(floor.clone());
@@ -121,6 +132,10 @@ export class SceneManager {
     this.worldScene.add(worldDirectionalLight);
   }
 
+  private setupTrajectoryVisualization(): void {
+    this.worldScene.add(this.cameraTrajectoryGroup);
+  }
+
   onWindowResize(): void {
     if (window.innerWidth / window.innerHeight > DEFAULT_ASPECT_RATIO) {
       this.renderer.setSize(
@@ -144,6 +159,115 @@ export class SceneManager {
 
     this.cameraMesh = CameraMeshCreator.createCameraMesh();
     this.worldScene.add(this.cameraMesh);
+  }
+
+  private createTrajectoryLine(
+    positions: THREE.Vector3[],
+    color: number
+  ): THREE.Line {
+    const geometry = new THREE.BufferGeometry().setFromPoints(positions);
+    const material = new THREE.LineBasicMaterial({
+      color: color,
+      linewidth: 3,
+      transparent: true,
+      opacity: 0.8,
+    });
+    return new THREE.Line(geometry, material);
+  }
+
+  private createTrajectoryPoints(
+    positions: THREE.Vector3[],
+    color: number
+  ): THREE.Points {
+    const geometry = new THREE.BufferGeometry().setFromPoints(positions);
+    const material = new THREE.PointsMaterial({
+      color: color,
+      size: 0.3,
+      transparent: true,
+      opacity: 0.9,
+    });
+    return new THREE.Points(geometry, material);
+  }
+
+  private updateCameraTrajectory(): void {
+    this.cameraTrajectoryGroup.clear();
+
+    if (this.cameraFrames.length < 2) return;
+
+    const positions = this.cameraFrames.map((frame) => frame.position.clone());
+
+    const trajectoryLine = this.createTrajectoryLine(positions, 0x0088ff);
+    this.cameraTrajectoryGroup.add(trajectoryLine);
+
+    const trajectoryPoints = this.createTrajectoryPoints(positions, 0x0044aa);
+    this.cameraTrajectoryGroup.add(trajectoryPoints);
+
+    const startSphere = new THREE.Mesh(
+      new THREE.SphereGeometry(0.2, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+    );
+    startSphere.position.copy(positions[0]);
+    this.cameraTrajectoryGroup.add(startSphere);
+
+    const endSphere = new THREE.Mesh(
+      new THREE.SphereGeometry(0.2, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0xff0000 })
+    );
+    endSphere.position.copy(positions[positions.length - 1]);
+    this.cameraTrajectoryGroup.add(endSphere);
+  }
+
+  private updateSubjectTrajectories(): void {
+    this.subjectTrajectoryGroups.forEach((group) => {
+      this.worldScene.remove(group);
+      group.clear();
+    });
+    this.subjectTrajectoryGroups = [];
+
+    this.subjectsInfo.forEach((subjectInfo, index) => {
+      if (!subjectInfo.frames || subjectInfo.frames.length < 2) return;
+
+      const trajectoryGroup = new THREE.Group();
+      const positions = subjectInfo.frames
+        .filter((frame) => frame !== undefined)
+        .map((frame) => frame!.position.clone());
+
+      if (positions.length < 2) return;
+
+      const colors = [0xff8800, 0x8800ff, 0xff0088, 0x00ff88, 0x88ff00];
+      const color = colors[index % colors.length];
+
+      const trajectoryLine = this.createTrajectoryLine(positions, color);
+      trajectoryGroup.add(trajectoryLine);
+
+      const trajectoryPoints = this.createTrajectoryPoints(positions, color);
+      trajectoryGroup.add(trajectoryPoints);
+
+      const startCube = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 0.3, 0.3),
+        new THREE.MeshBasicMaterial({
+          color: color,
+          opacity: 0.8,
+          transparent: true,
+        })
+      );
+      startCube.position.copy(positions[0]);
+      trajectoryGroup.add(startCube);
+
+      const endCube = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 0.3, 0.3),
+        new THREE.MeshBasicMaterial({
+          color: color,
+          opacity: 0.4,
+          transparent: true,
+        })
+      );
+      endCube.position.copy(positions[positions.length - 1]);
+      trajectoryGroup.add(endCube);
+
+      this.subjectTrajectoryGroups.push(trajectoryGroup);
+      this.worldScene.add(trajectoryGroup);
+    });
   }
 
   updateCamera(camera: CameraParameters): void {
@@ -195,6 +319,8 @@ export class SceneManager {
     this.subjectMeshes = [];
     this.worldSubjectMeshes = [];
 
+    this.subjectsInfo = subjectsInfo;
+
     subjectsInfo.forEach(async (subjectInfo, index) => {
       const mesh = await createSubjectMesh(subjectInfo.subject, false);
 
@@ -207,6 +333,13 @@ export class SceneManager {
 
       this.updateSubjectFrame(index, subjectInfo.frames![0]);
     });
+
+    this.updateSubjectTrajectories();
+  }
+
+  updateCameraFrames(cameraFrames: CameraParameters[]): void {
+    this.cameraFrames = cameraFrames;
+    this.updateCameraTrajectory();
   }
 
   render(): void {
@@ -220,6 +353,13 @@ export class SceneManager {
       this.worldScene.remove(this.cameraMesh);
       this.cameraMesh.traverse(this.disposeObject);
     }
+
+    this.cameraTrajectoryGroup.clear();
+    this.subjectTrajectoryGroups.forEach((group) => {
+      this.worldScene.remove(group);
+      group.clear();
+    });
+
     this.scene.traverse(this.disposeObject);
     this.worldScene.traverse(this.disposeObject);
     this.renderer.dispose();
