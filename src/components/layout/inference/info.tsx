@@ -6,7 +6,6 @@ import {
   Typography,
   Collapse,
   Stack,
-  ToggleButtonGroup,
   ToggleButton,
   FormControl,
   InputLabel,
@@ -116,14 +115,11 @@ export const InferenceInfo: FC<{}> = () => {
     });
   };
 
-  const handleTrajectoryModeChange = (
-    _: React.MouseEvent<HTMLElement>,
-    newMode: string
-  ) => {
-    if (newMode && sourceData?.trajectories?.[newMode]) {
-      setSelectedTrajectoryMode(newMode);
+  const handleTrajectoryModeChange = (mode: string) => {
+    if (mode && sourceData?.trajectories?.[mode]) {
+      setSelectedTrajectoryMode(mode);
 
-      const trajectoryData = sourceData.trajectories[newMode];
+      const trajectoryData = sourceData.trajectories[mode];
       const convertedFrames = convertInferenceTrajectory(
         trajectoryData,
         selectedBatchIndex
@@ -133,9 +129,8 @@ export const InferenceInfo: FC<{}> = () => {
       dispatch(setCurrentFrame(0));
       dispatch(setIsRendering(true));
 
-      // Update current trajectory mode in source data
       if (sourceData) {
-        sourceData.currentTrajectoryMode = newMode;
+        sourceData.currentTrajectoryMode = mode;
       }
     }
   };
@@ -210,19 +205,34 @@ export const InferenceInfo: FC<{}> = () => {
               <Typography variant="body2" sx={{ mb: 1 }}>
                 Trajectory Mode
               </Typography>
-              <ToggleButtonGroup
-                value={selectedTrajectoryMode}
-                exclusive
-                onChange={handleTrajectoryModeChange}
-                size="small"
-                fullWidth
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 1,
+                  alignItems: "center",
+                }}
               >
                 {Object.keys(sourceData.trajectories).map((mode) => (
-                  <ToggleButton key={mode} value={mode}>
-                    {mode.replace("_", " ")}
+                  <ToggleButton
+                    key={mode}
+                    value={mode}
+                    selected={selectedTrajectoryMode === mode}
+                    onChange={() => handleTrajectoryModeChange(mode)}
+                    size="small"
+                    sx={{
+                      minWidth: "fit-content",
+                      px: 2,
+                      py: 0.5,
+                      fontSize: "0.75rem",
+                      textTransform: "none",
+                      flex: "0 0 auto",
+                    }}
+                  >
+                    {mode.replace(/_/g, " ")}
                   </ToggleButton>
                 ))}
-              </ToggleButtonGroup>
+              </Box>
             </Box>
 
             {totalBatches > 1 && (
@@ -237,8 +247,8 @@ export const InferenceInfo: FC<{}> = () => {
                     {Array.from({ length: totalBatches }, (_, i) => (
                       <MenuItem key={i} value={i}>
                         Simulation {i + 1}-{" "}
-                        {sourceData.batch_data?.raw_prompt[i].movement.type ||
-                          ""}
+                        {sourceData.batch_data?.raw_prompt?.[i].movement.type ||
+                          " "}
                       </MenuItem>
                     ))}
                   </Select>

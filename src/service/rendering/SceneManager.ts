@@ -182,7 +182,7 @@ export class SceneManager {
     const geometry = new THREE.BufferGeometry().setFromPoints(positions);
     const material = new THREE.PointsMaterial({
       color: color,
-      size: 0.3,
+      size: 0.1,
       transparent: true,
       opacity: 0.9,
     });
@@ -203,14 +203,14 @@ export class SceneManager {
     this.cameraTrajectoryGroup.add(trajectoryPoints);
 
     const startSphere = new THREE.Mesh(
-      new THREE.SphereGeometry(0.2, 16, 16),
+      new THREE.SphereGeometry(0.02, 16, 16),
       new THREE.MeshBasicMaterial({ color: 0x00ff00 })
     );
     startSphere.position.copy(positions[0]);
     this.cameraTrajectoryGroup.add(startSphere);
 
     const endSphere = new THREE.Mesh(
-      new THREE.SphereGeometry(0.2, 16, 16),
+      new THREE.SphereGeometry(0.02, 16, 16),
       new THREE.MeshBasicMaterial({ color: 0xff0000 })
     );
     endSphere.position.copy(positions[positions.length - 1]);
