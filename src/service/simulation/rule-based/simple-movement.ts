@@ -110,11 +110,9 @@ export const moveByEasing = (
 
       frame.position.copy(arcCenter).add(newRelativePos);
 
-      const currentSubjectPosition =
-        subjectFrames[index]?.position || arcCenter;
       const lookAtMatrix = new THREE.Matrix4().lookAt(
         frame.position,
-        currentSubjectPosition,
+        arcCenter,
         new THREE.Vector3(0, 1, 0)
       );
       frame.rotation.setFromRotationMatrix(lookAtMatrix);
