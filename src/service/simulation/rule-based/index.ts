@@ -2,6 +2,7 @@ import {
   SimulationInstruction,
   CameraParameters,
   DynamicMode,
+  SetupConfig,
 } from "../instruction/types";
 import { SubjectInfo } from "../../subjects/types";
 import { getEasedTime } from "../instruction/helpers/movement-easing";
@@ -23,32 +24,37 @@ export const initCameraParameters = (
   }
 
   const startSubjectFrame = subjectFrames[0];
-
-  const startParams =
-    startCameraParameter ||
-    getCameraBySetup(
-      instruction.initialSetup,
-      subjectInfo.subject,
-      startSubjectFrame
-    );
-
   const endSubjectFrame = subjectFrames[subjectFrames.length - 1];
 
-  const easedT = Array.from(Array(instruction.frameCount), (_, i) =>
+  const easedT = Array.from({ length: instruction.frameCount }, (_, i) =>
     getEasedTime(i / (instruction.frameCount - 1), instruction.dynamic.easing)
   );
 
   if (instruction.dynamic.type === DynamicMode.Interpolation) {
-    let endParams = instruction.dynamic.endSetup
-      ? getCameraBySetup(
-          instruction.dynamic.endSetup,
-          subjectInfo.subject,
-          endSubjectFrame
-        )
-      : startParams;
+    let startSetup: SetupConfig;
+    let endSetup: SetupConfig;
+
+    if (instruction.setup.kind === "init") {
+      startSetup = instruction.setup.config;
+      endSetup = instruction.dynamic.complementSetup;
+    } else {
+      startSetup = instruction.dynamic.complementSetup;
+      endSetup = instruction.setup.config;
+    }
+
+    const startParams =
+      startCameraParameter ||
+      getCameraBySetup(startSetup, subjectInfo.subject, startSubjectFrame);
+
+    const endParams = getCameraBySetup(
+      endSetup,
+      subjectInfo.subject,
+      endSubjectFrame
+    );
+
     const rotationInterpolation =
-      !!instruction.dynamic.endSetup.subjectView ||
-      !!instruction.dynamic.endSetup.cameraAngle;
+      !!endSetup?.subjectView || !!endSetup?.cameraAngle;
+
     frames = interpolateCameraParameters(
       startParams,
       endParams,
@@ -60,12 +66,21 @@ export const initCameraParameters = (
       instruction.constraints
     );
   } else {
+    const startParams =
+      startCameraParameter ||
+      getCameraBySetup(
+        instruction.setup.config,
+        subjectInfo.subject,
+        instruction.setup.kind === "init" ? startSubjectFrame : endSubjectFrame
+      );
+
     frames = moveByEasing(
       startParams,
       instruction.dynamic,
       easedT,
       subjectFrames,
-      instruction.constraints?.allFramesVisibility
+      instruction.constraints?.allFramesVisibility,
+      instruction.setup.kind
     );
   }
 

@@ -117,81 +117,87 @@ export const formSlice = createSlice({
       }
       state.currentInstruction.constraints.maxSpeed = action.payload;
     },
-    setInitialCameraAngle: (
+    setSetupConfigCameraAngle: (
       state,
       action: PayloadAction<CameraVerticalAngle | undefined>
     ) => {
-      state.currentInstruction.initialSetup.cameraAngle = action.payload;
+      state.currentInstruction.setup.config.cameraAngle = action.payload;
     },
-    setInitialShotSize: (
+    setSetupConfigShotSize: (
       state,
       action: PayloadAction<ShotSize | undefined>
     ) => {
-      state.currentInstruction.initialSetup.shotSize = action.payload;
+      state.currentInstruction.setup.config.shotSize = action.payload;
     },
-    setInitialSubjectView: (
+    setSetupConfigSubjectView: (
       state,
       action: PayloadAction<SubjectView | undefined>
     ) => {
-      state.currentInstruction.initialSetup.subjectView = action.payload;
+      state.currentInstruction.setup.config.subjectView = action.payload;
     },
-    setInitialSubjectFraming: (
+    setSetupConfigSubjectFraming: (
       state,
       action: PayloadAction<SubjectFraming | undefined>
     ) => {
-      state.currentInstruction.initialSetup.subjectFraming = action.payload;
+      state.currentInstruction.setup.config.subjectFraming = action.payload;
     },
-    setEndCameraAngle: (
+    setComplementSetupCameraAngle: (
       state,
       action: PayloadAction<CameraVerticalAngle | undefined>
     ) => {
       if (
         state.currentInstruction.dynamic.type === DynamicMode.Interpolation &&
-        !state.currentInstruction.dynamic.endSetup
+        !state.currentInstruction.dynamic.complementSetup
       ) {
-        state.currentInstruction.dynamic.endSetup = {};
+        state.currentInstruction.dynamic.complementSetup = {};
       }
       if (state.currentInstruction.dynamic.type === DynamicMode.Interpolation) {
-        state.currentInstruction.dynamic.endSetup.cameraAngle = action.payload;
+        state.currentInstruction.dynamic.complementSetup.cameraAngle =
+          action.payload;
       }
     },
-    setEndShotSize: (state, action: PayloadAction<ShotSize | undefined>) => {
+    setComplementSetupShotSize: (
+      state,
+      action: PayloadAction<ShotSize | undefined>
+    ) => {
       if (
         state.currentInstruction.dynamic.type === DynamicMode.Interpolation &&
-        !state.currentInstruction.dynamic.endSetup
+        !state.currentInstruction.dynamic.complementSetup
       ) {
-        state.currentInstruction.dynamic.endSetup = {};
+        state.currentInstruction.dynamic.complementSetup = {};
       }
       if (state.currentInstruction.dynamic.type === DynamicMode.Interpolation) {
-        state.currentInstruction.dynamic.endSetup.shotSize = action.payload;
+        state.currentInstruction.dynamic.complementSetup.shotSize =
+          action.payload;
       }
     },
-    setEndSubjectView: (
+    setComplementSetupSubjectView: (
       state,
       action: PayloadAction<SubjectView | undefined>
     ) => {
       if (
         state.currentInstruction.dynamic.type === DynamicMode.Interpolation &&
-        !state.currentInstruction.dynamic.endSetup
+        !state.currentInstruction.dynamic.complementSetup
       ) {
-        state.currentInstruction.dynamic.endSetup = {};
+        state.currentInstruction.dynamic.complementSetup = {};
       }
       if (state.currentInstruction.dynamic.type === DynamicMode.Interpolation) {
-        state.currentInstruction.dynamic.endSetup.subjectView = action.payload;
+        state.currentInstruction.dynamic.complementSetup.subjectView =
+          action.payload;
       }
     },
-    setEndSubjectFraming: (
+    setComplementSetupSubjectFraming: (
       state,
       action: PayloadAction<SubjectFraming | undefined>
     ) => {
       if (
         state.currentInstruction.dynamic.type === DynamicMode.Interpolation &&
-        !state.currentInstruction.dynamic.endSetup
+        !state.currentInstruction.dynamic.complementSetup
       ) {
-        state.currentInstruction.dynamic.endSetup = {};
+        state.currentInstruction.dynamic.complementSetup = {};
       }
       if (state.currentInstruction.dynamic.type === DynamicMode.Interpolation) {
-        state.currentInstruction.dynamic.endSetup.subjectFraming =
+        state.currentInstruction.dynamic.complementSetup.subjectFraming =
           action.payload;
       }
     },
@@ -200,6 +206,11 @@ export const formSlice = createSlice({
     },
     setDynamicType: (state, action: PayloadAction<DynamicMode>) => {
       state.currentInstruction.dynamic.type = action.payload;
+    },
+    setSetupKind: (state, action: PayloadAction<"init" | "end">) => {
+      if (action.payload) {
+        state.currentInstruction.setup.kind = action.payload;
+      }
     },
   },
 });
@@ -220,16 +231,17 @@ export const {
   setImportance,
   setMaxAccelerate,
   setMaxSpeed,
-  setInitialCameraAngle,
-  setInitialShotSize,
-  setInitialSubjectView,
-  setInitialSubjectFraming,
-  setEndCameraAngle,
-  setEndShotSize,
-  setEndSubjectView,
-  setEndSubjectFraming,
+  setSetupConfigCameraAngle,
+  setSetupConfigShotSize,
+  setSetupConfigSubjectView,
+  setSetupConfigSubjectFraming,
+  setComplementSetupCameraAngle,
+  setComplementSetupShotSize,
+  setComplementSetupSubjectView,
+  setComplementSetupSubjectFraming,
   setDynamic,
   setDynamicType,
+  setSetupKind,
 } = formSlice.actions;
 
 export default formSlice.reducer;

@@ -38,20 +38,6 @@ const MOVEMENT_VALIDATION_RULES = {
       return finalIndex >= initialIndex;
     },
   },
-  [CameraMovementType.DollyInZoomOut]: {
-    shotSize: (initial: ShotSize, final?: ShotSize) => {
-      if (!final) return true;
-
-      return initial === final;
-    },
-  },
-  [CameraMovementType.DollyOutZoomIn]: {
-    shotSize: (initial: ShotSize, final?: ShotSize) => {
-      if (!final) return true;
-
-      return initial === final;
-    },
-  },
 };
 
 const validateSetup = ({
@@ -62,8 +48,8 @@ const validateSetup = ({
   const rules = (MOVEMENT_VALIDATION_RULES as any)[movement.type];
   if (!rules) return true;
 
-  if (rules.shotSize && final.shotSize) {
-    if (!rules.shotSize(initial.shotSize, final.shotSize)) {
+  if (rules.shotSize && final?.shotSize) {
+    if (!rules.shotSize(initial?.shotSize, final.shotSize)) {
       return false;
     }
   }

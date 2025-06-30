@@ -3,6 +3,8 @@ import {
   DynamicMode,
   Scale,
   SimulationInstruction,
+  SetupConfig,
+  CinematographySetup,
 } from "@/service/simulation/instruction/types";
 import {
   buildConstraintsForMovement,
@@ -15,6 +17,7 @@ import {
   getSimpleMovementDirection,
   getSimpleMovementMode,
 } from "./simple-movement";
+import { defaultCinematographyPrompt } from "../constant";
 
 export function translatePromptToSimulationInstruction(
   prompt: CinematographyPrompt,
@@ -28,16 +31,23 @@ export function translatePromptToSimulationInstruction(
 
   const movementEasing = mapMovementSpeedToEasing(movement.speed);
   const constraints = buildConstraintsForMovement(movement.type);
-  const initialSetup = mapCinematographySetupToConfig(initial);
-
   const isSimpleMovement =
     highLevelInstructionRules[movement.type]?.simpleMovement;
+
+  const startSetupSource: CinematographySetup = {
+    ...defaultCinematographyPrompt.initial,
+    ...initial,
+  } as CinematographySetup;
+  const startConfig = mapCinematographySetupToConfig(startSetupSource);
 
   if (isSimpleMovement) {
     return {
       frameCount,
       subjectIndex,
-      initialSetup,
+      setup: {
+        config: startConfig,
+        kind: "init",
+      },
       constraints,
       dynamic: {
         type: DynamicMode.Simple,
@@ -51,20 +61,38 @@ export function translatePromptToSimulationInstruction(
     const subjectAwareInterpolation = determineSubjectAwareInterpolation(
       movement.type
     );
-    const endSetup = {
-      ...autoGenerateEndSetup(initial, movement.type),
-      ...mapCinematographySetupToConfig(final),
+
+    const endConfig: SetupConfig = {
+      ...autoGenerateEndSetup(startSetupSource, movement.type),
+      ...(final ? mapCinematographySetupToConfig(final) : {}),
     };
+
+    let mainConfig: SetupConfig;
+    let complementConfig: SetupConfig;
+    let kind: "init" | "end";
+
+    if (!initial && final) {
+      kind = "end";
+      mainConfig = endConfig;
+      complementConfig = startConfig;
+    } else {
+      kind = "init";
+      mainConfig = startConfig;
+      complementConfig = endConfig;
+    }
 
     return {
       frameCount,
       subjectIndex,
-      initialSetup,
+      setup: {
+        config: mainConfig,
+        kind: kind,
+      },
       constraints,
       dynamic: {
         type: DynamicMode.Interpolation,
         easing: movementEasing,
-        endSetup,
+        complementSetup: complementConfig,
         subjectAwareInterpolation,
       },
     };

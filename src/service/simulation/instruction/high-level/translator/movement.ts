@@ -146,20 +146,13 @@ export function buildConstraintsForMovement(
         },
       };
 
-    case CameraMovementType.CraneUp:
-    case CameraMovementType.CraneDown:
-
     case CameraMovementType.DollyIn:
     case CameraMovementType.DollyOut:
 
-    case CameraMovementType.DollyInZoomOut:
-    case CameraMovementType.DollyOutZoomIn:
-
     case CameraMovementType.ArcLeft:
     case CameraMovementType.ArcRight:
-
-    // case CameraMovementType.DutchLeft:
-    // case CameraMovementType.DutchRight:
+      // case CameraMovementType.DutchLeft:
+      // case CameraMovementType.DutchRight:
       return {
         ...baseConstraints,
         allFramesVisibility: true,
@@ -206,9 +199,7 @@ export function determineSubjectAwareInterpolation(
     case CameraMovementType.Follow:
     case CameraMovementType.Track:
     case CameraMovementType.DollyIn:
-    case CameraMovementType.DollyInZoomOut:
     case CameraMovementType.DollyOut:
-    case CameraMovementType.DollyOutZoomIn:
       return true;
     default:
       return false;
@@ -217,11 +208,11 @@ export function determineSubjectAwareInterpolation(
 
 export function mapMovementSpeedToEasing(speed: MovementSpeed): MovementEasing {
   switch (speed) {
-    case MovementSpeed.SlowToFast:
+    case MovementSpeed.SlowToFast: // select random from easeIn...
       return MovementEasing.EaseInQuad;
-    case MovementSpeed.FastToSlow:
+    case MovementSpeed.FastToSlow: // select random from easeOut...
       return MovementEasing.EaseOutQuad;
-    case MovementSpeed.SmoothStartStop:
+    case MovementSpeed.SmoothStartStop: // select random from easeInOut...
       return MovementEasing.Smooth;
     case MovementSpeed.Constant:
     default:

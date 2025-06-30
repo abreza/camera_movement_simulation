@@ -6,25 +6,28 @@ import {
   Select,
   Typography,
   Stack,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
 import {
   CameraVerticalAngle,
   ShotSize,
   SubjectView,
   SubjectInFramePosition,
-  Scale,
   SubjectFraming,
+  DynamicMode,
 } from "@/service/simulation/instruction/types";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import {
-  setInitialCameraAngle,
-  setInitialShotSize,
-  setInitialSubjectView,
-  setInitialSubjectFraming,
-  setEndCameraAngle,
-  setEndShotSize,
-  setEndSubjectView,
-  setEndSubjectFraming,
+  setSetupConfigCameraAngle,
+  setSetupConfigShotSize,
+  setSetupConfigSubjectView,
+  setSetupConfigSubjectFraming,
+  setComplementSetupCameraAngle,
+  setComplementSetupShotSize,
+  setComplementSetupSubjectView,
+  setComplementSetupSubjectFraming,
+  setSetupKind,
 } from "@/redux/slices/formSlice";
 
 interface SetupControlsProps {
@@ -38,24 +41,32 @@ export const SetupControls: FC<SetupControlsProps> = ({ isInitial }) => {
   );
 
   const setup = isInitial
-    ? currentInstruction.initialSetup
-    : currentInstruction.dynamic.type === "interpolation"
-    ? currentInstruction.dynamic.endSetup
+    ? currentInstruction.setup.config
+    : currentInstruction.dynamic.type === DynamicMode.Interpolation
+    ? currentInstruction.dynamic.complementSetup
     : undefined;
 
   const handleCameraAngleChange = (value: CameraVerticalAngle | undefined) => {
     dispatch(
-      isInitial ? setInitialCameraAngle(value) : setEndCameraAngle(value)
+      isInitial
+        ? setSetupConfigCameraAngle(value)
+        : setComplementSetupCameraAngle(value)
     );
   };
 
   const handleShotSizeChange = (value: ShotSize | undefined) => {
-    dispatch(isInitial ? setInitialShotSize(value) : setEndShotSize(value));
+    dispatch(
+      isInitial
+        ? setSetupConfigShotSize(value)
+        : setComplementSetupShotSize(value)
+    );
   };
 
   const handleSubjectViewChange = (value: SubjectView | undefined) => {
     dispatch(
-      isInitial ? setInitialSubjectView(value) : setEndSubjectView(value)
+      isInitial
+        ? setSetupConfigSubjectView(value)
+        : setComplementSetupSubjectView(value)
     );
   };
 
@@ -66,15 +77,49 @@ export const SetupControls: FC<SetupControlsProps> = ({ isInitial }) => {
 
     dispatch(
       isInitial
-        ? setInitialSubjectFraming(updatedFraming)
-        : setEndSubjectFraming(updatedFraming)
+        ? setSetupConfigSubjectFraming(updatedFraming)
+        : setComplementSetupSubjectFraming(updatedFraming)
     );
+  };
+
+  const handleKindChange = (
+    event: React.MouseEvent<HTMLElement>,
+    newKind: "init" | "end" | null
+  ) => {
+    if (newKind !== null) {
+      dispatch(setSetupKind(newKind));
+    }
   };
 
   return (
     <>
+      {isInitial && (
+        <ToggleButtonGroup
+          value={currentInstruction.setup.kind}
+          exclusive
+          onChange={handleKindChange}
+          aria-label="setup kind"
+          fullWidth
+          size="small"
+          sx={{ mb: 2 }}
+        >
+          <ToggleButton value="init" aria-label="start point">
+            Define Start Point
+          </ToggleButton>
+          <ToggleButton value="end" aria-label="end point">
+            Define End Point
+          </ToggleButton>
+        </ToggleButtonGroup>
+      )}
+
       <Typography variant="subtitle2" sx={{ mb: 1 }}>
-        {isInitial ? "Initial Setup" : "End Setup"}
+        {isInitial
+          ? currentInstruction.setup.kind === "init"
+            ? "Start Setup"
+            : "End Setup"
+          : currentInstruction.setup.kind === "init"
+          ? "End Setup"
+          : "Start Setup"}
       </Typography>
 
       <FormControl fullWidth sx={{ mb: 2 }} size="small">

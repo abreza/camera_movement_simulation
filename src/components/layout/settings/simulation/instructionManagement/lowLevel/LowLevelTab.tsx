@@ -24,6 +24,20 @@ import {
   editInstruction,
 } from "@/redux/slices/instructionsSlice";
 import { toast } from "react-toastify";
+import {
+  DynamicMode,
+  SetupConfig,
+} from "@/service/simulation/instruction/types";
+
+const isSetupConfigEmpty = (config: SetupConfig | undefined): boolean => {
+  if (!config) return true;
+  return Object.values(config).every((value) => {
+    if (typeof value === "object" && value !== null) {
+      return Object.keys(value).length === 0;
+    }
+    return value === undefined;
+  });
+};
 
 export const LowLevelTab: FC = () => {
   const dispatch = useAppDispatch();
@@ -37,20 +51,21 @@ export const LowLevelTab: FC = () => {
 
   const handleAddOrUpdate = () => {
     if (
-      !currentInstruction.initialSetup.cameraAngle ||
-      !currentInstruction.initialSetup.shotSize
+      !currentInstruction.setup.config.cameraAngle ||
+      !currentInstruction.setup.config.shotSize
     ) {
-      toast.error("Please set camera angle and shot size in initial setup");
+      toast.error(
+        "Please define at least Camera Angle and Shot Size for the main setup."
+      );
       return;
     }
 
     if (
-      currentInstruction.dynamic.type === "interpolation" &&
-      !currentInstruction.dynamic.endSetup?.cameraAngle &&
-      !currentInstruction.dynamic.endSetup?.shotSize
+      currentInstruction.dynamic.type === DynamicMode.Interpolation &&
+      isSetupConfigEmpty(currentInstruction.dynamic.complementSetup)
     ) {
       toast.error(
-        "Please set at least one end setup parameter for interpolation"
+        "For interpolation movement, please define at least one property in the complement setup."
       );
       return;
     }
@@ -68,7 +83,9 @@ export const LowLevelTab: FC = () => {
     }
 
     dispatch(resetForm());
-    toast.success("Instruction added successfully");
+    toast.success(
+      `Instruction ${editingIndex !== null ? "updated" : "added"} successfully`
+    );
   };
 
   const handleRender = () => {

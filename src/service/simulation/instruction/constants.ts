@@ -19,19 +19,22 @@ export const SCALE_FACTORS = {
 
 export const defaultSimulationInstruction: SimulationInstruction = {
   frameCount: DEFAULT_FRAME_COUNT,
-  initialSetup: {
-    cameraAngle: CameraVerticalAngle.Eye,
-    shotSize: ShotSize.MediumShot,
-    subjectView: SubjectView.Front,
-    subjectFraming: {
-      position: SubjectInFramePosition.Center,
+  setup: {
+    config: {
+      cameraAngle: CameraVerticalAngle.Eye,
+      shotSize: ShotSize.MediumShot,
+      subjectView: SubjectView.Front,
+      subjectFraming: {
+        position: SubjectInFramePosition.Center,
+      },
     },
+    kind: "init",
   },
   dynamic: {
     type: DynamicMode.Interpolation,
     easing: MovementEasing.Linear,
     subjectAwareInterpolation: false,
-    endSetup: {
+    complementSetup: {
       cameraAngle: undefined,
       shotSize: undefined,
       subjectView: undefined,

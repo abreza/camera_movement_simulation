@@ -19,61 +19,6 @@ export enum ShotSize {
   ExtremeLongShot = "extremeLongShot",
 }
 
-export enum Scale {
-  Small = "small",
-  Medium = "medium",
-  Large = "large",
-  Full = "full",
-}
-
-export enum MovementEasing {
-  Linear = "linear",
-
-  EaseInSine = "easeInSine",
-  EaseOutSine = "easeOutSine",
-  EaseInOutSine = "easeInOutSine",
-
-  EaseInQuad = "easeInQuad",
-  EaseOutQuad = "easeOutQuad",
-  EaseInOutQuad = "easeInOutQuad",
-
-  EaseInCubic = "easeInCubic",
-  EaseOutCubic = "easeOutCubic",
-  EaseInOutCubic = "easeInOutCubic",
-
-  EaseInQuart = "easeInQuart",
-  EaseOutQuart = "easeOutQuart",
-  EaseInOutQuart = "easeInOutQuart",
-
-  EaseInQuint = "easeInQuint",
-  EaseOutQuint = "easeOutQuint",
-  EaseInOutQuint = "easeInOutQuint",
-
-  EaseInExpo = "easeInExpo",
-  EaseOutExpo = "easeOutExpo",
-  EaseInOutExpo = "easeInOutExpo",
-
-  EaseInCirc = "easeInCirc",
-  EaseOutCirc = "easeOutCirc",
-  EaseInOutCirc = "easeInOutCirc",
-
-  EaseInBack = "easeInBack",
-  EaseOutBack = "easeOutBack",
-  EaseInOutBack = "easeInOutBack",
-
-  EaseInElastic = "easeInElastic",
-  EaseOutElastic = "easeOutElastic",
-  EaseInOutElastic = "easeInOutElastic",
-
-  EaseInBounce = "easeInBounce",
-  EaseOutBounce = "easeOutBounce",
-  EaseInOutBounce = "easeInOutBounce",
-
-  HandHeld = "handHeld",
-  Anticipation = "anticipation",
-  Smooth = "smooth",
-}
-
 export enum SubjectView {
   Front = "front",
   Back = "back",
@@ -100,11 +45,6 @@ export enum SubjectInFramePosition {
   OuterTop = "outerTop",
   OuterBottom = "outerBottom",
 }
-
-export type MovementConfig<T> = {
-  type: T;
-  scale?: Scale;
-};
 
 export type SubjectFraming = {
   position?: SubjectInFramePosition;
@@ -159,14 +99,54 @@ export enum DynamicMode {
   Simple = "simple",
 }
 
+export enum MovementEasing {
+  Linear = "linear",
+
+  EaseInSine = "easeInSine",
+  EaseOutSine = "easeOutSine",
+  EaseInOutSine = "easeInOutSine",
+
+  EaseInQuad = "easeInQuad",
+  EaseOutQuad = "easeOutQuad",
+  EaseInOutQuad = "easeInOutQuad",
+
+  EaseInCubic = "easeInCubic",
+  EaseOutCubic = "easeOutCubic",
+  EaseInOutCubic = "easeInOutCubic",
+
+  EaseInQuart = "easeInQuart",
+  EaseOutQuart = "easeOutQuart",
+  EaseInOutQuart = "easeInOutQuart",
+
+  EaseInQuint = "easeInQuint",
+  EaseOutQuint = "easeOutQuint",
+  EaseInOutQuint = "easeInOutQuint",
+
+  EaseInExpo = "easeInExpo",
+  EaseOutExpo = "easeOutExpo",
+  EaseInOutExpo = "easeInOutExpo",
+
+  EaseInCirc = "easeInCirc",
+  EaseOutCirc = "easeOutCirc",
+  EaseInOutCirc = "easeInOutCirc",
+
+  Smooth = "smooth",
+}
+
+export enum Randomness {
+  HandHeld = "handHeld",
+  Shaky = "shaky",
+}
+
 export type DynamicBase = {
   type: DynamicMode;
   easing: MovementEasing;
+  randomness?: Randomness;
 };
 
 export type InterpolationDynamic = DynamicBase & {
   type: DynamicMode.Interpolation;
-  endSetup: SetupConfig;
+  complementSetup: SetupConfig;
   subjectAwareInterpolation?: boolean;
 };
 
@@ -175,11 +155,21 @@ export enum Direction {
   Right = "right",
   Up = "up",
   Down = "down",
+  Forward = "forward",
+  Backward = "backward",
 }
 
 export enum MovementMode {
   Transition = "transition",
   Rotation = "rotation",
+  Arc = "arc",
+}
+
+export enum Scale {
+  Small = "small",
+  Medium = "medium",
+  Large = "large",
+  Full = "full",
 }
 
 export type SimpleMovement = DynamicBase & {
@@ -192,7 +182,10 @@ export type SimpleMovement = DynamicBase & {
 export type InstructionDynamic = InterpolationDynamic | SimpleMovement;
 
 export type SimulationInstruction = {
-  initialSetup: SetupConfig;
+  setup: {
+    config: SetupConfig;
+    kind: "init" | "end";
+  };
   dynamic: InstructionDynamic;
   constraints?: ConstraintsConfig;
   frameCount: number;
@@ -224,9 +217,6 @@ export enum CameraMovementType {
   CraneUp = "craneUp",
   CraneDown = "craneDown",
 
-  DollyOutZoomIn = "dollyOutZoomIn",
-  DollyInZoomOut = "dollyInZoomOut",
-
   // DutchLeft = "dutchLeft",
   // DutchRight = "dutchRight",
 }
@@ -246,10 +236,10 @@ export type CinematographySetup = {
 };
 
 export type CinematographyPrompt = {
-  initial: CinematographySetup;
+  initial?: Partial<CinematographySetup>;
   movement: {
     type: CameraMovementType;
     speed: MovementSpeed;
   };
-  final: Partial<CinematographySetup>;
+  final?: Partial<CinematographySetup>;
 };

@@ -9,20 +9,23 @@ import { SubjectFrame } from "../../subjects/types";
 import { SCALE_FACTORS } from "../instruction/constants";
 
 export const moveByEasing = (
-  startParams: CameraParameters,
+  params: CameraParameters,
   movement: SimpleMovement,
   easedT: number[],
   subjectFrames?: SubjectFrame[],
-  allFramesVisibility?: boolean
+  allFramesVisibility?: boolean,
+  kind: "init" | "end" = "init"
 ): CameraParameters[] => {
   const scaleFactor = SCALE_FACTORS[movement.scale];
   const frames: CameraParameters[] = [];
 
-  const movementVectors = {
+  const movementVectors: Record<Direction, THREE.Vector3> = {
     [Direction.Left]: new THREE.Vector3(-1, 0, 0),
     [Direction.Right]: new THREE.Vector3(1, 0, 0),
     [Direction.Up]: new THREE.Vector3(0, 1, 0),
     [Direction.Down]: new THREE.Vector3(0, -1, 0),
+    [Direction.Forward]: new THREE.Vector3(0, 0, 1),
+    [Direction.Backward]: new THREE.Vector3(0, 0, -1),
   };
 
   const baseMovement = movementVectors[movement.direction];
@@ -33,16 +36,18 @@ export const moveByEasing = (
     const frame = {
       position: new THREE.Vector3(),
       rotation: new THREE.Euler(),
-      focalLength: startParams.focalLength,
-      aspectRatio: startParams.aspectRatio,
+      focalLength: params.focalLength,
+      aspectRatio: params.aspectRatio,
     };
+
+    const timeFactor = kind === "init" ? t : t - 1;
 
     if (movement.movementMode === MovementMode.Transition) {
       const movementAmount = baseMovement
         .clone()
-        .multiplyScalar(totalDistance * t);
-      frame.position.copy(startParams.position).add(movementAmount);
-      frame.rotation.copy(startParams.rotation);
+        .multiplyScalar(totalDistance * timeFactor);
+      frame.position.copy(params.position).add(movementAmount);
+      frame.rotation.copy(params.rotation);
 
       if (subjectFrames && allFramesVisibility && subjectFrames[index]) {
         const lookAtMatrix = new THREE.Matrix4();
@@ -54,10 +59,10 @@ export const moveByEasing = (
         frame.rotation.setFromRotationMatrix(lookAtMatrix);
       }
     } else if (movement.movementMode === MovementMode.Rotation) {
-      frame.position.copy(startParams.position);
+      frame.position.copy(params.position);
 
       const totalRotation = (Math.PI / 4) * scaleFactor;
-      const rotationAmount = totalRotation * t;
+      const rotationAmount = totalRotation * timeFactor;
 
       const rotationAxis =
         movement.direction === Direction.Left ||
@@ -66,7 +71,7 @@ export const moveByEasing = (
           : new THREE.Vector3(1, 0, 0);
 
       const quaternion = new THREE.Quaternion();
-      quaternion.setFromEuler(startParams.rotation);
+      quaternion.setFromEuler(params.rotation);
       const rotationQuaternion = new THREE.Quaternion();
       rotationQuaternion.setFromAxisAngle(
         rotationAxis,

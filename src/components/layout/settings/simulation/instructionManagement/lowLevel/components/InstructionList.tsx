@@ -25,7 +25,7 @@ export const InstructionList: FC = () => {
       {instructions.map((instruction, index) => (
         <ListItem key={index}>
           <ListItemText
-            primary={`${instruction.initialSetup?.cameraAngle} - ${instruction.initialSetup?.shotSize}`}
+            primary={`${instruction.setup.config?.cameraAngle} - ${instruction.setup.config?.shotSize}`}
             secondary={`Subject ${
               instruction.subjectIndex !== undefined
                 ? instruction.subjectIndex + 1

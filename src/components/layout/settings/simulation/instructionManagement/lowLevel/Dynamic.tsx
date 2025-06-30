@@ -48,11 +48,11 @@ export const Dynamic: FC = () => {
         );
       }
     } else if (dynamic.type === DynamicMode.Interpolation) {
-      if (!dynamic.endSetup) {
+      if (!dynamic.complementSetup) {
         dispatch(
           setDynamic({
             ...dynamic,
-            endSetup: {},
+            complementSetup: {},
             subjectAwareInterpolation: false,
           })
         );
