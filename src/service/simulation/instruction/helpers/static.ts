@@ -5,21 +5,7 @@ import {
   ShotSize,
   SubjectView,
 } from "../types";
-
-function sampleGaussian(mean: number, stdDev: number): number {
-  let u = 0,
-    v = 0,
-    s = 0;
-
-  do {
-    u = Math.random() * 2 - 1;
-    v = Math.random() * 2 - 1;
-    s = u * u + v * v;
-  } while (s >= 1 || s === 0);
-
-  const mul = Math.sqrt((-2.0 * Math.log(s)) / s);
-  return mean + u * mul * stdDev;
-}
+import { sampleGaussian } from "../../utils";
 
 export const getVerticalAngle = (
   camera: CameraParameters,

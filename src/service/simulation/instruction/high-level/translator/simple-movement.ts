@@ -10,9 +10,11 @@ export function getSimpleMovementDirection(
   switch (movementType) {
     case CameraMovementType.PanLeft:
     case CameraMovementType.TruckLeft:
+    case CameraMovementType.ArcLeft:
       return Direction.Left;
     case CameraMovementType.PanRight:
     case CameraMovementType.TruckRight:
+    case CameraMovementType.ArcRight:
       return Direction.Right;
     case CameraMovementType.TiltUp:
     case CameraMovementType.PedestalUp:
@@ -25,7 +27,9 @@ export function getSimpleMovementDirection(
   }
 }
 
-export function getSimpleMovementMode(movementType: CameraMovementType): MovementMode {
+export function getSimpleMovementMode(
+  movementType: CameraMovementType
+): MovementMode {
   switch (movementType) {
     case CameraMovementType.PanLeft:
     case CameraMovementType.PanRight:
@@ -37,6 +41,9 @@ export function getSimpleMovementMode(movementType: CameraMovementType): Movemen
     case CameraMovementType.PedestalUp:
     case CameraMovementType.PedestalDown:
       return MovementMode.Transition;
+    case CameraMovementType.ArcLeft:
+    case CameraMovementType.ArcRight:
+      return MovementMode.Arc;
     default:
       throw new Error(`Movement type ${movementType} is not a simple movement`);
   }

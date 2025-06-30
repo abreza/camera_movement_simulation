@@ -52,22 +52,16 @@ export const highLevelInstructionRules: Record<
     simpleMovement: true,
   },
   arcLeft: {
-    disabledFinalSetup: ["subjectView"],
+    simpleMovement: true,
   },
   arcRight: {
-    disabledFinalSetup: ["subjectView"],
+    simpleMovement: true,
   },
   craneUp: {
     disabledFinalSetup: ["subjectView"],
   },
   craneDown: {
     disabledFinalSetup: ["subjectView"],
-  },
-  dollyOutZoomIn: {
-    disabledFinalSetup: ["cameraAngle", "subjectView"],
-  },
-  dollyInZoomOut: {
-    disabledFinalSetup: ["cameraAngle", "subjectView"],
   },
   // dutchLeft: {
   //   disabledFinalSetup: [],

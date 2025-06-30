@@ -7,6 +7,9 @@ import {
 } from "../instruction/types";
 import { SubjectFrame } from "../../subjects/types";
 import { SCALE_FACTORS } from "../instruction/constants";
+import { sampleGaussian } from "../utils";
+
+const SCALE_STD_DEV_PERCENTAGE = 0.2;
 
 export const moveByEasing = (
   params: CameraParameters,
@@ -16,7 +19,10 @@ export const moveByEasing = (
   allFramesVisibility?: boolean,
   kind: "init" | "end" = "init"
 ): CameraParameters[] => {
-  const scaleFactor = SCALE_FACTORS[movement.scale];
+  const meanScaleFactor = SCALE_FACTORS[movement.scale];
+  const stdDev = meanScaleFactor * SCALE_STD_DEV_PERCENTAGE;
+  const scaleFactor = Math.max(0, sampleGaussian(meanScaleFactor, stdDev));
+
   const frames: CameraParameters[] = [];
 
   const movementVectors: Record<Direction, THREE.Vector3> = {
@@ -84,6 +90,34 @@ export const moveByEasing = (
 
       quaternion.multiply(rotationQuaternion);
       frame.rotation.setFromQuaternion(quaternion);
+    } else if (movement.movementMode === MovementMode.Arc && subjectFrames) {
+      const arcCenter =
+        subjectFrames[Math.floor(subjectFrames.length / 2)].position;
+      const initialRelativePos = params.position.clone().sub(arcCenter);
+
+      const totalRotation = (Math.PI / 2) * scaleFactor;
+      const rotationAmount = totalRotation * timeFactor;
+      const rotationDirection = movement.direction === Direction.Left ? 1 : -1;
+
+      const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 1, 0),
+        rotationAmount * rotationDirection
+      );
+
+      const newRelativePos = initialRelativePos
+        .clone()
+        .applyQuaternion(rotationQuaternion);
+
+      frame.position.copy(arcCenter).add(newRelativePos);
+
+      const currentSubjectPosition =
+        subjectFrames[index]?.position || arcCenter;
+      const lookAtMatrix = new THREE.Matrix4().lookAt(
+        frame.position,
+        currentSubjectPosition,
+        new THREE.Vector3(0, 1, 0)
+      );
+      frame.rotation.setFromRotationMatrix(lookAtMatrix);
     }
 
     frames.push(frame);
