@@ -8,7 +8,10 @@ import {
   CinematographyPrompt,
   CinematographySetup,
 } from "@/service/simulation/instruction/types";
-import { highLevelInstructionRules } from "./rules";
+import {
+  highLevelInstructionRules,
+  normalizeCinematographyPrompt,
+} from "./rules";
 import {
   cameraVerticalAngleLabels,
   shotSizeLabels,
@@ -38,6 +41,10 @@ const MOVEMENT_VALIDATION_RULES = {
       return finalIndex >= initialIndex;
     },
   },
+};
+
+type GeneratedCinematographyPrompt = CinematographyPrompt & {
+  initial: CinematographySetup;
 };
 
 const validateSetup = ({
@@ -134,12 +141,7 @@ const formatInstruction = (
     type: CameraMovementType;
     speed: MovementSpeed;
   },
-  final: {
-    cameraAngle?: CameraVerticalAngle;
-    shotSize?: ShotSize;
-    subjectView?: SubjectView;
-    subjectFraming?: SubjectInFramePosition;
-  }
+  final: Partial<CinematographySetup> = {}
 ) => {
   let text =
     `Begin with a ${
@@ -187,20 +189,29 @@ const formatInstruction = (
   return text;
 };
 
-export const generateRandomCinematographyPrompt = () => {
-  const initial = generateInitialSetup();
-  const movement = generateMovement();
-  const final = generateEndSetup(initial, movement.type);
+export const generateRandomCinematographyPrompt =
+  (): GeneratedCinematographyPrompt => {
+    const initial = generateInitialSetup();
+    const movement = generateMovement();
+    const final = generateEndSetup(initial, movement.type);
 
-  return { initial, movement, final };
-};
+    return normalizeCinematographyPrompt({
+      initial,
+      movement,
+      final,
+    }) as GeneratedCinematographyPrompt;
+  };
 
 export const generateRandomTexts = () => {
   const texts = Array.from({ length: 1000 }, () =>
     generateRandomCinematographyPrompt()
-  ).map(({ initial, movement, final }) =>
-    formatInstruction(initial, movement, final)
-  );
+  ).map(({ initial, movement, final }) => {
+    if (!initial) {
+      throw new Error("Randomly generated prompts must include an initial setup");
+    }
+
+    return formatInstruction(initial, movement, final);
+  });
 
   const blob = new Blob([texts.join("\n\n")], { type: "text/plain" });
   const url = window.URL.createObjectURL(blob);

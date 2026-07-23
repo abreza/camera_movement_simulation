@@ -4,6 +4,7 @@ import {
   SimulationInstruction,
 } from "@/service/simulation/instruction/types";
 import { defaultCinematographyPrompt } from "@/service/simulation/instruction/high-level/constant";
+import { normalizeCinematographyPrompt } from "@/service/simulation/instruction/high-level/rules";
 
 interface InstructionsState {
   instructions: SimulationInstruction[];
@@ -49,7 +50,9 @@ export const instructionsSlice = createSlice({
       state,
       action: PayloadAction<CinematographyPrompt>
     ) => {
-      state.cinematographyPrompt = action.payload;
+      state.cinematographyPrompt = normalizeCinematographyPrompt(
+        action.payload
+      );
     },
     resetInstructionsState: (state) => {
       return initialState;

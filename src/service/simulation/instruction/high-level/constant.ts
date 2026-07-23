@@ -19,10 +19,4 @@ export const defaultCinematographyPrompt: CinematographyPrompt = {
     type: CameraMovementType.DollyIn,
     speed: MovementSpeed.Constant,
   },
-  final: {
-    cameraAngle: undefined,
-    shotSize: undefined,
-    subjectView: undefined,
-    subjectFraming: undefined,
-  },
 };

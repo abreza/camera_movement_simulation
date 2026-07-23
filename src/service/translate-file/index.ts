@@ -3,6 +3,7 @@ import {
   SimulationInstruction,
 } from "../simulation/instruction/types";
 import { translatePromptToSimulationInstruction } from "../simulation/instruction/high-level/translator";
+import { normalizeCinematographyPrompt } from "../simulation/instruction/high-level/rules";
 
 interface MessageChoice {
   message: {
@@ -31,7 +32,11 @@ export function processInputData(inputData: InputItem[]): OutputItem[] {
       const content = item.response.choices[0].message.content;
 
       const parsedContent = JSON.parse(content);
-      const cinematographyPrompts = parsedContent.cinematographyPrompts || [];
+      const cinematographyPrompts = (
+        parsedContent.cinematographyPrompts || []
+      ).map((prompt: CinematographyPrompt) =>
+        normalizeCinematographyPrompt(prompt)
+      );
 
       const simulationInstructions = cinematographyPrompts.map(
         (prompt: CinematographyPrompt) =>

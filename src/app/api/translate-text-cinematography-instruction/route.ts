@@ -9,6 +9,7 @@ import {
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { z } from "zod";
+import { normalizeCinematographyPrompt } from "@/service/simulation/instruction/high-level/rules";
 
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -54,6 +55,7 @@ Follow these transformation rules:
 
 5. **Transition Handling**:
 - Only include 'final' properties if explicit transition
+- Do not include 'final' for pan, tilt, truck, pedestal, or arc movements when an initial setup is present
 - Match movement type to position changes
 - Ensure physical camera possibility
 `;
@@ -91,7 +93,7 @@ export async function POST(req: Request) {
     });
 
     return Response.json({
-      cinematographyPrompt: object,
+      cinematographyPrompt: normalizeCinematographyPrompt(object),
     });
   } catch (error) {
     console.error("AI processing error:", error);

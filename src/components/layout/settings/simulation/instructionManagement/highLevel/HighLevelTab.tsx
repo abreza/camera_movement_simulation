@@ -19,7 +19,10 @@ import {
   MovementSpeed,
 } from "@/service/simulation/instruction/types";
 
-import { highLevelInstructionRules } from "@/service/simulation/instruction/high-level/rules";
+import {
+  FINAL_SETUP_FIELDS,
+  highLevelInstructionRules,
+} from "@/service/simulation/instruction/high-level/rules";
 import { generateRandomTexts } from "@/service/simulation/instruction/high-level/generator";
 import { translatePromptToSimulationInstruction } from "@/service/simulation/instruction/high-level/translator";
 
@@ -60,17 +63,9 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({
       []) as string[];
   }, [cinematographyPrompt.movement.type]);
 
-  useEffect(() => {
-    const newFinal = { ...(cinematographyPrompt.final || {}) } as any;
-    disabledFields.forEach((field) => {
-      if (field in newFinal) {
-        newFinal[field] = undefined;
-      }
-    });
-    dispatch(
-      setCinematographyPrompt({ ...cinematographyPrompt, final: newFinal })
-    );
-  }, [cinematographyPrompt.movement.type, disabledFields]);
+  const hasEnabledFinalSetup = FINAL_SETUP_FIELDS.some(
+    (field) => !disabledFields.includes(field)
+  );
 
   const handleInitialChange =
     (field: string) => (event: SelectChangeEvent<string>) => {
@@ -184,31 +179,33 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({
         speed.
       </Typography>
 
-      <Accordion
-        sx={{ mb: 2, boxShadow: "none", "&:before": { display: "none" } }}
-      >
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
-          sx={{
-            padding: 0,
-            minHeight: "unset",
-            "& .MuiAccordionSummary-content": {
-              margin: 0,
-            },
-          }}
+      {hasEnabledFinalSetup && (
+        <Accordion
+          sx={{ mb: 2, boxShadow: "none", "&:before": { display: "none" } }}
         >
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-            Advanced End Setup
-          </Typography>
-        </AccordionSummary>
-        <AccordionDetails sx={{ padding: "8px 0" }}>
-          <FinalSetup
-            disabledFields={disabledFields}
-            final={cinematographyPrompt.final || {}}
-            handleFinalChange={handleFinalChange}
-          />
-        </AccordionDetails>
-      </Accordion>
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            sx={{
+              padding: 0,
+              minHeight: "unset",
+              "& .MuiAccordionSummary-content": {
+                margin: 0,
+              },
+            }}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              Advanced End Setup
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ padding: "8px 0" }}>
+            <FinalSetup
+              disabledFields={disabledFields}
+              final={cinematographyPrompt.final || {}}
+              handleFinalChange={handleFinalChange}
+            />
+          </AccordionDetails>
+        </Accordion>
+      )}
 
       <Button
         variant="contained"

@@ -72,10 +72,8 @@ export const cameraMovementTypeLabels: Record<CameraMovementType, string> = {
   [CameraMovementType.ArcRight]: "Arc Right",
   [CameraMovementType.CraneUp]: "Crane Up",
   [CameraMovementType.CraneDown]: "Crane Down",
-  [CameraMovementType.DollyOutZoomIn]: "Dolly Out & Zoom In",
-  [CameraMovementType.DollyInZoomOut]: "Dolly In & Zoom Out",
-  // [CameraMovementType.DutchLeft]: "Dutch Left",
-  // [CameraMovementType.DutchRight]: "Dutch Right",
+  [CameraMovementType.DutchLeft]: "Dutch Left",
+  [CameraMovementType.DutchRight]: "Dutch Right",
   [CameraMovementType.Follow]: "Follow",
   [CameraMovementType.Track]: "Track",
 };
