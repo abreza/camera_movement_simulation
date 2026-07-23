@@ -269,6 +269,23 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
         />
       </Stack>
 
+      <TextField
+        fullWidth
+        label="Dataset Seed (optional)"
+        value={generatorOptions.seed ?? ""}
+        onChange={(event) =>
+          dispatch(
+            setGeneratorOptions({
+              seed: event.target.value || undefined,
+            })
+          )
+        }
+        helperText="Reuse a seed from manifest.json to reproduce the same dataset."
+        margin="dense"
+        size="small"
+        disabled={generatingDataset}
+      />
+
       <Typography variant="body2" gutterBottom>
         Frame Count Range
       </Typography>

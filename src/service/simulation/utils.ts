@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { SubjectDimensions } from "../subjects/types";
 import { CameraParameters } from "./instruction/types";
 import { SENSOR_WIDTH, SENSOR_HEIGHT } from "./constants";
+import { randomValue } from "@/utils/randomUtils";
 
 export const getLookAtAngle = (
   cameraPosition: THREE.Vector3,
@@ -30,12 +31,16 @@ const projectPointUsingThreeJsCamera = (
 export const makeThreeJsCamera = (
   cameraParams: CameraParameters
 ): THREE.PerspectiveCamera => {
-  const tempCamera = new THREE.PerspectiveCamera();
+  const tempCamera = new THREE.PerspectiveCamera(
+    50,
+    cameraParams.aspectRatio
+  );
 
   tempCamera.position.copy(cameraParams.position);
   tempCamera.rotation.copy(cameraParams.rotation);
   tempCamera.setFocalLength(cameraParams.focalLength);
 
+  tempCamera.updateProjectionMatrix();
   tempCamera.updateMatrixWorld();
   return tempCamera;
 };
@@ -106,8 +111,8 @@ export function sampleGaussian(mean: number, stdDev: number): number {
     s = 0;
 
   do {
-    u = Math.random() * 2 - 1;
-    v = Math.random() * 2 - 1;
+    u = randomValue() * 2 - 1;
+    v = randomValue() * 2 - 1;
     s = u * u + v * v;
   } while (s >= 1 || s === 0);
 

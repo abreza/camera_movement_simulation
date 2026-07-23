@@ -18,6 +18,25 @@ import {
   getSimpleMovementMode,
 } from "./simple-movement";
 import { defaultCinematographyPrompt } from "../constant";
+import { normalizeCinematographyPrompt } from "../rules";
+
+function mergeSetupConfigs(...configs: SetupConfig[]): SetupConfig {
+  return configs.reduce<SetupConfig>((merged, config) => {
+    const subjectFraming =
+      merged.subjectFraming || config.subjectFraming
+        ? {
+            ...merged.subjectFraming,
+            ...config.subjectFraming,
+          }
+        : undefined;
+
+    return {
+      ...merged,
+      ...config,
+      ...(subjectFraming ? { subjectFraming } : {}),
+    };
+  }, {});
+}
 
 export function translatePromptToSimulationInstruction(
   prompt: CinematographyPrompt,
@@ -27,7 +46,8 @@ export function translatePromptToSimulationInstruction(
   }
 ): SimulationInstruction {
   const { frameCount = 30, subjectIndex = 0 } = options || {};
-  const { movement, initial, final } = prompt;
+  const normalizedPrompt = normalizeCinematographyPrompt(prompt);
+  const { movement, initial, final } = normalizedPrompt;
 
   const movementEasing = mapMovementSpeedToEasing(movement.speed);
   const constraints = buildConstraintsForMovement(movement.type);
@@ -36,18 +56,23 @@ export function translatePromptToSimulationInstruction(
 
   const startConfig = initial && mapCinematographySetupToConfig(initial);
 
-  const endConfig: SetupConfig = {
-    ...(initial
-      ? autoGenerateEndSetup(
-          {
-            ...defaultCinematographyPrompt.initial,
-            ...initial,
-          } as CinematographySetup,
-          movement.type
-        )
-      : {}),
-    ...(final ? mapCinematographySetupToConfig(final) : {}),
-  };
+  const automaticEndConfig = initial
+    ? autoGenerateEndSetup(
+        {
+          ...defaultCinematographyPrompt.initial,
+          ...initial,
+        } as CinematographySetup,
+        movement.type
+      )
+    : {};
+  const explicitEndConfig = final
+    ? mapCinematographySetupToConfig(final)
+    : {};
+  const endConfig = mergeSetupConfigs(
+    startConfig || {},
+    automaticEndConfig,
+    explicitEndConfig
+  );
 
   if (isSimpleMovement) {
     const setup = startConfig

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { SubjectFrame } from "./types";
+import { randomValue } from "@/utils/randomUtils";
 
 export function getRandomWithSeed(seed: number, min = 0, max = 1): number {
   const x = Math.sin(seed) * 10000;
@@ -32,12 +33,12 @@ export function addMovementNoise(
   } = noiseSettings;
 
   const seeds = {
-    px: Math.random() * 100,
-    py: Math.random() * 100,
-    pz: Math.random() * 100,
-    rx: Math.random() * 100,
-    ry: Math.random() * 100,
-    rz: Math.random() * 100,
+    px: randomValue() * 100,
+    py: randomValue() * 100,
+    pz: randomValue() * 100,
+    rx: randomValue() * 100,
+    ry: randomValue() * 100,
+    rz: randomValue() * 100,
   };
 
   return frames.map((frame, index) => {

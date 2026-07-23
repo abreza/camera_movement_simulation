@@ -8,7 +8,7 @@ import {
   ProjectedBounds,
 } from "@/service/simulation/utils";
 import { SubjectDimensions } from "@/service/subjects/types";
-import { DEFAULT_ASPECT_RATIO, SENSOR_HEIGHT } from "../../constants";
+import { SENSOR_HEIGHT } from "../../constants";
 
 export function calculateMinOffsetToCenterSection(
   bounds: ProjectedBounds
@@ -118,7 +118,8 @@ export function fixSubjectInView(
     ? calculateRequiredOffset(bounds, subjectInFramePosition)
     : calculateMinOffsetToCenterSection(bounds);
   const fovY = 2 * Math.atan(SENSOR_HEIGHT / (2 * cameraParams.focalLength));
-  const fovX = 2 * Math.atan(DEFAULT_ASPECT_RATIO * Math.tan(fovY / 2));
+  const fovX =
+    2 * Math.atan(cameraParams.aspectRatio * Math.tan(fovY / 2));
 
   const rotX = -offset.y * (fovY / 2);
   const rotY = -offset.x * (fovX / 2);

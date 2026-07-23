@@ -43,51 +43,44 @@ export function updateParameterDictionary(
   existingDictionary: ParameterDictionary = { keys: [], values: [] },
   path: string = ""
 ): ParameterDictionary {
-  const seenValues: Map<string, Set<string>> = new Map();
-
-  existingDictionary.keys.forEach((key, index) => {
-    seenValues.set(key, new Set(existingDictionary.values[index]));
-  });
-
-  for (const obj of objects) {
-    const extractFromObject = (currentObj: any, currentPath: string) => {
-      if (!currentObj || typeof currentObj !== "object") return;
-
-      for (const [key, value] of Object.entries(currentObj)) {
-        const newPath = currentPath ? `${currentPath}__${key}` : key;
-
-        if (typeof value === "string") {
-          if (!seenValues.has(newPath)) {
-            seenValues.set(newPath, new Set());
-          }
-          seenValues.get(newPath)!.add(value);
-        } else if (Array.isArray(value)) {
-          value.forEach((item) => extractFromObject(item, newPath));
-        } else if (
-          value &&
-          typeof value === "object" &&
-          !(value as any).isVector3 &&
-          !(value as any).isEuler
-        ) {
-          extractFromObject(value, newPath);
-        }
-      }
-    };
-
-    extractFromObject(obj, path);
-  }
-
   const dictionary: ParameterDictionary = {
-    keys: [],
-    values: [],
+    keys: [...existingDictionary.keys],
+    values: existingDictionary.values.map((values) => [...values]),
   };
 
-  for (const [path, values] of seenValues.entries()) {
-    if (values.size > 0) {
-      dictionary.keys.push(path);
-      dictionary.values.push(Array.from(values).sort());
+  const addValue = (valuePath: string, value: string) => {
+    let keyIndex = dictionary.keys.indexOf(valuePath);
+
+    if (keyIndex === -1) {
+      keyIndex = dictionary.keys.length;
+      dictionary.keys.push(valuePath);
+      dictionary.values.push([]);
     }
-  }
+
+    if (!dictionary.values[keyIndex].includes(value)) {
+      dictionary.values[keyIndex].push(value);
+    }
+  };
+
+  const extractValue = (value: any, currentPath: string) => {
+    if (typeof value === "string") {
+      addValue(currentPath, value);
+    } else if (Array.isArray(value)) {
+      value.forEach((item) => extractValue(item, currentPath));
+    } else if (
+      value &&
+      typeof value === "object" &&
+      !(value as any).isVector3 &&
+      !(value as any).isEuler
+    ) {
+      for (const [key, childValue] of Object.entries(value)) {
+        const childPath = currentPath ? `${currentPath}__${key}` : key;
+        extractValue(childValue, childPath);
+      }
+    }
+  };
+
+  objects.forEach((object) => extractValue(object, path));
 
   return dictionary;
 }

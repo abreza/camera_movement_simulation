@@ -15,6 +15,12 @@ import {
 import { calculateCameraPositions } from "../simulation/optimization";
 import { formatSimulationData } from "./simulationFormatter";
 import { ParameterDictionary } from "./parameterDictionary";
+import {
+  createRandomSeed,
+  createSeededRandom,
+  RandomSource,
+  withRandomSource,
+} from "@/utils/randomUtils";
 
 export interface GenerateDatasetConfig {
   simulationCount: number;
@@ -22,6 +28,7 @@ export interface GenerateDatasetConfig {
   instructionCount?: number;
   minFrameCount?: number;
   maxFrameCount?: number;
+  seed?: string | number;
   subjectClassProbabilities?: Partial<Record<ObjectClass, number>>;
   movementDistribution?: Record<string, number>;
   onProgress?: (progress: number, phase: "generating" | "zipping") => void;
@@ -36,7 +43,8 @@ export interface GenerateDatasetConfig {
 
 function assignRandomMovements(
   subjects: Subject[],
-  movementDistribution?: Record<string, number>
+  movementDistribution?: Record<string, number>,
+  random: RandomSource = Math.random
 ): Record<string, string> {
   const movements: Record<string, string> = {};
   const movementTypes = Object.keys(movementGenerators);
@@ -44,7 +52,7 @@ function assignRandomMovements(
   if (!movementDistribution) {
     subjects.forEach((subject) => {
       const randomMovement =
-        movementTypes[Math.floor(Math.random() * movementTypes.length)];
+        movementTypes[Math.floor(random() * movementTypes.length)];
       movements[subject.id] = randomMovement;
     });
     return movements;
@@ -56,12 +64,12 @@ function assignRandomMovements(
   );
 
   subjects.forEach((subject) => {
-    let random = Math.random() * totalWeight;
+    let randomWeight = random() * totalWeight;
     let selectedMovement = movementTypes[0];
 
     for (const [movement, weight] of Object.entries(movementDistribution)) {
-      random -= weight;
-      if (random <= 0) {
+      randomWeight -= weight;
+      if (randomWeight <= 0) {
         selectedMovement = movement;
         break;
       }
@@ -93,12 +101,15 @@ export async function generateRandomDataset(
     instructionCount = 1,
     minFrameCount = 30,
     maxFrameCount = 30,
+    seed: configuredSeed,
     subjectClassProbabilities,
     movementDistribution,
     onProgress,
     chunkSize = CHUNK_SIZE,
     noiseConfig,
   } = config;
+  const seed = String(configuredSeed ?? createRandomSeed());
+  const random = createSeededRandom(seed);
   const paddingLength = Math.floor(Math.log10(simulationCount)) + 1;
 
   const zip = new JSZip();
@@ -119,24 +130,19 @@ export async function generateRandomDataset(
 
     onProgress?.((s / simulationCount) * 100, "generating");
 
-    const subjects = generateSubjects(subjectCount, subjectClassProbabilities);
+    const subjects = withRandomSource(random, () =>
+      generateSubjects(subjectCount, subjectClassProbabilities)
+    );
     operationCount += subjectCount;
     await yieldIfNeeded(operationCount, chunkSize);
 
     const subjectMovements = assignRandomMovements(
       subjects,
-      movementDistribution
+      movementDistribution,
+      random
     );
 
     operationCount += subjects.length;
-    await yieldIfNeeded(operationCount, chunkSize);
-
-    const subjectFrames = generateFrames(
-      subjects,
-      subjectMovements,
-      noiseConfig
-    );
-    operationCount += subjects.length * (maxFrameCount - minFrameCount + 1);
     await yieldIfNeeded(operationCount, chunkSize);
 
     const cinematographyPrompts: CinematographyPrompt[] = [];
@@ -147,18 +153,33 @@ export async function generateRandomDataset(
       await yieldIfNeeded(operationCount, chunkSize);
 
       const frameCount =
-        Math.floor(Math.random() * (maxFrameCount - minFrameCount + 1)) +
+        Math.floor(random() * (maxFrameCount - minFrameCount + 1)) +
         minFrameCount;
 
-      const prompt = generateRandomCinematographyPrompt();
+      const prompt = withRandomSource(random, () =>
+        generateRandomCinematographyPrompt()
+      );
       cinematographyPrompts.push(prompt);
 
       const instruction = translatePromptToSimulationInstruction(prompt, {
         frameCount,
-        subjectIndex: Math.floor(Math.random() * subjects.length),
+        subjectIndex: Math.floor(random() * subjects.length),
       });
       simulationInstructions.push(instruction);
     }
+
+    const totalFrameCount = simulationInstructions.reduce(
+      (sum, instruction) => sum + instruction.frameCount,
+      0
+    );
+    const subjectFrames = withRandomSource(random, () =>
+      generateFrames(subjects, subjectMovements, {
+        ...noiseConfig,
+        frameCount: totalFrameCount,
+      })
+    );
+    operationCount += subjects.length * totalFrameCount;
+    await yieldIfNeeded(operationCount, chunkSize);
 
     const subjectsInfo: SubjectInfo[] = subjects.map((subject, index) => ({
       subject,
@@ -168,9 +189,8 @@ export async function generateRandomDataset(
     operationCount += subjects.length;
     await yieldIfNeeded(operationCount, chunkSize);
 
-    const cameraFrames = calculateCameraPositions(
-      simulationInstructions,
-      subjectsInfo
+    const cameraFrames = withRandomSource(random, () =>
+      calculateCameraPositions(simulationInstructions, subjectsInfo)
     );
 
     const simulationData = {
@@ -206,6 +226,29 @@ export async function generateRandomDataset(
     new Uint8Array(packedDictionary),
     zipOptions
   );
+
+  const manifest = {
+    schemaVersion: 1,
+    generatorVersion: 1,
+    generatedAt: new Date().toISOString(),
+    seed,
+    config: {
+      simulationCount,
+      subjectCount,
+      instructionCount,
+      minFrameCount,
+      maxFrameCount,
+      subjectClassProbabilities: subjectClassProbabilities || null,
+      movementDistribution: movementDistribution || null,
+      noiseConfig: noiseConfig || null,
+    },
+    encoding: {
+      simulationFilePattern: "simulation_*.msgpack",
+      parameterDictionaryFile: "parameter_dictionary.msgpack",
+      fixedPointScale: 1000,
+    },
+  };
+  zip.file("manifest.json", JSON.stringify(manifest, null, 2), zipOptions);
 
   const content = await zip.generateAsync(
     {

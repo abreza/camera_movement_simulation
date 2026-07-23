@@ -21,6 +21,7 @@ import {
   movementSpeedLabels,
 } from "./enumLabels";
 import { getShotSizeIndex } from "../constants";
+import { randomValue } from "@/utils/randomUtils";
 
 const MOVEMENT_VALIDATION_RULES = {
   [CameraMovementType.DollyIn]: {
@@ -68,7 +69,7 @@ export const getRandomEnumValue = <T extends object>(
   enumObj: T
 ): T[keyof T] => {
   const values = Object.values(enumObj);
-  return values[Math.floor(Math.random() * values.length)];
+  return values[Math.floor(randomValue() * values.length)];
 };
 
 const generateInitialSetup = (): CinematographySetup => {
@@ -100,16 +101,16 @@ const generateEndSetup = (
   do {
     validEndSetup = {};
 
-    if (!disabledFields.includes("cameraAngle") && Math.random() < 0.5) {
+    if (!disabledFields.includes("cameraAngle") && randomValue() < 0.5) {
       validEndSetup.cameraAngle = getRandomEnumValue(CameraVerticalAngle);
     }
-    if (!disabledFields.includes("shotSize") && Math.random() < 0.5) {
+    if (!disabledFields.includes("shotSize") && randomValue() < 0.5) {
       validEndSetup.shotSize = getRandomEnumValue(ShotSize);
     }
-    if (!disabledFields.includes("subjectView") && Math.random() < 0.5) {
+    if (!disabledFields.includes("subjectView") && randomValue() < 0.5) {
       validEndSetup.subjectView = getRandomEnumValue(SubjectView);
     }
-    if (!disabledFields.includes("subjectFraming") && Math.random() < 0.5) {
+    if (!disabledFields.includes("subjectFraming") && randomValue() < 0.5) {
       validEndSetup.subjectFraming = getRandomEnumValue(SubjectInFramePosition);
     }
 

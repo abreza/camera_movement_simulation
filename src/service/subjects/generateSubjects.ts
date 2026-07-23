@@ -1,12 +1,13 @@
 import * as THREE from "three";
 import { ObjectClass, Subject } from "./types";
 import { objectSizes } from "./constants";
+import { randomValue } from "@/utils/randomUtils";
 
 function generateRandomGaussian(): number {
   let u = 0,
     v = 0;
-  while (u === 0) u = Math.random();
-  while (v === 0) v = Math.random();
+  while (u === 0) u = randomValue();
+  while (v === 0) v = randomValue();
   return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
 
@@ -23,7 +24,7 @@ export function generateSubjects(
   count?: number,
   probabilityFactors?: Partial<Record<ObjectClass, number>>
 ): Subject[] {
-  const objectCount = count ?? Math.floor(Math.random() * 11) + 5;
+  const objectCount = count ?? Math.floor(randomValue() * 11) + 5;
   const subjects: Subject[] = [];
 
   const defaultFactors: Record<ObjectClass, number> = {
@@ -43,7 +44,7 @@ export function generateSubjects(
   );
 
   for (let i = 0; i < objectCount; i++) {
-    let random = Math.random() * totalWeight;
+    let random = randomValue() * totalWeight;
     let chosenClass: ObjectClass = ObjectClass.Chair;
 
     for (const [objectClass, weight] of Object.entries(factors)) {

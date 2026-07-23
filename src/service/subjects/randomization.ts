@@ -1,15 +1,16 @@
 import { RandomizationSettings } from "./types";
 import { getRandomWithSeed } from "./utils";
+import { randomValue } from "@/utils/randomUtils";
 
 export function generateRandomSettings(
   baseSettings: Partial<RandomizationSettings> = {}
 ): RandomizationSettings {
-  const seed = Math.random();
+  const seed = randomValue();
   return {
     enabled: true,
     positionOffset: {
       x: getRandomWithSeed(seed + 0.1, -2, 2),
-      y: getRandomWithSeed(seed + 0.2, -0.5, 1),
+      y: getRandomWithSeed(seed + 0.2, 0, 1),
       z: getRandomWithSeed(seed + 0.3, -2, 2),
       radius: getRandomWithSeed(seed + 0.4, 0.7, 1.3),
     },

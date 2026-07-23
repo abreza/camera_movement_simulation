@@ -380,7 +380,9 @@ export class SceneManager {
   updateCamera(camera: CameraParameters): void {
     this.camera.position.copy(camera.position);
     this.camera.rotation.copy(camera.rotation);
+    this.camera.aspect = camera.aspectRatio;
     this.camera.setFocalLength(camera.focalLength);
+    this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld();
 
     if (this.cameraMesh) {
