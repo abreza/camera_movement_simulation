@@ -161,6 +161,7 @@ export function buildConstraintsForMovement(
     case CameraMovementType.Follow:
       return {
         ...baseConstraints,
+        allFramesVisibility: true,
         lockedMovement: {
           left: true,
           right: true,
@@ -183,6 +184,7 @@ export function buildConstraintsForMovement(
           rollNonClockwise: true,
         },
         staticDistance: true,
+        allFramesVisibility: true,
       };
 
     default:

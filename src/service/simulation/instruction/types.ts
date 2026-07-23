@@ -217,8 +217,8 @@ export enum CameraMovementType {
   CraneUp = "craneUp",
   CraneDown = "craneDown",
 
-  // DutchLeft = "dutchLeft",
-  // DutchRight = "dutchRight",
+  DutchLeft = "dutchLeft",
+  DutchRight = "dutchRight",
 }
 
 export enum MovementSpeed {
@@ -242,4 +242,5 @@ export type CinematographyPrompt = {
     speed: MovementSpeed;
   };
   final?: Partial<CinematographySetup>;
+  frameCount?: number;
 };

@@ -9,6 +9,8 @@ interface UIState {
   progress: number;
   progressPhase: "generating" | "zipping";
   generatorOptions: GenerateDatasetConfig;
+  showCameraPath: boolean;
+  showSubjectPaths: boolean;
 }
 
 const initialState: UIState = {
@@ -18,6 +20,8 @@ const initialState: UIState = {
   generatingDataset: false,
   progress: 0,
   progressPhase: "generating",
+  showCameraPath: true,
+  showSubjectPaths: true,
   generatorOptions: {
     simulationCount: 1000,
     subjectCount: 1,
@@ -85,6 +89,12 @@ export const uiSlice = createSlice({
         ...action.payload,
       };
     },
+    setShowCameraPath: (state, action: PayloadAction<boolean>) => {
+      state.showCameraPath = action.payload;
+    },
+    setShowSubjectPaths: (state, action: PayloadAction<boolean>) => {
+      state.showSubjectPaths = action.payload;
+    },
     resetUIState: (state) => {
       state.simulationStepIndex = -1;
       state.selectedView = "none";
@@ -102,6 +112,8 @@ export const {
   setProgress,
   setProgressPhase,
   setGeneratorOptions,
+  setShowCameraPath,
+  setShowSubjectPaths,
   resetUIState,
 } = uiSlice.actions;
 

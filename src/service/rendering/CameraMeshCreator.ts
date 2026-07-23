@@ -24,8 +24,6 @@ export class CameraMeshCreator {
     cameraMesh.add(lens);
     cameraMesh.add(viewfinder);
 
-    cameraMesh.rotation.y = Math.PI;
-
     cameraMesh.scale.set(0.1, 0.1, 0.1);
 
     return cameraMesh;

@@ -72,11 +72,13 @@ export const subjectAwareInterpolate = (
   const startParams = getSubjectRelativeParameters(start, startSubject);
   const endParams = getSubjectRelativeParameters(end, endSubject);
   let interpolatedPosition: THREE.Vector3;
-  let interpolatedRotation = new THREE.Euler(
-    start.rotation.x * (1 - t) + end.rotation.x * t,
-    start.rotation.y * (1 - t) + end.rotation.y * t,
-    start.rotation.z * (1 - t) + end.rotation.z * t,
-    start.rotation.order
+  const startQuaternion = new THREE.Quaternion().setFromEuler(start.rotation);
+  const endQuaternion = new THREE.Quaternion().setFromEuler(end.rotation);
+  const interpolatedQuaternion = startQuaternion
+    .clone()
+    .slerp(endQuaternion, t);
+  const interpolatedRotation = new THREE.Euler().setFromQuaternion(
+    interpolatedQuaternion
   );
 
   const interpolatedDistance =
@@ -154,14 +156,14 @@ export const interpolateCameraParameters = (
     const currentSubjectFrame = subjectFrames[i];
     const frameParams = subjectAwareInterpolation
       ? subjectAwareInterpolate(
-          startParams,
-          endParams,
-          startSubjectFrame,
-          currentSubjectFrame,
-          endSubjectFrame,
-          t,
-          rotationInterpolation
-        )
+        startParams,
+        endParams,
+        startSubjectFrame,
+        currentSubjectFrame,
+        endSubjectFrame,
+        t,
+        rotationInterpolation
+      )
       : normalInterpolate(startParams, fullEndParams, t);
 
     const prevCameraParams = i > 0 ? frames[i - 1] : startParams;
@@ -178,6 +180,14 @@ export const interpolateCameraParameters = (
 
     const constraintsFactor = t > 0.1 && t < 0.9 ? 1 : 5 - Math.abs(10 * t - 5);
 
+    const frameQuat = new THREE.Quaternion().setFromEuler(frameParams.rotation);
+    const constraintQuat = new THREE.Quaternion().setFromEuler(
+      appliedConstraintFrame.rotation
+    );
+    const finalQuat = frameQuat
+      .clone()
+      .slerp(constraintQuat, constraintsFactor);
+
     const frame: CameraParameters = {
       position: frameParams.position
         .clone()
@@ -187,15 +197,7 @@ export const interpolateCameraParameters = (
             .clone()
             .multiplyScalar(constraintsFactor)
         ),
-      rotation: new THREE.Euler(
-        frameParams.rotation.x * (1 - constraintsFactor) +
-          appliedConstraintFrame.rotation.x * constraintsFactor,
-        frameParams.rotation.y * (1 - constraintsFactor) +
-          appliedConstraintFrame.rotation.y * constraintsFactor,
-        frameParams.rotation.z * (1 - constraintsFactor) +
-          appliedConstraintFrame.rotation.z * constraintsFactor,
-        frameParams.rotation.order
-      ),
+      rotation: new THREE.Euler().setFromQuaternion(finalQuat),
       focalLength:
         frameParams.focalLength * (1 - constraintsFactor) +
         appliedConstraintFrame.focalLength * constraintsFactor,

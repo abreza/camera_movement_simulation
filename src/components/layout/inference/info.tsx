@@ -11,14 +11,17 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Button,
   Tabs,
   Tab,
+  alpha,
+  Chip,
+  IconButton,
 } from "@mui/material";
 
 import {
-  ArrowDropUp as MinimizeIcon,
-  ArrowDropDown as MaximizeIcon,
+  KeyboardArrowUp as MinimizeIcon,
+  KeyboardArrowDown as MaximizeIcon,
+  RouteOutlined as TrajectoryIcon,
 } from "@mui/icons-material";
 
 import {
@@ -40,7 +43,6 @@ interface TabPanelProps {
 
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
-
   return (
     <div
       role="tabpanel"
@@ -65,7 +67,6 @@ export const InferenceInfo: FC<{}> = () => {
     (state) => state.camera.selectedBatchIndex
   );
   const totalBatches = useAppSelector((state) => state.camera.totalBatches);
-
   const sourceData = useAppSelector((state) => state.camera.sourceData);
 
   useEffect(() => {
@@ -95,40 +96,32 @@ export const InferenceInfo: FC<{}> = () => {
       if (batchIndex >= trajectoryData.length) {
         batchIndex = 0;
       }
-      return trajectoryData[batchIndex].map((frame: any) => {
-        return {
-          position: new THREE.Vector3(frame[0], frame[1], frame[2]),
-          rotation: new THREE.Euler(frame[3], frame[4], frame[5]),
-          focalLength: 50,
-          aspectRatio: 16 / 9,
-        };
-      });
-    }
-
-    return trajectoryData.map((frame) => {
-      return {
+      return trajectoryData[batchIndex].map((frame: any) => ({
         position: new THREE.Vector3(frame[0], frame[1], frame[2]),
         rotation: new THREE.Euler(frame[3], frame[4], frame[5]),
         focalLength: 50,
         aspectRatio: 16 / 9,
-      };
-    });
+      }));
+    }
+    return trajectoryData.map((frame) => ({
+      position: new THREE.Vector3(frame[0], frame[1], frame[2]),
+      rotation: new THREE.Euler(frame[3], frame[4], frame[5]),
+      focalLength: 50,
+      aspectRatio: 16 / 9,
+    }));
   };
 
   const handleTrajectoryModeChange = (mode: string) => {
     if (mode && sourceData?.trajectories?.[mode]) {
       setSelectedTrajectoryMode(mode);
-
       const trajectoryData = sourceData.trajectories[mode];
       const convertedFrames = convertInferenceTrajectory(
         trajectoryData,
         selectedBatchIndex
       );
-
       dispatch(setCameraFrames(convertedFrames));
       dispatch(setCurrentFrame(0));
       dispatch(setIsRendering(true));
-
       if (sourceData) {
         sourceData.currentTrajectoryMode = mode;
       }
@@ -150,7 +143,6 @@ export const InferenceInfo: FC<{}> = () => {
     setSelectedPromptTab(newValue);
   };
 
-  // Check if both prompts exist
   const hasRawPrompt = sourceData.batch_data?.raw_prompt;
   const hasTextPrompt = sourceData.batch_data?.text_prompts;
   const hasBothPrompts = hasRawPrompt && hasTextPrompt;
@@ -165,52 +157,110 @@ export const InferenceInfo: FC<{}> = () => {
     return sourceData.batch_data.text_prompts[selectedBatchIndex];
   };
 
+  const codeBlockStyle = {
+    maxHeight: "140px",
+    overflowY: "auto" as const,
+    p: 1.5,
+    backgroundColor: alpha("#000000", 0.35),
+    borderRadius: 1.5,
+    fontSize: "0.72rem",
+    fontFamily: "'JetBrains Mono', monospace",
+    color: alpha("#FFFFFF", 0.75),
+    border: `1px solid ${alpha("#FFFFFF", 0.04)}`,
+    mt: 1,
+    whiteSpace: "pre-wrap" as const,
+    wordBreak: "break-word" as const,
+    "&::-webkit-scrollbar": { width: 4 },
+    "&::-webkit-scrollbar-thumb": {
+      backgroundColor: alpha("#FFFFFF", 0.1),
+      borderRadius: 2,
+    },
+  };
+
   return (
     <Box
       sx={{
         position: "fixed",
-        top: 20,
-        right: 20,
-        bgcolor: "background.paper",
-        borderRadius: 2,
-        boxShadow: 3,
+        top: 16,
+        right: 16,
+        bgcolor: alpha("#1A1A2E", 0.95),
+        backdropFilter: "blur(16px)",
+        borderRadius: 2.5,
+        border: `1px solid ${alpha("#FFFFFF", 0.08)}`,
+        boxShadow: `0 16px 64px ${alpha("#000000", 0.5)}`,
         zIndex: 10,
-        maxWidth: 600,
-        minWidth: 300,
+        maxWidth: 520,
+        minWidth: 280,
+        overflow: "hidden",
       }}
     >
-      <Button
+      <Box
         sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          p: 1,
-          borderBottom: trajectoryBoxMinimized
-            ? "none"
-            : "1px solid rgba(0,0,0,0.12)",
-          width: "100%",
+          px: 2,
+          py: 1.25,
+          cursor: "pointer",
+          transition: "background-color 0.15s ease",
+          "&:hover": {
+            backgroundColor: alpha("#FFFFFF", 0.03),
+          },
         }}
         onClick={() => setTrajectoryBoxMinimized(!trajectoryBoxMinimized)}
       >
-        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          Trajectory Details
-        </Typography>
-        {trajectoryBoxMinimized ? <MaximizeIcon /> : <MinimizeIcon />}
-      </Button>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <TrajectoryIcon
+            sx={{ fontSize: 16, color: "#E8753A", opacity: 0.8 }}
+          />
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontWeight: 700,
+              fontSize: "0.72rem",
+              color: "text.primary",
+              letterSpacing: "0.06em",
+            }}
+          >
+            Trajectory Details
+          </Typography>
+        </Box>
+        <IconButton size="small" sx={{ color: "text.secondary", p: 0.5 }}>
+          {trajectoryBoxMinimized ? (
+            <MaximizeIcon fontSize="small" />
+          ) : (
+            <MinimizeIcon fontSize="small" />
+          )}
+        </IconButton>
+      </Box>
 
       <Collapse in={!trajectoryBoxMinimized}>
-        <Box sx={{ p: 2 }}>
+        <Box
+          sx={{
+            px: 2,
+            pb: 2,
+            pt: 0.5,
+            borderTop: `1px solid ${alpha("#FFFFFF", 0.05)}`,
+          }}
+        >
           <Stack spacing={2}>
             <Box>
-              <Typography variant="body2" sx={{ mb: 1 }}>
-                Trajectory Mode
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: 600,
+                  mb: 1,
+                  display: "block",
+                }}
+              >
+                Mode
               </Typography>
               <Box
                 sx={{
                   display: "flex",
                   flexWrap: "wrap",
-                  gap: 1,
-                  alignItems: "center",
+                  gap: 0.75,
                 }}
               >
                 {Object.keys(sourceData.trajectories).map((mode) => (
@@ -222,11 +272,12 @@ export const InferenceInfo: FC<{}> = () => {
                     size="small"
                     sx={{
                       minWidth: "fit-content",
-                      px: 2,
-                      py: 0.5,
-                      fontSize: "0.75rem",
+                      px: 1.5,
+                      py: 0.4,
+                      fontSize: "0.68rem",
                       textTransform: "none",
-                      flex: "0 0 auto",
+                      borderRadius: "6px !important",
+                      border: `1px solid ${alpha("#FFFFFF", 0.08)} !important`,
                     }}
                   >
                     {mode.replace(/_/g, " ")}
@@ -234,133 +285,98 @@ export const InferenceInfo: FC<{}> = () => {
                 ))}
               </Box>
             </Box>
-
             {totalBatches > 1 && (
-              <Box>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Simulation</InputLabel>
-                  <Select
-                    value={selectedBatchIndex}
-                    label="Simulation"
-                    onChange={handleBatchSelectionChange}
-                  >
-                    {Array.from({ length: totalBatches }, (_, i) => (
-                      <MenuItem key={i} value={i}>
-                        Simulation {i + 1}-{" "}
-                        {sourceData.batch_data?.raw_prompt?.[i].movement.type ||
-                          " "}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
+              <FormControl fullWidth size="small">
+                <InputLabel>Simulation</InputLabel>
+                <Select
+                  value={selectedBatchIndex}
+                  label="Simulation"
+                  onChange={handleBatchSelectionChange}
+                >
+                  {Array.from({ length: totalBatches }, (_, i) => (
+                    <MenuItem key={i} value={i}>
+                      Simulation {i + 1}
+                      {sourceData.batch_data?.raw_prompt?.[i]?.movement?.type
+                        ? ` — ${sourceData.batch_data.raw_prompt[i].movement.type}`
+                        : ""}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             )}
-          </Stack>
-
-          <Box mt={2}>
-            <Stack direction="row" justifyContent="space-between">
-              <Typography variant="body2">
-                <strong>Dataset Type:</strong> {sourceData.dataset_type}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Model Type:</strong> {sourceData.model_type}
-              </Typography>
+            <Stack direction="row" spacing={1}>
+              {sourceData.dataset_type && (
+                <Chip
+                  label={sourceData.dataset_type}
+                  size="small"
+                  variant="outlined"
+                  sx={{ fontSize: "0.68rem" }}
+                />
+              )}
+              {sourceData.model_type && (
+                <Chip
+                  label={sourceData.model_type}
+                  size="small"
+                  variant="outlined"
+                  sx={{ fontSize: "0.68rem" }}
+                />
+              )}
             </Stack>
-
             {(hasRawPrompt || hasTextPrompt) && (
-              <Box mt={1}>
+              <Box>
                 {hasBothPrompts ? (
                   <>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      <strong>Prompt:</strong>
-                    </Typography>
-                    <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-                      <Tabs
-                        value={selectedPromptTab}
-                        onChange={handlePromptTabChange}
-                        variant="fullWidth"
-                      >
-                        <Tab label="Raw Prompt" />
-                        <Tab label="Text Prompt" />
-                      </Tabs>
-                    </Box>
+                    <Tabs
+                      value={selectedPromptTab}
+                      onChange={handlePromptTabChange}
+                      variant="fullWidth"
+                      sx={{
+                        minHeight: 32,
+                        "& .MuiTab-root": {
+                          minHeight: 32,
+                          py: 0.5,
+                          fontSize: "0.7rem",
+                        },
+                      }}
+                    >
+                      <Tab label="Raw Prompt" />
+                      <Tab label="Text Prompt" />
+                    </Tabs>
                     <TabPanel value={selectedPromptTab} index={0}>
-                      <pre
-                        style={{
-                          maxHeight: "150px",
-                          overflowY: "auto",
-                          padding: 8,
-                          background: "rgba(0,0,0,0.05)",
-                          borderRadius: 4,
-                          fontSize: "0.8rem",
-                          margin: 0,
-                          marginTop: 8,
-                        }}
-                      >
+                      <Box sx={codeBlockStyle}>
                         {JSON.stringify(getCurrentRawPrompt(), null, 2)}
-                      </pre>
+                      </Box>
                     </TabPanel>
                     <TabPanel value={selectedPromptTab} index={1}>
-                      <Box
-                        sx={{
-                          maxHeight: "150px",
-                          overflowY: "auto",
-                          p: 1,
-                          background: "rgba(0,0,0,0.05)",
-                          borderRadius: 1,
-                          fontSize: "0.8rem",
-                          mt: 1,
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {getCurrentTextPrompt()}
-                      </Box>
+                      <Box sx={codeBlockStyle}>{getCurrentTextPrompt()}</Box>
                     </TabPanel>
                   </>
                 ) : (
                   <>
-                    <Typography variant="body2">
-                      <strong>Prompt:</strong>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "text.secondary",
+                        fontWeight: 600,
+                        display: "block",
+                        mb: 0.5,
+                      }}
+                    >
+                      Prompt
                     </Typography>
                     {hasRawPrompt && (
-                      <pre
-                        style={{
-                          maxHeight: "150px",
-                          overflowY: "auto",
-                          padding: 8,
-                          background: "rgba(0,0,0,0.05)",
-                          borderRadius: 4,
-                          fontSize: "0.8rem",
-                          margin: 0,
-                          marginTop: 4,
-                        }}
-                      >
+                      <Box sx={codeBlockStyle}>
                         {JSON.stringify(getCurrentRawPrompt(), null, 2)}
-                      </pre>
+                      </Box>
                     )}
                     {hasTextPrompt && (
-                      <Box
-                        sx={{
-                          maxHeight: "150px",
-                          overflowY: "auto",
-                          p: 1,
-                          background: "rgba(0,0,0,0.05)",
-                          borderRadius: 1,
-                          fontSize: "0.8rem",
-                          mt: 0.5,
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {getCurrentTextPrompt()}
-                      </Box>
+                      <Box sx={codeBlockStyle}>{getCurrentTextPrompt()}</Box>
                     )}
                   </>
                 )}
               </Box>
             )}
-          </Box>
+          </Stack>
         </Box>
       </Collapse>
     </Box>

@@ -6,7 +6,6 @@ import {
   CameraMovementType,
   CameraVerticalAngle,
   SubjectInFramePosition,
-  Scale,
 } from "@/service/simulation/instruction/types";
 import { getCloserShotSize, getFartherShotSize } from "./shotSize";
 
@@ -31,12 +30,10 @@ export function autoGenerateEndSetup(
 
   switch (movementType) {
     case CameraMovementType.DollyIn:
-    case CameraMovementType.DollyInZoomOut:
       endSetup.shotSize = getCloserShotSize(initial.shotSize);
       break;
 
     case CameraMovementType.DollyOut:
-    case CameraMovementType.DollyOutZoomIn:
       endSetup.shotSize = getFartherShotSize(initial.shotSize);
       break;
 

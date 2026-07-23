@@ -1,4 +1,4 @@
-import React, { FC, useMemo, useEffect } from "react";
+import React, { FC, useMemo, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -42,6 +42,17 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({
     (state) => state.instructions.cinematographyPrompt
   );
 
+  const [isLocalhost, setIsLocalhost] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsLocalhost(
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+      );
+    }
+  }, []);
+
   const disabledFields = useMemo(() => {
     const movementType = cinematographyPrompt.movement
       .type as keyof typeof highLevelInstructionRules;
@@ -50,7 +61,7 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({
   }, [cinematographyPrompt.movement.type]);
 
   useEffect(() => {
-    const newFinal = { ...cinematographyPrompt.final } as any;
+    const newFinal = { ...(cinematographyPrompt.final || {}) } as any;
     disabledFields.forEach((field) => {
       if (field in newFinal) {
         newFinal[field] = undefined;
@@ -67,7 +78,7 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({
         setCinematographyPrompt({
           ...cinematographyPrompt,
           initial: {
-            ...cinematographyPrompt.initial,
+            ...(cinematographyPrompt.initial || {}),
             [field]: event.target.value,
           },
         })
@@ -92,7 +103,10 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({
       dispatch(
         setCinematographyPrompt({
           ...cinematographyPrompt,
-          final: { ...cinematographyPrompt.final, [field]: event.target.value },
+          final: {
+            ...(cinematographyPrompt.final || {}),
+            [field]: event.target.value
+          },
         })
       );
     };
@@ -102,7 +116,7 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({
       const instruction =
         translatePromptToSimulationInstruction(cinematographyPrompt);
       dispatch(resetForm(instruction));
-      onNavigateToLowLevel(); // Navigate to low-level tab after translation
+      onNavigateToLowLevel();
       toast.success("Translated to low-level instructions successfully");
     } catch (error) {
       console.error("Translation error:", error);
@@ -120,28 +134,28 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({
         Generate cinematographyPrompt camera trajectory that begins with a{" "}
         <SelectRenderer
           options={Object.values(CameraVerticalAngle)}
-          value={cinematographyPrompt.initial.cameraAngle}
+          value={cinematographyPrompt.initial?.cameraAngle ?? ""}
           onChange={handleInitialChange("cameraAngle")}
           enumType="CameraVerticalAngle"
         />{" "}
         camera angle from the{" "}
         <SelectRenderer
           options={Object.values(SubjectView)}
-          value={cinematographyPrompt.initial.subjectView}
+          value={cinematographyPrompt.initial?.subjectView ?? ""}
           onChange={handleInitialChange("subjectView")}
           enumType="SubjectView"
         />{" "}
         side of the subject, using a{" "}
         <SelectRenderer
           options={Object.values(ShotSize)}
-          value={cinematographyPrompt.initial.shotSize}
+          value={cinematographyPrompt.initial?.shotSize ?? ""}
           onChange={handleInitialChange("shotSize")}
           enumType="ShotSize"
         />{" "}
         shot size and positioning the subject in the{" "}
         <SelectRenderer
           options={Object.values(SubjectInFramePosition)}
-          value={cinematographyPrompt.initial.subjectFraming}
+          value={cinematographyPrompt.initial?.subjectFraming ?? ""}
           onChange={handleInitialChange("subjectFraming")}
           enumType="SubjectInFramePosition"
         />{" "}
@@ -156,14 +170,14 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({
         Next, apply a{" "}
         <SelectRenderer
           options={Object.values(CameraMovementType)}
-          value={cinematographyPrompt.movement.type}
+          value={cinematographyPrompt.movement.type ?? ""}
           onChange={handleMovementChange("type")}
           enumType="CameraMovementType"
         />{" "}
         movement with{" "}
         <SelectRenderer
           options={Object.values(MovementSpeed)}
-          value={cinematographyPrompt.movement.speed}
+          value={cinematographyPrompt.movement.speed ?? ""}
           onChange={handleMovementChange("speed")}
           enumType="MovementSpeed"
         />{" "}
@@ -190,7 +204,7 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({
         <AccordionDetails sx={{ padding: "8px 0" }}>
           <FinalSetup
             disabledFields={disabledFields}
-            final={cinematographyPrompt.final}
+            final={cinematographyPrompt.final || {}}
             handleFinalChange={handleFinalChange}
           />
         </AccordionDetails>
@@ -204,13 +218,15 @@ export const HighLevelTab: FC<HighLevelTabProps> = ({
       >
         Translate to Low-Level Instructions
       </Button>
-      <Button
-        onClick={() => generateRandomTexts()}
-        sx={{ mt: 2 }}
-        color="secondary"
-      >
-        Generate 1000 Random Prompt
-      </Button>
+      {isLocalhost && (
+        <Button
+          onClick={() => generateRandomTexts()}
+          sx={{ mt: 2 }}
+          color="secondary"
+        >
+          Generate 1000 Random Prompt
+        </Button>
+      )}
     </Box>
   );
 };

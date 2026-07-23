@@ -1,13 +1,23 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createSubjectMesh } from "./SubjectMeshCreator";
-import { SubjectFrame, SubjectFrameInfo, SubjectInfo } from "../subjects/types";
+import {
+  SubjectFrame,
+  SubjectFrameInfo,
+  SubjectInfo,
+  Subject,
+} from "../subjects/types";
 import { CameraParameters } from "../simulation/instruction/types";
 import {
   DEFAULT_ASPECT_RATIO,
   DEFAULT_FOCAL_LENGTH,
 } from "../simulation/constants";
 import { CameraMeshCreator } from "./CameraMeshCreator";
+import {
+  PlacementController,
+  PlacementCallback,
+  PreviewCallback,
+} from "./PlacementController";
 
 export class SceneManager {
   private scene: THREE.Scene;
@@ -25,6 +35,16 @@ export class SceneManager {
   private subjectTrajectoryGroups: THREE.Group[];
   private cameraFrames: CameraParameters[];
   private subjectsInfo: SubjectInfo[];
+
+  private _showCameraPath: boolean = true;
+  private _showSubjectPaths: boolean = true;
+
+  private subjectMeshMap: Map<
+    string,
+    { main: THREE.Object3D; world: THREE.Object3D }
+  > = new Map();
+
+  public placementController: PlacementController;
 
   constructor(
     cameraViewElement: HTMLDivElement,
@@ -56,10 +76,70 @@ export class SceneManager {
     this.setupLighting();
     this.initCameraMesh();
     this.setupTrajectoryVisualization();
+
+    this.placementController = new PlacementController(
+      this.worldRenderer,
+      this.worldCamera,
+      this.worldScene,
+      this.worldControls
+    );
+  }
+
+  async addSingleSubject(
+    subject: Subject,
+    position: THREE.Vector3
+  ): Promise<void> {
+    const mainMesh = await createSubjectMesh(subject, false);
+    mainMesh.position.copy(position);
+    this.scene.add(mainMesh);
+    this.subjectMeshes.push(mainMesh);
+
+    const worldMesh = await createSubjectMesh(subject, true);
+    worldMesh.position.copy(position);
+    this.worldScene.add(worldMesh);
+    this.worldSubjectMeshes.push(worldMesh);
+
+    this.subjectMeshMap.set(subject.id, { main: mainMesh, world: worldMesh });
+  }
+
+  removeSingleSubject(subjectId: string): void {
+    const entry = this.subjectMeshMap.get(subjectId);
+    if (!entry) return;
+
+    entry.main.traverse(this.disposeObject);
+    this.scene.remove(entry.main);
+
+    entry.world.traverse(this.disposeObject);
+    this.worldScene.remove(entry.world);
+
+    this.subjectMeshes = this.subjectMeshes.filter((m) => m !== entry.main);
+    this.worldSubjectMeshes = this.worldSubjectMeshes.filter(
+      (m) => m !== entry.world
+    );
+    this.subjectMeshMap.delete(subjectId);
+  }
+
+  repositionSubject(subjectId: string, position: THREE.Vector3): void {
+    const entry = this.subjectMeshMap.get(subjectId);
+    if (!entry) return;
+    entry.main.position.copy(position);
+    entry.world.position.copy(position);
+  }
+
+  startPlacement(
+    subject: Subject,
+    onConfirm: PlacementCallback,
+    onPreview?: PreviewCallback
+  ): void {
+    this.placementController.startPlacement(subject, onConfirm, onPreview);
+  }
+
+  cancelPlacement(): void {
+    this.placementController.cancelPlacement();
   }
 
   private setupFloor(): void {
-    const floorGeometry = new THREE.PlaneGeometry(100, 100);
+    const floorGeometry = new THREE.PlaneGeometry(1000, 1000);
     const floorMaterial = new THREE.MeshStandardMaterial({
       color: 0xeeeeaa,
       roughness: 0.8,
@@ -87,6 +167,15 @@ export class SceneManager {
     worldViewElement.appendChild(this.worldRenderer.domElement);
 
     this.worldCamera.position.set(20, 20, 20);
+
+    // Smooth OrbitControls navigation
+    this.worldControls.enableDamping = true;
+    this.worldControls.dampingFactor = 0.05;
+    this.worldControls.panSpeed = 0.8;
+    this.worldControls.zoomSpeed = 1.2;
+    this.worldControls.screenSpacePanning = true;
+    this.worldControls.maxPolarAngle = Math.PI / 2 + 0.1; // Restrict camera mostly above floor
+
     this.worldControls.update();
   }
 
@@ -155,6 +244,7 @@ export class SceneManager {
   private initCameraMesh(): void {
     if (this.cameraMesh) {
       this.worldScene.remove(this.cameraMesh);
+      this.cameraMesh.traverse(this.disposeObject);
     }
 
     this.cameraMesh = CameraMeshCreator.createCameraMesh();
@@ -190,7 +280,10 @@ export class SceneManager {
   }
 
   private updateCameraTrajectory(): void {
+    this.cameraTrajectoryGroup.traverse(this.disposeObject);
     this.cameraTrajectoryGroup.clear();
+
+    this.cameraTrajectoryGroup.visible = this._showCameraPath;
 
     if (this.cameraFrames.length < 2) return;
 
@@ -219,6 +312,7 @@ export class SceneManager {
 
   private updateSubjectTrajectories(): void {
     this.subjectTrajectoryGroups.forEach((group) => {
+      group.traverse(this.disposeObject);
       this.worldScene.remove(group);
       group.clear();
     });
@@ -265,8 +359,21 @@ export class SceneManager {
       endCube.position.copy(positions[positions.length - 1]);
       trajectoryGroup.add(endCube);
 
+      trajectoryGroup.visible = this._showSubjectPaths;
       this.subjectTrajectoryGroups.push(trajectoryGroup);
       this.worldScene.add(trajectoryGroup);
+    });
+  }
+
+  setCameraTrajectoryVisibility(visible: boolean): void {
+    this._showCameraPath = visible;
+    this.cameraTrajectoryGroup.visible = visible;
+  }
+
+  setSubjectTrajectoryVisibility(visible: boolean): void {
+    this._showSubjectPaths = visible;
+    this.subjectTrajectoryGroups.forEach((group) => {
+      group.visible = visible;
     });
   }
 
@@ -313,12 +420,24 @@ export class SceneManager {
     );
   }
 
+  updateSubjectTrajectoriesFromInfo(subjectsInfo: SubjectInfo[]): void {
+    this.subjectsInfo = subjectsInfo;
+    this.updateSubjectTrajectories();
+  }
+
   initSubjects(subjectsInfo: SubjectInfo[]): void {
-    this.subjectMeshes.forEach((mesh) => this.scene.remove(mesh));
-    this.worldSubjectMeshes.forEach((mesh) => this.worldScene.remove(mesh));
+    this.subjectMeshes.forEach((mesh) => {
+      mesh.traverse(this.disposeObject);
+      this.scene.remove(mesh);
+    });
+    this.worldSubjectMeshes.forEach((mesh) => {
+      mesh.traverse(this.disposeObject);
+      this.worldScene.remove(mesh);
+    });
+
     this.subjectMeshes = [];
     this.worldSubjectMeshes = [];
-
+    this.subjectMeshMap.clear();
     this.subjectsInfo = subjectsInfo;
 
     subjectsInfo.forEach(async (subjectInfo, index) => {
@@ -330,6 +449,11 @@ export class SceneManager {
       const worldMesh = await createSubjectMesh(subjectInfo.subject, true);
       this.worldScene.add(worldMesh);
       this.worldSubjectMeshes.push(worldMesh);
+
+      this.subjectMeshMap.set(subjectInfo.subject.id, {
+        main: mesh,
+        world: worldMesh,
+      });
 
       this.updateSubjectFrame(index, subjectInfo.frames![0]);
     });
@@ -349,32 +473,43 @@ export class SceneManager {
   }
 
   dispose(): void {
+    this.placementController.dispose();
+
     if (this.cameraMesh) {
       this.worldScene.remove(this.cameraMesh);
       this.cameraMesh.traverse(this.disposeObject);
     }
 
+    this.cameraTrajectoryGroup.traverse(this.disposeObject);
     this.cameraTrajectoryGroup.clear();
+
     this.subjectTrajectoryGroups.forEach((group) => {
+      group.traverse(this.disposeObject);
       this.worldScene.remove(group);
       group.clear();
     });
 
     this.scene.traverse(this.disposeObject);
     this.worldScene.traverse(this.disposeObject);
+
     this.renderer.dispose();
     this.worldRenderer.dispose();
     this.worldControls.dispose();
   }
 
-  private disposeObject(object: THREE.Object3D): void {
-    if (object instanceof THREE.Mesh) {
-      object.geometry.dispose();
+  private disposeObject = (object: THREE.Object3D): void => {
+    if (
+      object instanceof THREE.Mesh ||
+      object instanceof THREE.Line ||
+      object instanceof THREE.Points
+    ) {
+      object.geometry?.dispose();
+
       if (object.material instanceof THREE.Material) {
         object.material.dispose();
       } else if (Array.isArray(object.material)) {
         object.material.forEach((material) => material.dispose());
       }
     }
-  }
+  };
 }

@@ -10,12 +10,12 @@ function generateRandomGaussian(): number {
   return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
 
-function generateDimensions(objectClass: ObjectClass): THREE.Vector3 {
+export function generateDimensions(objectClass: ObjectClass): THREE.Vector3 {
   const { mean, std } = objectSizes[objectClass];
   return new THREE.Vector3(
-    mean.x + generateRandomGaussian() * std.x,
-    mean.y + generateRandomGaussian() * std.y,
-    mean.z + generateRandomGaussian() * std.z
+    Math.max(0.05, mean.x + generateRandomGaussian() * std.x),
+    Math.max(0.05, mean.y + generateRandomGaussian() * std.y),
+    Math.max(0.05, mean.z + generateRandomGaussian() * std.z)
   );
 }
 
@@ -32,7 +32,6 @@ export function generateSubjects(
     [ObjectClass.Laptop]: 0.3,
     [ObjectClass.Book]: 0.3,
     [ObjectClass.Tree]: 0.5,
-    // [ObjectClass.Building]: 0.1,
     [ObjectClass.Car]: 1,
     [ObjectClass.Bicycle]: 1,
   };

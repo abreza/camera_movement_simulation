@@ -9,14 +9,13 @@ import { getEnumLabel } from "@/service/simulation/instruction/high-level/enumLa
 
 interface SelectRendererProps {
   options: string[];
-  value: string;
+  value?: string;
   onChange: (event: SelectChangeEvent<string>) => void;
   haveEmptyOption?: boolean;
   enumType: string;
   size?: "small" | "medium";
   sx?: Record<string, any>;
 }
-
 export const SelectRenderer: FC<SelectRendererProps> = ({
   options,
   value = "",

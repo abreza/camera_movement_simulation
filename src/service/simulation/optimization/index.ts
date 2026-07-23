@@ -1,6 +1,24 @@
 import { CameraParameters, SimulationInstruction } from "../instruction/types";
 import { SubjectInfo } from "../../subjects/types";
-import { optimizeCameraParameters } from "./optimizer";
+import { initCameraParameters } from "../rule-based";
+
+export const optimizeCameraParameters = (
+  instruction: SimulationInstruction,
+  startCameraParameter?: CameraParameters,
+  subjectInfo?: SubjectInfo
+): CameraParameters[] => {
+  if (!subjectInfo?.frames?.length) {
+    return [];
+  }
+
+  let frames = initCameraParameters(
+    instruction,
+    startCameraParameter,
+    subjectInfo
+  );
+
+  return frames;
+};
 
 export const calculateCameraPositions = (
   instructions: SimulationInstruction[],

@@ -72,7 +72,7 @@ export const moveByEasing = (
 
       const rotationAxis =
         movement.direction === Direction.Left ||
-        movement.direction === Direction.Right
+          movement.direction === Direction.Right
           ? new THREE.Vector3(0, 1, 0)
           : new THREE.Vector3(1, 0, 0);
 
@@ -82,10 +82,10 @@ export const moveByEasing = (
       rotationQuaternion.setFromAxisAngle(
         rotationAxis,
         rotationAmount *
-          (movement.direction === Direction.Left ||
+        (movement.direction === Direction.Left ||
           movement.direction === Direction.Up
-            ? 1
-            : -1)
+          ? 1
+          : -1)
       );
 
       quaternion.multiply(rotationQuaternion);

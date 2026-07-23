@@ -53,7 +53,7 @@ const convertTrajectoryToParameters = (
 ): CameraParameters[] =>
   trajectory.map((frame) => {
     const [position, rotation] = extractFrameData(frame);
-    rotation[2] = 0;
+    rotation[2] = 0; // Lock Z rotation (roll)
     return createCameraParameters(position, rotation);
   });
 
@@ -147,11 +147,28 @@ export const cameraSlice = createSlice({
     setIsRendering: (state, action: PayloadAction<boolean>) => {
       state.isRendering = action.payload;
     },
+    clearInferenceData: (state) => {
+      state.sourceData = null;
+      state.batchTrajectories = null;
+      state.selectedBatchIndex = 0;
+      state.totalBatches = 0;
+      state.inferenceSubjects = [];
+    },
     setSelectedBatchIndex: (state, action: PayloadAction<number>) => {
       state.selectedBatchIndex = action.payload;
 
       if (state.batchTrajectories && state.sourceData?.batch_data) {
-        const trajectoryData = state.batchTrajectories["prompt_generation"];
+        let activeMode = state.sourceData.currentTrajectoryMode || "prompt_generation";
+        let trajectoryData = state.batchTrajectories[activeMode];
+
+        if (!trajectoryData) {
+          const availableModes = Object.keys(state.batchTrajectories);
+          if (availableModes.length > 0) {
+            activeMode = availableModes[0];
+            trajectoryData = state.batchTrajectories[activeMode];
+            state.sourceData.currentTrajectoryMode = activeMode;
+          }
+        }
 
         if (trajectoryData) {
           state.cameraFrames = convertInferenceTrajectory(
@@ -164,13 +181,27 @@ export const cameraSlice = createSlice({
     },
     importCameraFrames: (state, action: PayloadAction<any>) => {
       const inferenceData = action.payload;
-      const { batch_data } = inferenceData;
+      const { batch_data, trajectories } = inferenceData;
 
-      const trajectoryData = inferenceData.trajectories["prompt_generation"];
+      if (!trajectories || Object.keys(trajectories).length === 0) {
+        console.error("Invalid inference file: Missing or empty 'trajectories'");
+        return;
+      }
+
+      let initialMode = "prompt_generation";
+      if (!trajectories[initialMode]) {
+        initialMode = Object.keys(trajectories)[0];
+      }
+
+      inferenceData.currentTrajectoryMode = initialMode;
+      const trajectoryData = trajectories[initialMode];
 
       if (trajectoryData) {
-        state.batchTrajectories = inferenceData.trajectories;
-        state.totalBatches = trajectoryData.length;
+        state.batchTrajectories = trajectories;
+
+        const isBatched = Array.isArray(trajectoryData[0]) && Array.isArray(trajectoryData[0][0]);
+        state.totalBatches = isBatched ? trajectoryData.length : 1;
+
         state.selectedBatchIndex = 0;
         state.cameraFrames = convertInferenceTrajectory(
           trajectoryData,
@@ -179,7 +210,7 @@ export const cameraSlice = createSlice({
         );
       }
 
-      if (batch_data.subject_trajectory && batch_data.subject_volume) {
+      if (batch_data?.subject_trajectory && batch_data?.subject_volume) {
         state.inferenceSubjects = processInferenceSubjects(
           batch_data.subject_trajectory,
           batch_data.subject_volume,
@@ -208,6 +239,7 @@ export const {
   setSelectedBatchIndex,
   importCameraFrames,
   resetCameraState,
+  clearInferenceData,
 } = cameraSlice.actions;
 
 export default cameraSlice.reducer;

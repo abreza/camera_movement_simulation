@@ -34,20 +34,35 @@ export function translatePromptToSimulationInstruction(
   const isSimpleMovement =
     highLevelInstructionRules[movement.type]?.simpleMovement;
 
-  const startSetupSource: CinematographySetup = {
-    ...defaultCinematographyPrompt.initial,
-    ...initial,
-  } as CinematographySetup;
-  const startConfig = mapCinematographySetupToConfig(startSetupSource);
+  const startConfig = initial && mapCinematographySetupToConfig(initial);
+
+  const endConfig: SetupConfig = {
+    ...(initial
+      ? autoGenerateEndSetup(
+          {
+            ...defaultCinematographyPrompt.initial,
+            ...initial,
+          } as CinematographySetup,
+          movement.type
+        )
+      : {}),
+    ...(final ? mapCinematographySetupToConfig(final) : {}),
+  };
 
   if (isSimpleMovement) {
+    const setup = startConfig
+      ? {
+          config: startConfig,
+          kind: "init",
+        }
+      : ({
+          config: endConfig,
+          kind: "end",
+        } as any);
     return {
       frameCount,
       subjectIndex,
-      setup: {
-        config: startConfig,
-        kind: "init",
-      },
+      setup,
       constraints,
       dynamic: {
         type: DynamicMode.Simple,
@@ -62,11 +77,6 @@ export function translatePromptToSimulationInstruction(
       movement.type
     );
 
-    const endConfig: SetupConfig = {
-      ...autoGenerateEndSetup(startSetupSource, movement.type),
-      ...(final ? mapCinematographySetupToConfig(final) : {}),
-    };
-
     let mainConfig: SetupConfig;
     let complementConfig: SetupConfig;
     let kind: "init" | "end";
@@ -74,10 +84,10 @@ export function translatePromptToSimulationInstruction(
     if (!initial && final) {
       kind = "end";
       mainConfig = endConfig;
-      complementConfig = startConfig;
+      complementConfig = startConfig || {};
     } else {
       kind = "init";
-      mainConfig = startConfig;
+      mainConfig = startConfig || {};
       complementConfig = endConfig;
     }
 
