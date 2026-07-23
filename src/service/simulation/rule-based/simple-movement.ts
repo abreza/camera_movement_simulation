@@ -64,17 +64,22 @@ export const moveByEasing = (
         );
         frame.rotation.setFromRotationMatrix(lookAtMatrix);
       }
-    } else if (movement.movementMode === MovementMode.Rotation) {
+    } else if (
+      movement.movementMode === MovementMode.Rotation ||
+      movement.movementMode === MovementMode.Roll
+    ) {
       frame.position.copy(params.position);
 
       const totalRotation = (Math.PI / 4) * scaleFactor;
       const rotationAmount = totalRotation * timeFactor;
 
       const rotationAxis =
-        movement.direction === Direction.Left ||
-          movement.direction === Direction.Right
-          ? new THREE.Vector3(0, 1, 0)
-          : new THREE.Vector3(1, 0, 0);
+        movement.movementMode === MovementMode.Roll
+          ? new THREE.Vector3(0, 0, 1)
+          : movement.direction === Direction.Left ||
+            movement.direction === Direction.Right
+            ? new THREE.Vector3(0, 1, 0)
+            : new THREE.Vector3(1, 0, 0);
 
       const quaternion = new THREE.Quaternion();
       quaternion.setFromEuler(params.rotation);

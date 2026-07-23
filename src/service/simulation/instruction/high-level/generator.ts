@@ -81,9 +81,18 @@ const generateInitialSetup = (): CinematographySetup => {
   };
 };
 
+const GENERATED_MOVEMENT_TYPES = Object.values(CameraMovementType).filter(
+  (movementType) =>
+    movementType !== CameraMovementType.DutchLeft &&
+    movementType !== CameraMovementType.DutchRight
+);
+
 const generateMovement = () => {
   return {
-    type: getRandomEnumValue(CameraMovementType),
+    type:
+      GENERATED_MOVEMENT_TYPES[
+        Math.floor(randomValue() * GENERATED_MOVEMENT_TYPES.length)
+      ],
     speed: getRandomEnumValue(MovementSpeed),
   };
 };

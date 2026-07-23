@@ -53,7 +53,6 @@ const convertTrajectoryToParameters = (
 ): CameraParameters[] =>
   trajectory.map((frame) => {
     const [position, rotation] = extractFrameData(frame);
-    rotation[2] = 0; // Lock Z rotation (roll)
     return createCameraParameters(position, rotation);
   });
 

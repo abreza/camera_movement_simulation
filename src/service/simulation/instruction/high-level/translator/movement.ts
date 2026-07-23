@@ -146,13 +146,34 @@ export function buildConstraintsForMovement(
         },
       };
 
+    case CameraMovementType.DutchLeft:
+    case CameraMovementType.DutchRight:
+      return {
+        ...baseConstraints,
+        allFramesVisibility: false,
+        lockedMovement: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          forward: true,
+          backward: true,
+        },
+        lockedRotation: {
+          left: true,
+          right: true,
+          up: true,
+          down: true,
+          rollClockwise: movementType === CameraMovementType.DutchLeft,
+          rollNonClockwise: movementType === CameraMovementType.DutchRight,
+        },
+      };
+
     case CameraMovementType.DollyIn:
     case CameraMovementType.DollyOut:
 
     case CameraMovementType.ArcLeft:
     case CameraMovementType.ArcRight:
-      // case CameraMovementType.DutchLeft:
-      // case CameraMovementType.DutchRight:
       return {
         ...baseConstraints,
         allFramesVisibility: true,

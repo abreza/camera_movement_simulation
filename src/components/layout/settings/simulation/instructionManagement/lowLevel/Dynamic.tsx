@@ -29,6 +29,11 @@ import {
   setSubjectAwareInterpolation,
 } from "@/redux/slices/formSlice";
 
+const ROLL_DIRECTIONS = [Direction.Left, Direction.Right];
+
+const isRollDirection = (direction?: Direction) =>
+  direction === Direction.Left || direction === Direction.Right;
+
 export const Dynamic: FC = () => {
   const dispatch = useAppDispatch();
   const dynamic = useAppSelector(
@@ -46,6 +51,16 @@ export const Dynamic: FC = () => {
             scale: Scale.Medium,
           })
         );
+      } else if (
+        dynamic.movementMode === MovementMode.Roll &&
+        !isRollDirection(dynamic.direction)
+      ) {
+        dispatch(
+          setDynamic({
+            ...dynamic,
+            direction: Direction.Right,
+          })
+        );
       }
     } else if (dynamic.type === DynamicMode.Interpolation) {
       if (!dynamic.complementSetup) {
@@ -58,7 +73,7 @@ export const Dynamic: FC = () => {
         );
       }
     }
-  }, [dynamic.type, dispatch]);
+  }, [dynamic, dispatch]);
 
   const handleDynamicTypeChange = (
     _: React.MouseEvent<HTMLElement>,
@@ -108,7 +123,12 @@ export const Dynamic: FC = () => {
           <FormControl fullWidth sx={{ mb: 2 }} size="small">
             <InputLabel>Movement Direction</InputLabel>
             <Select
-              value={dynamic.direction || Direction.Right}
+              value={
+                dynamic.movementMode === MovementMode.Roll &&
+                !isRollDirection(dynamic.direction)
+                  ? Direction.Right
+                  : dynamic.direction || Direction.Right
+              }
               onChange={(e) =>
                 dispatch(
                   setDynamic({
@@ -119,7 +139,10 @@ export const Dynamic: FC = () => {
               }
               label="Movement Direction"
             >
-              {Object.values(Direction).map((direction) => (
+              {(dynamic.movementMode === MovementMode.Roll
+                ? ROLL_DIRECTIONS
+                : Object.values(Direction)
+              ).map((direction) => (
                 <MenuItem key={direction} value={direction}>
                   {direction}
                 </MenuItem>
@@ -131,14 +154,20 @@ export const Dynamic: FC = () => {
             <InputLabel>Movement Mode</InputLabel>
             <Select
               value={dynamic.movementMode || MovementMode.Transition}
-              onChange={(e) =>
+              onChange={(e) => {
+                const movementMode = e.target.value as MovementMode;
                 dispatch(
                   setDynamic({
                     ...dynamic,
-                    movementMode: e.target.value as MovementMode,
+                    movementMode,
+                    direction:
+                      movementMode === MovementMode.Roll &&
+                      !isRollDirection(dynamic.direction)
+                        ? Direction.Right
+                        : dynamic.direction,
                   })
-                )
-              }
+                );
+              }}
               label="Movement Mode"
             >
               {Object.values(MovementMode).map((mode) => (

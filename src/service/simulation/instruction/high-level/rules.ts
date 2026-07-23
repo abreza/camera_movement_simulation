@@ -11,6 +11,15 @@ export const FINAL_SETUP_FIELDS: (keyof SetupConfig)[] = [
   "subjectFraming",
 ];
 
+function hasMeaningfulSetup(
+  setup: CinematographyPrompt["initial"]
+): boolean {
+  return FINAL_SETUP_FIELDS.some((field) => {
+    const value: unknown = setup?.[field];
+    return value !== undefined && value !== null && value !== "";
+  });
+}
+
 type HighLevelInstructionRule = {
   simpleMovement?: boolean;
   disabledFinalSetup?: (keyof SetupConfig)[];
@@ -56,27 +65,33 @@ export const highLevelInstructionRules: Record<
   craneDown: {
     disabledFinalSetup: ["subjectView"],
   },
-  dutchLeft: {},
-  dutchRight: {},
+  dutchLeft: SIMPLE_MOVEMENT_RULE,
+  dutchRight: SIMPLE_MOVEMENT_RULE,
 };
 
 export function normalizeCinematographyPrompt(
   prompt: CinematographyPrompt
 ): CinematographyPrompt {
-  if (!prompt.final) {
-    return prompt;
+  const hasMeaningfulInitialSetup = hasMeaningfulSetup(prompt.initial);
+  const { initial: _initial, ...promptWithoutInitial } = prompt;
+  const promptWithNormalizedInitial =
+    prompt.initial && !hasMeaningfulInitialSetup
+      ? promptWithoutInitial
+      : prompt;
+
+  if (!promptWithNormalizedInitial.final) {
+    return promptWithNormalizedInitial;
   }
 
-  const rule = highLevelInstructionRules[prompt.movement.type];
-  if (rule.simpleMovement && !prompt.initial) {
-    return prompt;
-  }
-
-  const disabledFields = new Set(rule.disabledFinalSetup || []);
+  const rule =
+    highLevelInstructionRules[promptWithNormalizedInitial.movement.type];
+  const disabledFields = new Set(
+    hasMeaningfulInitialSetup ? rule.disabledFinalSetup ?? [] : []
+  );
   const normalizedFinal: Record<string, unknown> = {};
 
   FINAL_SETUP_FIELDS.forEach((field) => {
-    const value: unknown = prompt.final?.[field];
+    const value: unknown = promptWithNormalizedInitial.final?.[field];
     if (
       value !== undefined &&
       value !== null &&
@@ -87,7 +102,8 @@ export function normalizeCinematographyPrompt(
     }
   });
 
-  const { final: _final, ...promptWithoutFinal } = prompt;
+  const { final: _final, ...promptWithoutFinal } =
+    promptWithNormalizedInitial;
 
   if (Object.keys(normalizedFinal).length === 0) {
     return promptWithoutFinal;

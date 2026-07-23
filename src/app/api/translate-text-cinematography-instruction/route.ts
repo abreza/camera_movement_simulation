@@ -32,7 +32,7 @@ Follow these transformation rules:
 - "Low angle" → CameraVerticalAngle.Low
 - "Close-up" → ShotSize.CloseUp
 - "Over-the-shoulder" → SubjectView.ThreeQuarterFrontLeft
-- "Dutch tilt" → CameraMovementType.DutchLeft
+- "Dutch tilt" → CameraMovementType.DutchLeft/CameraMovementType.DutchRight based on context direction
 - "Slow zoom" → { type: DollyIn, speed: SlowToFast }
 
 2. **Movement Interpretation**:
@@ -55,7 +55,7 @@ Follow these transformation rules:
 
 5. **Transition Handling**:
 - Only include 'final' properties if explicit transition
-- Do not include 'final' for pan, tilt, truck, pedestal, or arc movements when an initial setup is present
+- Do not include 'final' for pan, tilt, truck, pedestal, arc, or Dutch movements when an initial setup is present
 - Match movement type to position changes
 - Ensure physical camera possibility
 `;
