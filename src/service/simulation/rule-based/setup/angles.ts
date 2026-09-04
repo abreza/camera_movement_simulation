@@ -21,9 +21,11 @@ export const calculatePositionByAngles = (
     ? getDesiredHorizontalAngle(setup.subjectView)
     : 0;
 
-  const x = baseDistance * Math.sin(verticalAngle) * Math.sin(horizontalAngle);
-  const y = baseDistance * Math.cos(verticalAngle);
-  const z = baseDistance * Math.sin(verticalAngle) * Math.cos(horizontalAngle);
+  const offset = new THREE.Vector3(
+    baseDistance * Math.sin(verticalAngle) * Math.sin(horizontalAngle),
+    baseDistance * Math.cos(verticalAngle),
+    -baseDistance * Math.sin(verticalAngle) * Math.cos(horizontalAngle)
+  ).applyQuaternion(new THREE.Quaternion().setFromEuler(frame.rotation));
 
-  return new THREE.Vector3(x, y, z).add(subjectPosition);
+  return offset.add(subjectPosition);
 };

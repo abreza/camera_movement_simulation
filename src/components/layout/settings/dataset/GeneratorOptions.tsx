@@ -18,7 +18,15 @@ import {
   Fade,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
-import { GenerateDatasetConfig } from "@/service/dataset/generate";
+import {
+  DATASET_INSTRUCTION_COUNT,
+  DATASET_MOVEMENT_TYPES,
+  DATASET_SUBJECT_COUNT,
+  GenerateDatasetConfig,
+  MAX_DATASET_ROTATION_NOISE_AMPLITUDE,
+  MAX_DATASET_FRAME_COUNT,
+  MIN_DATASET_FRAME_COUNT,
+} from "@/service/dataset/generate";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import {
   setGeneratingDataset,
@@ -27,7 +35,6 @@ import {
   setProgressPhase,
 } from "@/redux/slices/uiSlice";
 import { generateRandomDataset } from "@/service/dataset/generate";
-import { movementGenerators } from "@/service/subjects/movements";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { MovementPreview } from "./MovementPreview";
 
@@ -70,7 +77,7 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
 
   const lastUpdateTime = useRef<number>(0);
 
-  const movementTypes = useMemo(() => Object.keys(movementGenerators), []);
+  const movementTypes = useMemo(() => [...DATASET_MOVEMENT_TYPES], []);
 
   const handleChange = useCallback(
     (name: keyof GenerateDatasetConfig) =>
@@ -170,6 +177,8 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
 
     const configWithProgress: GenerateDatasetConfig = {
       ...generatorOptions,
+      subjectCount: DATASET_SUBJECT_COUNT,
+      instructionCount: DATASET_INSTRUCTION_COUNT,
       onProgress: (value: number, phase: "generating" | "zipping") => {
         if (value > progress) {
           throttledSetProgress(value);
@@ -202,7 +211,8 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
       ([name, value]) => ({
         name: movementDisplayNames[name] || name,
         value: value,
-        percentage: Math.round((value / totalWeight) * 100),
+        percentage:
+          totalWeight > 0 ? Math.round((value / totalWeight) * 100) : 0,
       })
     );
   }, [generatorOptions.movementDistribution]);
@@ -226,48 +236,14 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
           margin="dense"
           inputProps={{ min: 1 }}
           size="small"
-        />
-
-        <TextField
-          fullWidth
-          label="Subject Count"
-          type="number"
-          value={generatorOptions.subjectCount}
-          onChange={(e) => {
-            const value = parseInt(e.target.value, 10);
-            if (value >= 1 && value <= 10) {
-              dispatch(
-                setGeneratorOptions({
-                  subjectCount: value,
-                })
-              );
-            }
-          }}
-          margin="dense"
-          inputProps={{ min: 1, max: 10 }}
-          size="small"
-        />
-
-        <TextField
-          fullWidth
-          label="Instruction Count"
-          type="number"
-          value={generatorOptions.instructionCount}
-          onChange={(e) => {
-            const value = parseInt(e.target.value, 10);
-            if (value >= 1 && value <= 10) {
-              dispatch(
-                setGeneratorOptions({
-                  instructionCount: value,
-                })
-              );
-            }
-          }}
-          margin="dense"
-          inputProps={{ min: 1, max: 10 }}
-          size="small"
+          disabled={generatingDataset}
         />
       </Stack>
+
+      <Typography variant="caption" color="text.secondary">
+        Each sample contains exactly one subject and one instruction, so their
+        association is unambiguous.
+      </Typography>
 
       <TextField
         fullWidth
@@ -280,7 +256,7 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
             })
           )
         }
-        helperText="Reuse a seed from manifest.json to reproduce the same dataset."
+        helperText="Reuse a seed from manifest.json to reproduce the same sample content."
         margin="dense"
         size="small"
         disabled={generatingDataset}
@@ -291,8 +267,8 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
       </Typography>
       <Slider
         value={[
-          generatorOptions.minFrameCount ?? 30,
-          generatorOptions.maxFrameCount ?? 30,
+          generatorOptions.minFrameCount ?? MIN_DATASET_FRAME_COUNT,
+          generatorOptions.maxFrameCount ?? MAX_DATASET_FRAME_COUNT,
         ]}
         onChange={(event, newValue) => {
           dispatch(
@@ -302,12 +278,13 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
             })
           );
         }}
-        min={10}
-        max={300}
+        min={MIN_DATASET_FRAME_COUNT}
+        max={MAX_DATASET_FRAME_COUNT}
         step={10}
         marks
         valueLabelDisplay="auto"
         size="small"
+        disabled={generatingDataset}
       />
 
       <Divider sx={{ my: 2 }} />
@@ -363,15 +340,16 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
                 value={generatorOptions.noiseConfig?.rotationAmplitude ?? 0.02}
                 onChange={handleNoiseConfigChange("rotationAmplitude")}
                 min={0}
-                max={0.8}
-                step={0.004}
+                max={MAX_DATASET_ROTATION_NOISE_AMPLITUDE}
+                step={0.005}
                 valueLabelDisplay="auto"
                 size="small"
                 disabled={generatingDataset}
               />
 
               <Typography variant="caption" display="block" gutterBottom>
-                Frequency: {generatorOptions.noiseConfig?.frequency?.toFixed(1)}
+                Noise Cycles per Clip:{" "}
+                {generatorOptions.noiseConfig?.frequency?.toFixed(1)}
               </Typography>
               <Slider
                 value={generatorOptions.noiseConfig?.frequency ?? 0.5}

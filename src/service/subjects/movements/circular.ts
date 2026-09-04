@@ -39,7 +39,7 @@ export function generateCircularMotion(
       const direction = reverseDirection ? -1 : 1;
       const angle =
         (direction * (2 * Math.PI * frame * speedFactor)) /
-          DEFAULT_FRAME_COUNT +
+          (DEFAULT_FRAME_COUNT - 1) +
         angleOffset;
 
       const x =
@@ -56,7 +56,8 @@ export function generateCircularMotion(
     }
   } else {
     for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-      const angle = (2 * Math.PI * frame) / DEFAULT_FRAME_COUNT + angleOffset;
+      const angle =
+        (2 * Math.PI * frame) / (DEFAULT_FRAME_COUNT - 1) + angleOffset;
       const x = CIRCLE_RADIUS * Math.cos(angle);
       const z = CIRCLE_RADIUS * Math.sin(angle);
       const y = subject.dimensions.height / 2;

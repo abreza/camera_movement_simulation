@@ -20,10 +20,16 @@ export function getSimpleMovementDirection(
       return Direction.Right;
     case CameraMovementType.TiltUp:
     case CameraMovementType.PedestalUp:
+    case CameraMovementType.CraneUp:
       return Direction.Up;
     case CameraMovementType.TiltDown:
     case CameraMovementType.PedestalDown:
+    case CameraMovementType.CraneDown:
       return Direction.Down;
+    case CameraMovementType.DollyIn:
+      return Direction.Forward;
+    case CameraMovementType.DollyOut:
+      return Direction.Backward;
     default:
       throw new Error(`Movement type ${movementType} is not a simple movement`);
   }
@@ -42,7 +48,12 @@ export function getSimpleMovementMode(
     case CameraMovementType.TruckRight:
     case CameraMovementType.PedestalUp:
     case CameraMovementType.PedestalDown:
+    case CameraMovementType.DollyIn:
+    case CameraMovementType.DollyOut:
       return MovementMode.Transition;
+    case CameraMovementType.CraneUp:
+    case CameraMovementType.CraneDown:
+      return MovementMode.Crane;
     case CameraMovementType.ArcLeft:
     case CameraMovementType.ArcRight:
       return MovementMode.Arc;

@@ -1,18 +1,9 @@
 import * as THREE from "three";
 import {
   CameraParameters,
-  ConstraintsConfig,
   InterpolationDynamic,
 } from "../instruction/types";
-import { SubjectFrame, SubjectDimensions } from "../../subjects/types";
-import { applyConstraintsOnFrame } from "./setup/constraints";
-
-const getFrontVector = (rotation: THREE.Euler): THREE.Vector3 => {
-  const direction = new THREE.Vector3(0, 0, -1);
-  const rotationMatrix = new THREE.Matrix4();
-  rotationMatrix.makeRotationFromEuler(rotation);
-  return direction.applyMatrix4(rotationMatrix).normalize();
-};
+import { SubjectFrame } from "../../subjects/types";
 
 export const normalInterpolate = (
   start: CameraParameters,
@@ -43,21 +34,48 @@ export const normalInterpolate = (
   };
 };
 
-const getSubjectRelativeParameters = (
+const getSubjectLocalOffset = (
   camera: CameraParameters,
   subject: SubjectFrame
-): { distance: number; relativeAngle: number } => {
-  const distance = camera.position.distanceTo(subject.position);
-
-  const subjectFrontVector = getFrontVector(subject.rotation);
-
-  const cameraToSubject = camera.position
+): THREE.Vector3 => {
+  const inverseSubjectRotation = new THREE.Quaternion()
+    .setFromEuler(subject.rotation)
+    .invert();
+  return camera.position
     .clone()
     .sub(subject.position)
-    .normalize();
-  const relativeAngle = Math.acos(cameraToSubject.dot(subjectFrontVector));
+    .applyQuaternion(inverseSubjectRotation);
+};
 
-  return { distance, relativeAngle };
+const getSubjectLocalCameraRotation = (
+  camera: CameraParameters,
+  subject: SubjectFrame
+): THREE.Quaternion => {
+  return new THREE.Quaternion()
+    .setFromEuler(subject.rotation)
+    .invert()
+    .multiply(new THREE.Quaternion().setFromEuler(camera.rotation));
+};
+
+const slerpDirection = (
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+  t: number
+): THREE.Vector3 => {
+  const startDirection = start.clone().normalize();
+  const endDirection = end.clone().normalize();
+  if (startDirection.distanceToSquared(endDirection) < 1e-12) {
+    return startDirection;
+  }
+  const directionDelta = new THREE.Quaternion().setFromUnitVectors(
+    startDirection,
+    endDirection
+  );
+  const interpolatedDelta = new THREE.Quaternion().slerp(
+    directionDelta,
+    t
+  );
+  return startDirection.applyQuaternion(interpolatedDelta).normalize();
 };
 
 export const subjectAwareInterpolate = (
@@ -69,58 +87,39 @@ export const subjectAwareInterpolate = (
   t: number,
   rotationInterpolation: boolean = true
 ): CameraParameters => {
-  const startParams = getSubjectRelativeParameters(start, startSubject);
-  const endParams = getSubjectRelativeParameters(end, endSubject);
-  let interpolatedPosition: THREE.Vector3;
-  const startQuaternion = new THREE.Quaternion().setFromEuler(start.rotation);
-  const endQuaternion = new THREE.Quaternion().setFromEuler(end.rotation);
-  const interpolatedQuaternion = startQuaternion
-    .clone()
-    .slerp(endQuaternion, t);
-  const interpolatedRotation = new THREE.Euler().setFromQuaternion(
-    interpolatedQuaternion
-  );
-
+  const startLocalOffset = getSubjectLocalOffset(start, startSubject);
+  const endLocalOffset = getSubjectLocalOffset(end, endSubject);
+  const startDistance = startLocalOffset.length();
+  const endDistance = endLocalOffset.length();
   const interpolatedDistance =
-    startParams.distance + (endParams.distance - startParams.distance) * t;
-
-  let directionToSubject: THREE.Vector3;
-
-  if (!rotationInterpolation) {
-    directionToSubject = new THREE.Vector3()
-      .subVectors(currentSubject.position, start.position)
-      .normalize();
-  } else {
-    const startDirection = startSubject.position
-      .clone()
-      .sub(start.position)
-      .normalize();
-    const endDirection = endSubject.position
-      .clone()
-      .sub(end.position)
-      .normalize();
-
-    const startQuaternion = new THREE.Quaternion().setFromUnitVectors(
-      getFrontVector(startSubject.rotation),
-      startDirection
-    );
-    const endQuaternion = new THREE.Quaternion().setFromUnitVectors(
-      getFrontVector(endSubject.rotation),
-      endDirection
-    );
-
-    const interpolatedQuaternion = startQuaternion
-      .clone()
-      .slerp(endQuaternion, t);
-
-    directionToSubject = getFrontVector(currentSubject.rotation)
-      .applyQuaternion(interpolatedQuaternion)
-      .normalize();
-  }
-
-  interpolatedPosition = currentSubject.position
+    startDistance + (endDistance - startDistance) * t;
+  const localDirection = rotationInterpolation
+    ? slerpDirection(startLocalOffset, endLocalOffset, t)
+    : startLocalOffset.clone().normalize();
+  const currentSubjectQuaternion = new THREE.Quaternion().setFromEuler(
+    currentSubject.rotation
+  );
+  const interpolatedPosition = currentSubject.position
     .clone()
-    .sub(directionToSubject.multiplyScalar(interpolatedDistance));
+    .add(
+      localDirection
+        .multiplyScalar(interpolatedDistance)
+        .applyQuaternion(currentSubjectQuaternion)
+    );
+
+  const startLocalCameraRotation = getSubjectLocalCameraRotation(
+    start,
+    startSubject
+  );
+  const endLocalCameraRotation = getSubjectLocalCameraRotation(end, endSubject);
+  const interpolatedLocalCameraRotation = rotationInterpolation
+    ? startLocalCameraRotation.clone().slerp(endLocalCameraRotation, t)
+    : startLocalCameraRotation;
+  const interpolatedRotation = new THREE.Euler().setFromQuaternion(
+    currentSubjectQuaternion
+      .clone()
+      .multiply(interpolatedLocalCameraRotation)
+  );
 
   const interpolatedFocalLength =
     start.focalLength + (end.focalLength - start.focalLength) * t;
@@ -139,11 +138,9 @@ export const interpolateCameraParameters = (
   startParams: CameraParameters,
   endParams: CameraParameters,
   instructionDynamic: InterpolationDynamic,
-  subjectDimensions: SubjectDimensions,
   subjectFrames: SubjectFrame[],
   easedT: number[],
-  rotationInterpolation: boolean = true,
-  constraints?: ConstraintsConfig
+  rotationInterpolation: boolean = true
 ): CameraParameters[] => {
   const frames: CameraParameters[] = [];
   const subjectAwareInterpolation =
@@ -153,7 +150,8 @@ export const interpolateCameraParameters = (
   const fullEndParams: CameraParameters = { ...startParams, ...endParams };
 
   easedT.forEach((t, i) => {
-    const currentSubjectFrame = subjectFrames[i];
+    const currentSubjectFrame =
+      subjectFrames[Math.min(i, subjectFrames.length - 1)];
     const frameParams = subjectAwareInterpolation
       ? subjectAwareInterpolate(
         startParams,
@@ -166,47 +164,7 @@ export const interpolateCameraParameters = (
       )
       : normalInterpolate(startParams, fullEndParams, t);
 
-    const prevCameraParams = i > 0 ? frames[i - 1] : startParams;
-    const subjectFrameCurrent =
-      subjectFrames[Math.min(i, subjectFrames.length - 1)];
-
-    const appliedConstraintFrame = applyConstraintsOnFrame(
-      frameParams,
-      prevCameraParams,
-      constraints,
-      subjectFrameCurrent,
-      subjectDimensions
-    );
-
-    const constraintsFactor = t > 0.1 && t < 0.9 ? 1 : 5 - Math.abs(10 * t - 5);
-
-    const frameQuat = new THREE.Quaternion().setFromEuler(frameParams.rotation);
-    const constraintQuat = new THREE.Quaternion().setFromEuler(
-      appliedConstraintFrame.rotation
-    );
-    const finalQuat = frameQuat
-      .clone()
-      .slerp(constraintQuat, constraintsFactor);
-
-    const frame: CameraParameters = {
-      position: frameParams.position
-        .clone()
-        .multiplyScalar(1 - constraintsFactor)
-        .add(
-          appliedConstraintFrame.position
-            .clone()
-            .multiplyScalar(constraintsFactor)
-        ),
-      rotation: new THREE.Euler().setFromQuaternion(finalQuat),
-      focalLength:
-        frameParams.focalLength * (1 - constraintsFactor) +
-        appliedConstraintFrame.focalLength * constraintsFactor,
-      aspectRatio:
-        frameParams.aspectRatio * (1 - constraintsFactor) +
-        appliedConstraintFrame.aspectRatio * constraintsFactor,
-    };
-
-    frames.push(frame);
+    frames.push(frameParams);
   });
   return frames;
 };

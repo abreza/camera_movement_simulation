@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { Subject, SubjectDimensions, ObjectClass } from "../subjects/types";
 import { objectModels } from "./ModelLoader";
+import { modelCanonicalYawOffsets } from "../subjects/constants";
 
 export const createSubjectMesh = async (
   subject: Subject,
@@ -19,6 +20,7 @@ export const createSubjectMesh = async (
   }
 
   const subjectMesh = model.clone();
+  subjectMesh.rotation.y += modelCanonicalYawOffsets[subject.class] ?? 0;
   scaleSubjectMesh(subjectMesh, subject.dimensions);
 
   const boundingBox = new THREE.Box3().setFromObject(subjectMesh);

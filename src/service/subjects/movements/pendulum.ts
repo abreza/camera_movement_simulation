@@ -38,7 +38,7 @@ export function generatePendulumMotion(
     const posZ = randomSettings.positionOffset?.z || 0;
 
     for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-      const progress = frame / DEFAULT_FRAME_COUNT;
+      const progress = frame / (DEFAULT_FRAME_COUNT - 1);
       const angle =
         maxAngle *
         Math.sin(
@@ -61,7 +61,7 @@ export function generatePendulumMotion(
     }
   } else {
     for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-      const progress = frame / DEFAULT_FRAME_COUNT;
+      const progress = frame / (DEFAULT_FRAME_COUNT - 1);
       const angle =
         MAX_ANGLE *
         Math.sin(progress * PENDULUM_FREQUENCY * 2 * Math.PI + phaseOffset);

@@ -4,7 +4,11 @@ import { calculatePositionByAngles } from "./angles";
 import { applyCameraDistance } from "./distance";
 import { calculateRegionOfInterest } from "./roi";
 import { getLookAtAngle } from "../../utils";
-import { DEFAULT_ASPECT_RATIO, DEFAULT_FOCAL_LENGTH } from "../../constants";
+import {
+  DEFAULT_ASPECT_RATIO,
+  DEFAULT_FOCAL_LENGTH,
+  MIN_CAMERA_HEIGHT,
+} from "../../constants";
 import { fixSubjectInView } from "./framing";
 
 export const getCameraBySetup = (
@@ -20,6 +24,7 @@ export const getCameraBySetup = (
     frame
   );
   const updatedPosition = applyCameraDistance(scale, regionOfInterest, position);
+  updatedPosition.y = Math.max(MIN_CAMERA_HEIGHT, updatedPosition.y);
 
   const camera = {
     position: updatedPosition,
@@ -30,8 +35,9 @@ export const getCameraBySetup = (
 
   return fixSubjectInView(
     camera,
-    frame.position,
-    subject.dimensions,
-    setup.subjectFraming?.position
+    regionOfInterest.position,
+    regionOfInterest.dimensions,
+    setup.subjectFraming?.position,
+    regionOfInterest.rotation
   );
 };

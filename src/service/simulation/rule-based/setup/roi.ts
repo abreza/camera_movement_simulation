@@ -9,6 +9,7 @@ import {
 export type RegionOfInterest = {
   dimensions: SubjectDimensions;
   position: THREE.Vector3;
+  rotation: THREE.Euler;
 };
 
 type ROIResult = {
@@ -53,11 +54,10 @@ const getDefaultAttentionBox = (
       height: subjectBox.dimensions.height * 0.5,
       depth: subjectBox.dimensions.depth * 0.5,
     },
-    position: new THREE.Vector3(
-      subjectBox.position.x + subjectBox.dimensions.width * 0.25,
-      subjectBox.position.y + subjectBox.dimensions.height * 0.25,
-      subjectBox.position.z + subjectBox.dimensions.depth * 0.25
-    ),
+    // The attention region is the upper half of the object, centred laterally
+    // and in depth.  Offsetting x/z here biased every close shot diagonally.
+    position: new THREE.Vector3(0, subjectBox.dimensions.height * 0.25, 0),
+    rotation: subjectBox.rotation.clone(),
   };
 };
 
@@ -71,10 +71,15 @@ export const calculateRegionOfInterest = (
   const subjectBox: RegionOfInterest = {
     dimensions: subject.dimensions,
     position: frame.position,
+    rotation: frame.rotation,
   };
 
-  const attentionBox: RegionOfInterest =
-    subject.attentionBox || getDefaultAttentionBox(subjectBox);
+  const localAttentionBox = subject.attentionBox ||
+    getDefaultAttentionBox(subjectBox);
+  const attentionPosition = localAttentionBox.position
+    .clone()
+    .applyQuaternion(new THREE.Quaternion().setFromEuler(frame.rotation))
+    .add(frame.position);
 
   const t = getInterpolationFactor(shotSize);
 
@@ -83,19 +88,20 @@ export const calculateRegionOfInterest = (
       dimensions: {
         width:
           t * subjectBox.dimensions.width +
-          (1 - t) * attentionBox.dimensions.width,
+          (1 - t) * localAttentionBox.dimensions.width,
         height:
           t * subjectBox.dimensions.height +
-          (1 - t) * attentionBox.dimensions.height,
+          (1 - t) * localAttentionBox.dimensions.height,
         depth:
           t * subjectBox.dimensions.depth +
-          (1 - t) * attentionBox.dimensions.depth,
+          (1 - t) * localAttentionBox.dimensions.depth,
       },
       position: new THREE.Vector3().lerpVectors(
-        attentionBox.position,
+        attentionPosition,
         subjectBox.position,
         t
       ),
+      rotation: frame.rotation.clone(),
     },
     scale,
   };

@@ -5,7 +5,6 @@ import {
   ShotSize,
   SubjectView,
 } from "../types";
-import { sampleGaussian } from "../../utils";
 
 export const getVerticalAngle = (
   camera: CameraParameters,
@@ -18,8 +17,6 @@ export const getVerticalAngle = (
   const yAxis = new THREE.Vector3(0, 1, 0);
   return cameraToSubject.angleTo(yAxis);
 };
-
-const ANGLE_STD_DEV = 0.1;
 
 export const getDesiredVerticalAngle = (angle: CameraVerticalAngle): number => {
   let meanAngle: number;
@@ -37,13 +34,15 @@ export const getDesiredVerticalAngle = (angle: CameraVerticalAngle): number => {
       meanAngle = Math.PI * 0.1;
       break;
     case CameraVerticalAngle.BirdsEye:
-      meanAngle = 0;
+      // An exactly vertical look direction is collinear with the camera's
+      // world-up vector, making lookAt orientation (and framing) singular.
+      meanAngle = Math.PI / 60;
       break;
     default:
       meanAngle = Math.PI * 0.5;
   }
 
-  return sampleGaussian(meanAngle, ANGLE_STD_DEV);
+  return meanAngle;
 };
 
 const SHOT_SIZE_DISTANCE_FACTORS = {
@@ -57,8 +56,6 @@ const SHOT_SIZE_DISTANCE_FACTORS = {
   [ShotSize.ExtremeLongShot]: 20,
 };
 
-const DISTANCE_STD_DEV_PERCENTAGE = 0.15;
-
 export const getDesiredDistance = (
   shotSize: ShotSize,
   subjectDimensions: { height: number }
@@ -66,9 +63,7 @@ export const getDesiredDistance = (
   const meanDistance =
     subjectDimensions.height * (SHOT_SIZE_DISTANCE_FACTORS[shotSize] || 5);
 
-  const stdDev = meanDistance * DISTANCE_STD_DEV_PERCENTAGE;
-
-  return Math.max(0.1, sampleGaussian(meanDistance, stdDev));
+  return Math.max(0.1, meanDistance);
 };
 
 export const getDesiredHorizontalAngle = (view: SubjectView): number => {
@@ -101,5 +96,5 @@ export const getDesiredHorizontalAngle = (view: SubjectView): number => {
     default:
       meanAngle = 0;
   }
-  return sampleGaussian(meanAngle, ANGLE_STD_DEV);
+  return meanAngle;
 };

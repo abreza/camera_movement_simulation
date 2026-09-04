@@ -88,3 +88,12 @@ export const modelPaths: Record<ObjectClass, ModelPaths> = {
     materialType: "mtl",
   },
 };
+
+/**
+ * Yaw corrections from each asset's authored forward axis to the simulator's
+ * canonical local -Z subject-forward axis.  The bicycle is already -Z; the
+ * car OBJ is authored toward +Z (its front light geometry is on that end).
+ */
+export const modelCanonicalYawOffsets: Partial<Record<ObjectClass, number>> = {
+  [ObjectClass.Car]: Math.PI,
+};

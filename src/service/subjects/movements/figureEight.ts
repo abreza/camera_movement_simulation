@@ -38,7 +38,7 @@ export function generateFigureEightMotion(
     const phaseOffset = randomSettings.phaseOffset || 0;
 
     for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-      const progress = frame / DEFAULT_FRAME_COUNT;
+      const progress = frame / (DEFAULT_FRAME_COUNT - 1);
       const angle =
         direction * 2 * Math.PI * progress * speedFactor +
         angleOffset +
@@ -66,7 +66,7 @@ export function generateFigureEightMotion(
     }
   } else {
     for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-      const progress = frame / DEFAULT_FRAME_COUNT;
+      const progress = frame / (DEFAULT_FRAME_COUNT - 1);
       const angle = 2 * Math.PI * progress + angleOffset;
 
       const x = FIGURE_8_WIDTH * Math.sin(angle);

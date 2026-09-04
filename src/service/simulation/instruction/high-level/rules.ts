@@ -1,7 +1,11 @@
 import {
   CameraMovementType,
+  CameraVerticalAngle,
   CinematographyPrompt,
+  ShotSize,
   SetupConfig,
+  SubjectInFramePosition,
+  SubjectView,
 } from "@/service/simulation/instruction/types";
 
 export const FINAL_SETUP_FIELDS: (keyof SetupConfig)[] = [
@@ -30,6 +34,45 @@ const SIMPLE_MOVEMENT_RULE: HighLevelInstructionRule = {
   disabledFinalSetup: FINAL_SETUP_FIELDS,
 };
 
+const FULL_VISIBILITY_MOVEMENTS = new Set<CameraMovementType>([
+  CameraMovementType.Follow,
+  CameraMovementType.Track,
+  CameraMovementType.ArcLeft,
+  CameraMovementType.ArcRight,
+]);
+
+const CROPPED_SHOT_SIZES = new Set<ShotSize>([
+  ShotSize.ExtremeCloseUp,
+  ShotSize.CloseUp,
+  ShotSize.MediumCloseUp,
+  ShotSize.MediumShot,
+]);
+
+const VISIBLE_FRAMING: Partial<
+  Record<SubjectInFramePosition, SubjectInFramePosition>
+> = {
+  [SubjectInFramePosition.OuterLeft]: SubjectInFramePosition.Left,
+  [SubjectInFramePosition.OuterRight]: SubjectInFramePosition.Right,
+  [SubjectInFramePosition.OuterTop]: SubjectInFramePosition.Top,
+  [SubjectInFramePosition.OuterBottom]: SubjectInFramePosition.Bottom,
+};
+
+function getTrackingSide(view?: SubjectView): SubjectView {
+  switch (view) {
+    case SubjectView.Right:
+    case SubjectView.ThreeQuarterFrontRight:
+    case SubjectView.ThreeQuarterBackRight:
+    case SubjectView.Back:
+      return SubjectView.Right;
+    case SubjectView.Left:
+    case SubjectView.ThreeQuarterFrontLeft:
+    case SubjectView.ThreeQuarterBackLeft:
+    case SubjectView.Front:
+    default:
+      return SubjectView.Left;
+  }
+}
+
 export const highLevelInstructionRules: Record<
   CameraMovementType,
   HighLevelInstructionRule
@@ -38,33 +81,32 @@ export const highLevelInstructionRules: Record<
     disabledFinalSetup: FINAL_SETUP_FIELDS,
   },
   follow: {
-    disabledFinalSetup: ["cameraAngle", "subjectView"],
+    // Follow is a single subject-relative camera relation.  A random final
+    // setup used to turn it into a compound interpolation instead.
+    disabledFinalSetup: FINAL_SETUP_FIELDS,
   },
   track: {
-    disabledFinalSetup: ["cameraAngle", "subjectView"],
+    // Tracking maintains a fixed subject distance, so a final shot size would
+    // directly contradict its static-distance constraint.
+    disabledFinalSetup: FINAL_SETUP_FIELDS,
   },
   panLeft: SIMPLE_MOVEMENT_RULE,
   panRight: SIMPLE_MOVEMENT_RULE,
   tiltUp: SIMPLE_MOVEMENT_RULE,
   tiltDown: SIMPLE_MOVEMENT_RULE,
-  dollyIn: {
-    disabledFinalSetup: ["cameraAngle", "subjectView"],
-  },
-  dollyOut: {
-    disabledFinalSetup: ["cameraAngle", "subjectView"],
-  },
+  // These are generated as explicit camera-local translations.  A second
+  // endpoint setup would be a competing instruction (and used to turn a
+  // dolly/crane into an arbitrary interpolation).
+  dollyIn: SIMPLE_MOVEMENT_RULE,
+  dollyOut: SIMPLE_MOVEMENT_RULE,
   truckLeft: SIMPLE_MOVEMENT_RULE,
   truckRight: SIMPLE_MOVEMENT_RULE,
   pedestalUp: SIMPLE_MOVEMENT_RULE,
   pedestalDown: SIMPLE_MOVEMENT_RULE,
   arcLeft: SIMPLE_MOVEMENT_RULE,
   arcRight: SIMPLE_MOVEMENT_RULE,
-  craneUp: {
-    disabledFinalSetup: ["subjectView"],
-  },
-  craneDown: {
-    disabledFinalSetup: ["subjectView"],
-  },
+  craneUp: SIMPLE_MOVEMENT_RULE,
+  craneDown: SIMPLE_MOVEMENT_RULE,
   dutchLeft: SIMPLE_MOVEMENT_RULE,
   dutchRight: SIMPLE_MOVEMENT_RULE,
 };
@@ -74,10 +116,79 @@ export function normalizeCinematographyPrompt(
 ): CinematographyPrompt {
   const hasMeaningfulInitialSetup = hasMeaningfulSetup(prompt.initial);
   const { initial: _initial, ...promptWithoutInitial } = prompt;
-  const promptWithNormalizedInitial =
+  let promptWithNormalizedInitial: CinematographyPrompt =
     prompt.initial && !hasMeaningfulInitialSetup
       ? promptWithoutInitial
       : prompt;
+
+  if (promptWithNormalizedInitial.initial) {
+    const movementType = promptWithNormalizedInitial.movement.type;
+    if (
+      movementType === CameraMovementType.Follow ||
+      movementType === CameraMovementType.Track
+    ) {
+      const initial = promptWithNormalizedInitial.initial;
+      promptWithNormalizedInitial = {
+        ...promptWithNormalizedInitial,
+        initial: {
+          ...initial,
+          // In this dataset a Follow is a rear chase, while a Track is a
+          // parallel side-on move.  Without this canonical distinction both
+          // labels generated the same subject-relative trajectory.
+          subjectView:
+            movementType === CameraMovementType.Follow
+              ? SubjectView.Back
+              : getTrackingSide(initial.subjectView),
+          cameraAngle: CameraVerticalAngle.Eye,
+        },
+      };
+    }
+  }
+
+  if (
+    promptWithNormalizedInitial.initial &&
+    FULL_VISIBILITY_MOVEMENTS.has(promptWithNormalizedInitial.movement.type)
+  ) {
+    const initial = promptWithNormalizedInitial.initial;
+    promptWithNormalizedInitial = {
+      ...promptWithNormalizedInitial,
+      initial: {
+        ...initial,
+        ...(initial.shotSize && CROPPED_SHOT_SIZES.has(initial.shotSize)
+          ? { shotSize: ShotSize.FullShot }
+          : {}),
+        ...(initial.subjectFraming && VISIBLE_FRAMING[initial.subjectFraming]
+          ? { subjectFraming: VISIBLE_FRAMING[initial.subjectFraming] }
+          : {}),
+      },
+    };
+  }
+
+  const normalizedMovementType = promptWithNormalizedInitial.movement.type;
+  const normalizedInitialAngle =
+    promptWithNormalizedInitial.initial?.cameraAngle;
+  const craneUpNeedsHeadroom =
+    normalizedMovementType === CameraMovementType.CraneUp &&
+    (normalizedInitialAngle === CameraVerticalAngle.Overhead ||
+      normalizedInitialAngle === CameraVerticalAngle.BirdsEye);
+  const downMoveNeedsHeadroom =
+    (normalizedMovementType === CameraMovementType.CraneDown ||
+      normalizedMovementType === CameraMovementType.PedestalDown) &&
+    (normalizedInitialAngle === CameraVerticalAngle.Low ||
+      normalizedInitialAngle === CameraVerticalAngle.Eye);
+
+  if (
+    promptWithNormalizedInitial.initial &&
+    (craneUpNeedsHeadroom || downMoveNeedsHeadroom)
+  ) {
+    promptWithNormalizedInitial = {
+      ...promptWithNormalizedInitial,
+      initial: {
+        ...promptWithNormalizedInitial.initial,
+        cameraAngle: CameraVerticalAngle.High,
+      },
+    };
+  }
 
   if (!promptWithNormalizedInitial.final) {
     return promptWithNormalizedInitial;

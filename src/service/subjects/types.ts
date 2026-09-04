@@ -65,5 +65,13 @@ export interface RandomizationSettings {
   };
   directionReversalProbability?: number;
   phaseOffset?: number;
+  /**
+   * A monotonic time warp applied when a generated path is sampled.  It adds
+   * natural acceleration/deceleration without changing the path endpoints.
+   */
+  timing?: {
+    smoothness: number;
+    accelerationBias: number;
+  };
   seed: number;
 }

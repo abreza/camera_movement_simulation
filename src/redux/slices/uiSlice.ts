@@ -1,5 +1,11 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { GenerateDatasetConfig } from "@/service/dataset/generate";
+import {
+  DATASET_INSTRUCTION_COUNT,
+  DATASET_SUBJECT_COUNT,
+  GenerateDatasetConfig,
+  MAX_DATASET_FRAME_COUNT,
+  MIN_DATASET_FRAME_COUNT,
+} from "@/service/dataset/generate";
 
 interface UIState {
   sidebarOpen: boolean;
@@ -24,10 +30,10 @@ const initialState: UIState = {
   showSubjectPaths: true,
   generatorOptions: {
     simulationCount: 1000,
-    subjectCount: 1,
-    instructionCount: 1,
-    minFrameCount: 30,
-    maxFrameCount: 300,
+    subjectCount: DATASET_SUBJECT_COUNT,
+    instructionCount: DATASET_INSTRUCTION_COUNT,
+    minFrameCount: MIN_DATASET_FRAME_COUNT,
+    maxFrameCount: MAX_DATASET_FRAME_COUNT,
     movementDistribution: {
       circular: 1,
       zigzag: 1,
@@ -36,9 +42,6 @@ const initialState: UIState = {
       static: 1,
       figureEight: 1,
       wave: 1,
-      pendulum: 1,
-      orbital: 1,
-      bounce: 1,
     },
     noiseConfig: {
       applyNoise: false,
@@ -87,6 +90,8 @@ export const uiSlice = createSlice({
       state.generatorOptions = {
         ...state.generatorOptions,
         ...action.payload,
+        subjectCount: DATASET_SUBJECT_COUNT,
+        instructionCount: DATASET_INSTRUCTION_COUNT,
       };
     },
     setShowCameraPath: (state, action: PayloadAction<boolean>) => {

@@ -3,6 +3,16 @@ import { ObjectClass, Subject } from "./types";
 import { objectSizes } from "./constants";
 import { randomValue } from "@/utils/randomUtils";
 
+export const DEFAULT_SUBJECT_CLASS_WEIGHTS: Record<ObjectClass, number> = {
+  [ObjectClass.Chair]: 1,
+  [ObjectClass.Table]: 0.7,
+  [ObjectClass.Laptop]: 0.3,
+  [ObjectClass.Book]: 0.3,
+  [ObjectClass.Tree]: 0.5,
+  [ObjectClass.Car]: 1,
+  [ObjectClass.Bicycle]: 1,
+};
+
 function generateRandomGaussian(): number {
   let u = 0,
     v = 0;
@@ -27,17 +37,10 @@ export function generateSubjects(
   const objectCount = count ?? Math.floor(randomValue() * 11) + 5;
   const subjects: Subject[] = [];
 
-  const defaultFactors: Record<ObjectClass, number> = {
-    [ObjectClass.Chair]: 1,
-    [ObjectClass.Table]: 0.7,
-    [ObjectClass.Laptop]: 0.3,
-    [ObjectClass.Book]: 0.3,
-    [ObjectClass.Tree]: 0.5,
-    [ObjectClass.Car]: 1,
-    [ObjectClass.Bicycle]: 1,
+  const factors = {
+    ...DEFAULT_SUBJECT_CLASS_WEIGHTS,
+    ...probabilityFactors,
   };
-
-  const factors = { ...defaultFactors, ...probabilityFactors };
   const totalWeight = Object.values(factors).reduce(
     (sum, weight) => sum + weight,
     0

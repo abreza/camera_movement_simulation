@@ -35,24 +35,20 @@ export function generateLinearMotion(
       endZ += endpointRandomness * (randomSettings.positionOffset?.z || 0);
     }
 
-    const speedFactor = randomSettings.speedFactor
-      ? getRandomWithSeed(
-          randomSettings.seed + 0.8,
-          randomSettings.speedFactor.min,
-          randomSettings.speedFactor.max
-        )
-      : 1;
+    const reverseDirection =
+      !!randomSettings.directionReversalProbability &&
+      getRandomWithSeed(randomSettings.seed + 0.7, 0, 1) <
+        randomSettings.directionReversalProbability;
 
     for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-      let progress = (frame / DEFAULT_FRAME_COUNT) * speedFactor;
+      const progress = frame / (DEFAULT_FRAME_COUNT - 1);
+      // A linear vehicle path should not hit an invisible endpoint and reverse
+      // instantaneously. Direction variety is sampled once for the whole clip;
+      // the shared monotonic timing warp supplies acceleration/deceleration.
+      const pathProgress = reverseDirection ? 1 - progress : progress;
 
-      progress = progress % 1;
-
-      const cyclicProgress =
-        progress < 0.5 ? progress * 2 : 1 - (progress - 0.5) * 2;
-
-      const x = startX + (endX - startX) * cyclicProgress;
-      const z = startZ + (endZ - startZ) * cyclicProgress;
+      const x = startX + (endX - startX) * pathProgress;
+      const z = startZ + (endZ - startZ) * pathProgress;
       const y =
         subject.dimensions.height / 2 + (randomSettings.positionOffset?.y || 0);
 
@@ -73,7 +69,7 @@ export function generateLinearMotion(
     const endZ = -startZ;
 
     for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-      const progress = frame / DEFAULT_FRAME_COUNT;
+      const progress = frame / (DEFAULT_FRAME_COUNT - 1);
       const x = startX + (endX - startX) * progress;
       const z = startZ + (endZ - startZ) * progress;
       const y = subject.dimensions.height / 2;

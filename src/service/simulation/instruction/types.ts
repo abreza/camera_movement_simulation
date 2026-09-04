@@ -163,6 +163,7 @@ export enum MovementMode {
   Transition = "transition",
   Rotation = "rotation",
   Arc = "arc",
+  Crane = "crane",
   Roll = "roll",
 }
 

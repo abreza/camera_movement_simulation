@@ -40,27 +40,27 @@ export function autoGenerateEndSetup(
     case CameraMovementType.ArcLeft:
       switch (initial.subjectView) {
         case SubjectView.Front:
-          endSetup.subjectView = SubjectView.ThreeQuarterFrontLeft;
-          break;
-        case SubjectView.ThreeQuarterFrontLeft:
-          endSetup.subjectView = SubjectView.Left;
-          break;
-        case SubjectView.Left:
-          endSetup.subjectView = SubjectView.ThreeQuarterBackLeft;
-          break;
-        case SubjectView.ThreeQuarterBackLeft:
-          endSetup.subjectView = SubjectView.Back;
-          break;
-        case SubjectView.Back:
-          endSetup.subjectView = SubjectView.ThreeQuarterBackRight;
-          break;
-        case SubjectView.ThreeQuarterBackRight:
-          endSetup.subjectView = SubjectView.Right;
-          break;
-        case SubjectView.Right:
           endSetup.subjectView = SubjectView.ThreeQuarterFrontRight;
           break;
         case SubjectView.ThreeQuarterFrontRight:
+          endSetup.subjectView = SubjectView.Right;
+          break;
+        case SubjectView.Right:
+          endSetup.subjectView = SubjectView.ThreeQuarterBackRight;
+          break;
+        case SubjectView.ThreeQuarterBackRight:
+          endSetup.subjectView = SubjectView.Back;
+          break;
+        case SubjectView.Back:
+          endSetup.subjectView = SubjectView.ThreeQuarterBackLeft;
+          break;
+        case SubjectView.ThreeQuarterBackLeft:
+          endSetup.subjectView = SubjectView.Left;
+          break;
+        case SubjectView.Left:
+          endSetup.subjectView = SubjectView.ThreeQuarterFrontLeft;
+          break;
+        case SubjectView.ThreeQuarterFrontLeft:
           endSetup.subjectView = SubjectView.Front;
           break;
       }
@@ -69,27 +69,27 @@ export function autoGenerateEndSetup(
     case CameraMovementType.ArcRight:
       switch (initial.subjectView) {
         case SubjectView.Front:
-          endSetup.subjectView = SubjectView.ThreeQuarterFrontRight;
-          break;
-        case SubjectView.ThreeQuarterFrontRight:
-          endSetup.subjectView = SubjectView.Right;
-          break;
-        case SubjectView.Right:
-          endSetup.subjectView = SubjectView.ThreeQuarterBackRight;
-          break;
-        case SubjectView.ThreeQuarterBackRight:
-          endSetup.subjectView = SubjectView.Back;
-          break;
-        case SubjectView.Back:
-          endSetup.subjectView = SubjectView.ThreeQuarterBackLeft;
-          break;
-        case SubjectView.ThreeQuarterBackLeft:
-          endSetup.subjectView = SubjectView.Left;
-          break;
-        case SubjectView.Left:
           endSetup.subjectView = SubjectView.ThreeQuarterFrontLeft;
           break;
         case SubjectView.ThreeQuarterFrontLeft:
+          endSetup.subjectView = SubjectView.Left;
+          break;
+        case SubjectView.Left:
+          endSetup.subjectView = SubjectView.ThreeQuarterBackLeft;
+          break;
+        case SubjectView.ThreeQuarterBackLeft:
+          endSetup.subjectView = SubjectView.Back;
+          break;
+        case SubjectView.Back:
+          endSetup.subjectView = SubjectView.ThreeQuarterBackRight;
+          break;
+        case SubjectView.ThreeQuarterBackRight:
+          endSetup.subjectView = SubjectView.Right;
+          break;
+        case SubjectView.Right:
+          endSetup.subjectView = SubjectView.ThreeQuarterFrontRight;
+          break;
+        case SubjectView.ThreeQuarterFrontRight:
           endSetup.subjectView = SubjectView.Front;
           break;
       }

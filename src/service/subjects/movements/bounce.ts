@@ -42,7 +42,7 @@ export function generateBounceMotion(
     const phaseOffset = randomSettings.phaseOffset || 0;
 
     for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-      const progress = frame / DEFAULT_FRAME_COUNT;
+      const progress = frame / (DEFAULT_FRAME_COUNT - 1);
       const x = startX + direction * progress * BOUNCE_DISTANCE;
       const z = startZ;
 
@@ -70,7 +70,7 @@ export function generateBounceMotion(
     }
   } else {
     for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-      const progress = frame / DEFAULT_FRAME_COUNT;
+      const progress = frame / (DEFAULT_FRAME_COUNT - 1);
       const x = startX + progress * BOUNCE_DISTANCE;
 
       const bouncePhase = progress * BOUNCE_COUNT * Math.PI;

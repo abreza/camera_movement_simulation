@@ -24,12 +24,14 @@ export function addMovementNoise(
     positionAmplitude?: number;
     rotationAmplitude?: number;
     frequency?: number;
+    grounded?: boolean;
   } = {}
 ): SubjectFrame[] {
   const {
     positionAmplitude = 0.1,
     rotationAmplitude = 0.02,
     frequency = 0.5,
+    grounded = false,
   } = noiseSettings;
 
   const seeds = {
@@ -42,13 +44,24 @@ export function addMovementNoise(
   };
 
   return frames.map((frame, index) => {
+    // Express frequency in cycles per clip, not radians per frame.  This keeps
+    // the same motion character for both 100- and 500-frame exports and avoids
+    // high-frequency vehicle jitter on long clips.
+    const progress = index / Math.max(1, frames.length - 1);
+    const phase = progress * frequency * Math.PI * 2;
     const noise = {
-      px: Math.sin(index * frequency + seeds.px) * positionAmplitude,
-      py: Math.sin(index * frequency + seeds.py) * positionAmplitude,
-      pz: Math.sin(index * frequency + seeds.pz) * positionAmplitude,
-      rx: Math.sin(index * frequency + seeds.rx) * rotationAmplitude,
-      ry: Math.sin(index * frequency + seeds.ry) * rotationAmplitude,
-      rz: Math.sin(index * frequency + seeds.rz) * rotationAmplitude,
+      px: Math.sin(phase + seeds.px) * positionAmplitude,
+      py: grounded
+        ? 0
+        : Math.sin(phase + seeds.py) * positionAmplitude,
+      pz: Math.sin(phase + seeds.pz) * positionAmplitude,
+      rx: grounded
+        ? 0
+        : Math.sin(phase + seeds.rx) * rotationAmplitude,
+      ry: Math.sin(phase + seeds.ry) * rotationAmplitude,
+      rz: grounded
+        ? 0
+        : Math.sin(phase + seeds.rz) * rotationAmplitude,
     };
 
     return {

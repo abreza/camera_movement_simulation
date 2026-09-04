@@ -50,7 +50,11 @@ export function translatePromptToSimulationInstruction(
   const { movement, initial, final } = normalizedPrompt;
 
   const movementEasing = mapMovementSpeedToEasing(movement.speed);
-  const constraints = buildConstraintsForMovement(movement.type);
+  const constraints = buildConstraintsForMovement(
+    movement.type,
+    Boolean(final && Object.keys(final).length),
+    movement.speed
+  );
   const isSimpleMovement =
     highLevelInstructionRules[movement.type]?.simpleMovement;
 

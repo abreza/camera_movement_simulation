@@ -30,7 +30,7 @@ const MOVEMENT_VALIDATION_RULES = {
       const initialIndex = getShotSizeIndex(initial);
       const finalIndex = getShotSizeIndex(final);
 
-      return finalIndex <= initialIndex;
+      return finalIndex < initialIndex;
     },
   },
   [CameraMovementType.DollyOut]: {
@@ -39,7 +39,7 @@ const MOVEMENT_VALIDATION_RULES = {
       const initialIndex = getShotSizeIndex(initial);
       const finalIndex = getShotSizeIndex(final);
 
-      return finalIndex >= initialIndex;
+      return finalIndex > initialIndex;
     },
   },
 };
@@ -203,6 +203,15 @@ export const generateRandomCinematographyPrompt =
   (): GeneratedCinematographyPrompt => {
     const initial = generateInitialSetup();
     const movement = generateMovement();
+    if (
+      (movement.type === CameraMovementType.CraneDown ||
+        movement.type === CameraMovementType.PedestalDown) &&
+      initial.cameraAngle === CameraVerticalAngle.Low
+    ) {
+      // A low-angle camera already sits on the physical floor, leaving no
+      // valid downward crane travel.
+      initial.cameraAngle = CameraVerticalAngle.Eye;
+    }
     const final = generateEndSetup(initial, movement.type);
 
     return normalizeCinematographyPrompt({

@@ -36,7 +36,7 @@ export function generateSpiralMotion(
     const direction = reverseDirection ? -1 : 1;
 
     for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-      const progress = frame / DEFAULT_FRAME_COUNT;
+      const progress = frame / (DEFAULT_FRAME_COUNT - 1);
       const angle =
         direction * progress * spiralTurns * 2 * Math.PI + angleOffset;
       const radius = progress * maxRadius;
@@ -59,7 +59,7 @@ export function generateSpiralMotion(
     }
   } else {
     for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-      const progress = frame / DEFAULT_FRAME_COUNT;
+      const progress = frame / (DEFAULT_FRAME_COUNT - 1);
       const angle = progress * SPIRAL_TURNS * 2 * Math.PI + angleOffset;
       const radius = progress * MAX_RADIUS;
 

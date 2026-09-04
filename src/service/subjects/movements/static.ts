@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { Subject, SubjectFrame, RandomizationSettings } from "../types";
 import { DEFAULT_FRAME_COUNT } from "../../simulation/constants";
-import { getRandomWithSeed } from "../utils";
 
 export function generateStaticMotion(
   subject: Subject,
@@ -25,46 +24,6 @@ export function generateStaticMotion(
     z = radius * Math.sin(angle) + (randomSettings.positionOffset?.z || 0);
     y = subject.dimensions.height / 2 + (randomSettings.positionOffset?.y || 0);
 
-    const subtleMovement =
-      getRandomWithSeed(randomSettings.seed + 0.95, 0, 1) < 0.3;
-
-    if (subtleMovement) {
-      const subtleAmplitude = getRandomWithSeed(
-        randomSettings.seed + 0.96,
-        0.01,
-        0.1
-      );
-      const subtleFrequency = getRandomWithSeed(
-        randomSettings.seed + 0.97,
-        0.1,
-        0.5
-      );
-
-      for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-        const progress = frame / DEFAULT_FRAME_COUNT;
-        const subtleX =
-          x +
-          Math.sin(progress * Math.PI * 2 * subtleFrequency) * subtleAmplitude;
-        const subtleZ =
-          z +
-          Math.cos(progress * Math.PI * 2 * subtleFrequency) * subtleAmplitude;
-        const subtleY =
-          y +
-          (Math.sin(progress * Math.PI * 4 * subtleFrequency) *
-            subtleAmplitude) /
-            2;
-
-        frames.push({
-          position: new THREE.Vector3(subtleX, subtleY, subtleZ),
-          rotation: new THREE.Euler(
-            0,
-            angle + subtleAmplitude * Math.sin(progress * Math.PI * 2),
-            0
-          ),
-        });
-      }
-      return frames;
-    }
   }
 
   for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {

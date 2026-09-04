@@ -43,7 +43,7 @@ export function generateOrbitalMotion(
     const direction = reverseDirection ? -1 : 1;
 
     for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-      const progress = frame / DEFAULT_FRAME_COUNT;
+      const progress = frame / (DEFAULT_FRAME_COUNT - 1);
       const angle =
         direction * 2 * Math.PI * progress * speedFactor + angleOffset;
 
@@ -69,7 +69,7 @@ export function generateOrbitalMotion(
     }
   } else {
     for (let frame = 0; frame < DEFAULT_FRAME_COUNT; frame++) {
-      const progress = frame / DEFAULT_FRAME_COUNT;
+      const progress = frame / (DEFAULT_FRAME_COUNT - 1);
       const angle = 2 * Math.PI * progress + angleOffset;
 
       const x = CENTER_OFFSET.x + ORBIT_RADIUS * Math.cos(angle);
