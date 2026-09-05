@@ -20,6 +20,25 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
 
+## Dataset benchmark
+
+With Node.js 22 or newer and dependencies installed, run:
+
+```bash
+npm run benchmark:dataset
+npm run benchmark:dataset -- 1000
+```
+
+The default is 100 samples with a fixed seed and 100–500 frames per sample.
+The command reports generation time, samples per second, archive size, and a
+SHA-256 hash of the simulation MessagePack contents. It checks the ZIP entries
+and every file's CRC. Timing includes archive creation and excludes source
+loading and verification. The archive stays in memory and is not saved.
+
+Compare runs with the same sample count and Node version. The sample hash
+excludes random dataset IDs and timestamps, so it can detect changes to generated
+samples independently of archive metadata.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useMemo } from "react";
+import React, { useCallback, useEffect, useRef, useMemo } from "react";
 import {
   Button,
   TextField,
@@ -18,11 +18,14 @@ import {
   Fade,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
+import type {
+  DatasetProgressPhase,
+  GenerateDatasetConfig,
+} from "@/service/dataset/generate";
 import {
   DATASET_INSTRUCTION_COUNT,
   DATASET_MOVEMENT_TYPES,
   DATASET_SUBJECT_COUNT,
-  GenerateDatasetConfig,
   MAX_DATASET_ROTATION_NOISE_AMPLITUDE,
   MAX_DATASET_FRAME_COUNT,
   MIN_DATASET_FRAME_COUNT,
@@ -34,12 +37,13 @@ import {
   setProgress,
   setProgressPhase,
 } from "@/redux/slices/uiSlice";
-import { generateRandomDataset } from "@/service/dataset/generate";
+import { generateRandomDataset } from "@/service/dataset/generateClient";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { MovementPreview } from "./MovementPreview";
+import { toast } from "react-toastify";
 
 interface GeneratorOptionsProps {
-  onClose: () => void;
+  onBack: () => void;
 }
 
 const movementDisplayNames: Record<string, string> = {
@@ -69,13 +73,22 @@ const COLORS = [
 ];
 
 export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
-  onClose,
+  onBack,
 }) => {
   const dispatch = useAppDispatch();
   const { generatingDataset, progress, progressPhase, generatorOptions } =
     useAppSelector((state) => state.ui);
 
   const lastUpdateTime = useRef<number>(0);
+  const progressPhaseRef = useRef<DatasetProgressPhase>("generating");
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(
+    () => () => {
+      abortControllerRef.current?.abort();
+    },
+    []
+  );
 
   const movementTypes = useMemo(() => [...DATASET_MOVEMENT_TYPES], []);
 
@@ -86,12 +99,13 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
         newValue: number | number[]
       ) => {
         if (name === "simulationCount") {
+          const parsedValue = Number.parseInt(
+            (event as React.ChangeEvent<HTMLInputElement>).target.value,
+            10
+          );
           dispatch(
             setGeneratorOptions({
-              [name]: parseInt(
-                (event as React.ChangeEvent<HTMLInputElement>).target.value,
-                10
-              ),
+              [name]: Number.isNaN(parsedValue) ? 0 : parsedValue,
             })
           );
         } else {
@@ -163,7 +177,7 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
   const throttledSetProgress = useCallback(
     (value: number) => {
       const now = Date.now();
-      if (now - lastUpdateTime.current > 100) {
+      if (value >= 100 || now - lastUpdateTime.current > 100) {
         dispatch(setProgress(value));
         lastUpdateTime.current = now;
       }
@@ -172,31 +186,62 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
   );
 
   const handleGenerate = async () => {
+    if (abortControllerRef.current) return;
+
     dispatch(setProgress(0));
+    dispatch(setProgressPhase("generating"));
     lastUpdateTime.current = 0;
+    progressPhaseRef.current = "generating";
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     const configWithProgress: GenerateDatasetConfig = {
       ...generatorOptions,
       subjectCount: DATASET_SUBJECT_COUNT,
       instructionCount: DATASET_INSTRUCTION_COUNT,
-      onProgress: (value: number, phase: "generating" | "zipping") => {
-        if (value > progress) {
-          throttledSetProgress(value);
-        }
-        if (phase !== progressPhase) {
+      onProgress: (value: number, phase: DatasetProgressPhase) => {
+        if (phase !== progressPhaseRef.current) {
+          progressPhaseRef.current = phase;
           dispatch(setProgressPhase(phase));
+          dispatch(setProgress(value));
+          lastUpdateTime.current = Date.now();
+        } else {
+          throttledSetProgress(value);
         }
       },
     };
 
+    let completed = false;
     try {
       dispatch(setGeneratingDataset(true));
-      await generateRandomDataset(configWithProgress);
-      dispatch(setGeneratingDataset(false));
-      onClose();
+      await generateRandomDataset(configWithProgress, {
+        signal: abortController.signal,
+      });
+      completed = true;
     } catch (error) {
-      console.error("Error generating dataset:", error);
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        console.error("Error generating dataset:", error);
+        toast.error(
+          error instanceof Error
+            ? `Dataset generation failed: ${error.message}`
+            : "Dataset generation failed."
+        );
+      }
+    } finally {
+      if (abortControllerRef.current === abortController) {
+        abortControllerRef.current = null;
+      }
       dispatch(setGeneratingDataset(false));
+    }
+
+    if (completed) onBack();
+  };
+
+  const handleCancel = () => {
+    if (generatingDataset) {
+      abortControllerRef.current?.abort();
+    } else {
+      onBack();
     }
   };
 
@@ -217,12 +262,23 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
     );
   }, [generatorOptions.movementDistribution]);
 
+  const simulationCountIsValid =
+    Number.isInteger(generatorOptions.simulationCount) &&
+    generatorOptions.simulationCount > 0;
+  const movementDistributionIsValid =
+    Object.values(generatorOptions.movementDistribution ?? {}).reduce(
+      (sum, weight) => sum + weight,
+      0
+    ) > 0;
+  const canGenerate =
+    simulationCountIsValid && movementDistributionIsValid && !generatingDataset;
+
   return (
     <Box sx={{ width: "100%" }}>
       <Typography variant="subtitle1" gutterBottom>
         Generator Options
       </Typography>
-      <Stack direction="row" alignItems="center" spacing={1}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
         <TextField
           fullWidth
           label="Simulation Count"
@@ -234,9 +290,15 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
             ) as React.ChangeEventHandler<HTMLInputElement>
           }
           margin="dense"
-          inputProps={{ min: 1 }}
+          slotProps={{ htmlInput: { min: 1 } }}
           size="small"
           disabled={generatingDataset}
+          error={!simulationCountIsValid}
+          helperText={
+            simulationCountIsValid
+              ? undefined
+              : "Enter a positive whole number."
+          }
         />
       </Stack>
 
@@ -317,7 +379,11 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
 
           {generatorOptions.noiseConfig?.applyNoise && (
             <Box>
-              <Typography variant="caption" display="block" gutterBottom>
+              <Typography
+                variant="caption"
+                gutterBottom
+                sx={{ display: "block" }}
+              >
                 Position Amplitude:{" "}
                 {generatorOptions.noiseConfig?.positionAmplitude?.toFixed(2)}
               </Typography>
@@ -332,7 +398,11 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
                 disabled={generatingDataset}
               />
 
-              <Typography variant="caption" display="block" gutterBottom>
+              <Typography
+                variant="caption"
+                gutterBottom
+                sx={{ display: "block" }}
+              >
                 Rotation Amplitude:{" "}
                 {generatorOptions.noiseConfig?.rotationAmplitude?.toFixed(3)}
               </Typography>
@@ -347,7 +417,11 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
                 disabled={generatingDataset}
               />
 
-              <Typography variant="caption" display="block" gutterBottom>
+              <Typography
+                variant="caption"
+                gutterBottom
+                sx={{ display: "block" }}
+              >
                 Noise Cycles per Clip:{" "}
                 {generatorOptions.noiseConfig?.frequency?.toFixed(1)}
               </Typography>
@@ -400,10 +474,10 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
                       label={({
                         cx,
                         cy,
-                        midAngle,
+                        midAngle = 0,
                         innerRadius,
                         outerRadius,
-                        percent,
+                        percent = 0,
                         name,
                       }) => {
                         const RADIAN = Math.PI / 180;
@@ -445,7 +519,6 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
                       align="right"
                       verticalAlign="middle"
                       iconSize={8}
-                      fontSize={10}
                       wrapperStyle={{ fontSize: "10px" }}
                     />
                   </PieChart>
@@ -488,8 +561,8 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
                       }
                       arrow
                       placement="right"
-                      TransitionComponent={Fade}
-                      TransitionProps={{ unmountOnExit: true }}
+                      slots={{ transition: Fade }}
+                      slotProps={{ transition: { unmountOnExit: true } }}
                     >
                       <IconButton size="small" sx={{ ml: 1 }}>
                         <InfoIcon fontSize="small" />
@@ -532,19 +605,18 @@ export const GeneratorOptions: React.FC<GeneratorOptionsProps> = ({
       <Box sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}>
         <Button
           variant="outlined"
-          onClick={onClose}
+          onClick={handleCancel}
           sx={{ width: "48%" }}
           size="small"
-          disabled={generatingDataset}
         >
-          Cancel
+          {generatingDataset ? "Cancel Generation" : "Back"}
         </Button>
         <Button
           variant="contained"
           onClick={handleGenerate}
           sx={{ width: "48%" }}
           size="small"
-          disabled={generatingDataset}
+          disabled={!canGenerate}
         >
           {generatingDataset ? "Generating..." : "Generate Dataset"}
         </Button>

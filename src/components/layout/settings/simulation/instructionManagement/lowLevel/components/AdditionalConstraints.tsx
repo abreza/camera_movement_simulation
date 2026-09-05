@@ -70,7 +70,11 @@ export const AdditionalConstraints: FC = () => {
         <Typography variant="body2" sx={{ mt: 2 }}>
           Importance
         </Typography>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ alignItems: "center", mb: 2 }}
+        >
           <Slider
             value={importance}
             onChange={(_, newValue) =>
@@ -92,7 +96,7 @@ export const AdditionalConstraints: FC = () => {
           fullWidth
           sx={{ mb: 2 }}
           size="small"
-          InputProps={{ inputProps: { min: 0, step: 0.1 } }}
+          slotProps={{ htmlInput: { min: 0, step: 0.1 } }}
           helperText="Maximum acceleration allowed (optional)"
         />
 
@@ -104,7 +108,7 @@ export const AdditionalConstraints: FC = () => {
           fullWidth
           sx={{ mb: 2 }}
           size="small"
-          InputProps={{ inputProps: { min: 0, step: 0.1 } }}
+          slotProps={{ htmlInput: { min: 0, step: 0.1 } }}
           helperText="Maximum speed allowed (optional)"
         />
 
@@ -116,7 +120,7 @@ export const AdditionalConstraints: FC = () => {
           fullWidth
           sx={{ mb: 2 }}
           size="small"
-          InputProps={{ inputProps: { min: 100, step: 100 } }}
+          slotProps={{ htmlInput: { min: 100, step: 100 } }}
           helperText="Number of frames for this instruction (minimum 100)"
         />
       </AccordionDetails>

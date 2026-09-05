@@ -4,14 +4,22 @@ import { CameraParameters } from "./instruction/types";
 import { SENSOR_WIDTH, SENSOR_HEIGHT } from "./constants";
 import { randomValue } from "@/utils/randomUtils";
 
+// These helpers are synchronous and return independent values. Reuse the
+// internal Three.js objects instead of constructing cameras for every frame.
+const lookAtCamera = new THREE.PerspectiveCamera();
+const boundsCamera = new THREE.PerspectiveCamera();
+const boundsCorner = new THREE.Vector3();
+const boundsSubjectQuaternion = new THREE.Quaternion();
+let boundsFocalLength: number | undefined;
+let boundsAspectRatio: number | undefined;
+
 export const getLookAtAngle = (
   cameraPosition: THREE.Vector3,
   targetPosition: THREE.Vector3
 ): THREE.Euler => {
-  const tempCamera = new THREE.PerspectiveCamera();
-  tempCamera.position.copy(cameraPosition);
-  tempCamera.lookAt(targetPosition);
-  return tempCamera.rotation.clone();
+  lookAtCamera.position.copy(cameraPosition);
+  lookAtCamera.lookAt(targetPosition);
+  return lookAtCamera.rotation.clone();
 };
 
 export interface ProjectedBounds {
@@ -63,36 +71,48 @@ export const projectBoundingBox = (
   cameraParams: CameraParameters,
   rotation: THREE.Euler = new THREE.Euler()
 ): ProjectedBounds => {
-  const tempCamera = makeThreeJsCamera(cameraParams);
+  boundsCamera.position.copy(cameraParams.position);
+  boundsCamera.rotation.copy(cameraParams.rotation);
+  if (
+    boundsFocalLength !== cameraParams.focalLength ||
+    boundsAspectRatio !== cameraParams.aspectRatio
+  ) {
+    boundsCamera.aspect = cameraParams.aspectRatio;
+    boundsCamera.filmGauge = SENSOR_WIDTH;
+    boundsCamera.setFocalLength(cameraParams.focalLength);
+    boundsFocalLength = cameraParams.focalLength;
+    boundsAspectRatio = cameraParams.aspectRatio;
+  }
+  boundsCamera.updateMatrixWorld(true);
 
   const halfWidth = dimensions.width / 2;
   const halfHeight = dimensions.height / 2;
   const halfDepth = dimensions.depth / 2;
 
-  const subjectQuaternion = new THREE.Quaternion().setFromEuler(rotation);
-  const corners = [
-    new THREE.Vector3(-halfWidth, -halfHeight, -halfDepth),
-    new THREE.Vector3(halfWidth, -halfHeight, -halfDepth),
-    new THREE.Vector3(-halfWidth, halfHeight, -halfDepth),
-    new THREE.Vector3(halfWidth, halfHeight, -halfDepth),
-    new THREE.Vector3(-halfWidth, -halfHeight, halfDepth),
-    new THREE.Vector3(halfWidth, -halfHeight, halfDepth),
-    new THREE.Vector3(-halfWidth, halfHeight, halfDepth),
-    new THREE.Vector3(halfWidth, halfHeight, halfDepth),
-  ].map((corner) => corner.applyQuaternion(subjectQuaternion).add(position));
+  boundsSubjectQuaternion.setFromEuler(rotation);
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  let allInFront = true;
 
-  const cameraSpacePoints = corners.map((corner) =>
-    corner.clone().applyMatrix4(tempCamera.matrixWorldInverse)
-  );
-
-  const projectedPoints = corners.map((corner) =>
-    projectPointUsingThreeJsCamera(corner, tempCamera)
-  );
-
-  const minX = Math.min(...projectedPoints.map((p) => p.x));
-  const maxX = Math.max(...projectedPoints.map((p) => p.x));
-  const minY = Math.min(...projectedPoints.map((p) => p.y));
-  const maxY = Math.max(...projectedPoints.map((p) => p.y));
+  for (let index = 0; index < 8; index++) {
+    boundsCorner
+      .set(
+        index & 1 ? halfWidth : -halfWidth,
+        index & 2 ? halfHeight : -halfHeight,
+        index & 4 ? halfDepth : -halfDepth
+      )
+      .applyQuaternion(boundsSubjectQuaternion)
+      .add(position)
+      .applyMatrix4(boundsCamera.matrixWorldInverse);
+    allInFront = allInFront && boundsCorner.z < -boundsCamera.near;
+    boundsCorner.applyMatrix4(boundsCamera.projectionMatrix);
+    minX = Math.min(minX, boundsCorner.x);
+    maxX = Math.max(maxX, boundsCorner.x);
+    minY = Math.min(minY, boundsCorner.y);
+    maxY = Math.max(maxY, boundsCorner.y);
+  }
 
   return {
     width: maxX - minX,
@@ -100,9 +120,7 @@ export const projectBoundingBox = (
     center: new THREE.Vector2((minX + maxX) / 2, (minY + maxY) / 2),
     min: new THREE.Vector2(minX, minY),
     max: new THREE.Vector2(maxX, maxY),
-    allInFront: cameraSpacePoints.every(
-      (point) => point.z < -tempCamera.near
-    ),
+    allInFront,
   };
 };
 

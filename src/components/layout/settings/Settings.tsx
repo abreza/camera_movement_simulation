@@ -144,9 +144,8 @@ const ActionCard: FC<ActionCardProps> = ({
 
 export const Settings: FC<SettingsProps> = ({ open, onClose }) => {
   const dispatch = useAppDispatch();
-  const { simulationStepIndex, selectedView } = useAppSelector(
-    (state) => state.ui
-  );
+  const { simulationStepIndex, selectedView, generatingDataset } =
+    useAppSelector((state) => state.ui);
 
   const [importError, setImportError] = useState<string | null>(null);
   const [isLocalhost, setIsLocalhost] = useState<boolean>(false);
@@ -173,6 +172,10 @@ export const Settings: FC<SettingsProps> = ({ open, onClose }) => {
 
   const handleGenerateRandomDataset = () => {
     dispatch(setSelectedView("generator"));
+  };
+
+  const handleDialogClose = () => {
+    if (!generatingDataset) onClose();
   };
 
   const handleRenderSimulation = () => {
@@ -312,19 +315,21 @@ export const Settings: FC<SettingsProps> = ({ open, onClose }) => {
     <>
       <Dialog
         open={open}
-        TransitionComponent={Transition}
+        slots={{ transition: Transition }}
         keepMounted
-        onClose={onClose}
-        PaperProps={{
-          style: {
-            position: "fixed",
-            left: 20,
-            top: 20,
-            bottom: 20,
-            margin: 0,
-            maxHeight: "calc(100vh - 40px)",
-            display: "flex",
-            flexDirection: "column",
+        onClose={handleDialogClose}
+        slotProps={{
+          paper: {
+            style: {
+              position: "fixed",
+              left: 20,
+              top: 20,
+              bottom: 20,
+              margin: 0,
+              maxHeight: "calc(100vh - 40px)",
+              display: "flex",
+              flexDirection: "column",
+            },
           },
         }}
         maxWidth="sm"
@@ -370,7 +375,9 @@ export const Settings: FC<SettingsProps> = ({ open, onClose }) => {
             </Box>
           </Box>
           <IconButton
-            onClick={onClose}
+            aria-label="Close settings"
+            onClick={handleDialogClose}
+            disabled={generatingDataset}
             size="small"
             sx={{
               color: "text.secondary",
@@ -504,7 +511,7 @@ export const Settings: FC<SettingsProps> = ({ open, onClose }) => {
 
           {selectedView === "generator" && (
             <GeneratorOptions
-              onClose={() => dispatch(setSelectedView("none"))}
+              onBack={() => dispatch(setSelectedView("none"))}
             />
           )}
           {selectedView === "simulation" && <SimulationSteps />}

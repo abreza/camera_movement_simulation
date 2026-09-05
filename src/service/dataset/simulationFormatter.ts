@@ -97,6 +97,12 @@ type SubjectCompressed = {
   m: string;
 };
 
+function packFloatForDataset(value: number): number {
+  // Keep the same two rounding steps as quantizing the geometry and then
+  // serializing it, without allocating intermediate Three.js objects.
+  return Math.round(quantizeFloatForDataset(value) * DATASET_FLOAT_FACTOR);
+}
+
 function compressFormatSubjectInfo(
   subjectsInfo: SubjectInfo[]
 ): SubjectCompressed[] {
@@ -105,30 +111,30 @@ function compressFormatSubjectInfo(
       i: subject.id,
       c: subject.class,
       d: [
-        subject.dimensions.width,
-        subject.dimensions.height,
-        subject.dimensions.depth,
+        packFloatForDataset(subject.dimensions.width),
+        packFloatForDataset(subject.dimensions.height),
+        packFloatForDataset(subject.dimensions.depth),
       ],
       f:
         frames?.map((frame) => [
-          frame.position.x,
-          frame.position.y,
-          frame.position.z,
-          frame.rotation.x,
-          frame.rotation.y,
-          frame.rotation.z,
+          packFloatForDataset(frame.position.x),
+          packFloatForDataset(frame.position.y),
+          packFloatForDataset(frame.position.z),
+          packFloatForDataset(frame.rotation.x),
+          packFloatForDataset(frame.rotation.y),
+          packFloatForDataset(frame.rotation.z),
         ]) || [],
       m: movementType,
     };
 
     if (subject.attentionBox) {
       formattedInfo.a = [
-        subject.attentionBox.position.x,
-        subject.attentionBox.position.y,
-        subject.attentionBox.position.z,
-        subject.attentionBox.dimensions.width,
-        subject.attentionBox.dimensions.height,
-        subject.attentionBox.dimensions.depth,
+        packFloatForDataset(subject.attentionBox.position.x),
+        packFloatForDataset(subject.attentionBox.position.y),
+        packFloatForDataset(subject.attentionBox.position.z),
+        packFloatForDataset(subject.attentionBox.dimensions.width),
+        packFloatForDataset(subject.attentionBox.dimensions.height),
+        packFloatForDataset(subject.attentionBox.dimensions.depth),
       ];
     }
 
@@ -138,14 +144,14 @@ function compressFormatSubjectInfo(
 
 function compressCameraFrames(cameraFrames: CameraParameters[]): number[][] {
   return cameraFrames.map((frame) => [
-    frame.position.x,
-    frame.position.y,
-    frame.position.z,
-    frame.rotation.x,
-    frame.rotation.y,
-    frame.rotation.z,
-    frame.focalLength,
-    frame.aspectRatio,
+    packFloatForDataset(frame.position.x),
+    packFloatForDataset(frame.position.y),
+    packFloatForDataset(frame.position.z),
+    packFloatForDataset(frame.rotation.x),
+    packFloatForDataset(frame.rotation.y),
+    packFloatForDataset(frame.rotation.z),
+    packFloatForDataset(frame.focalLength),
+    packFloatForDataset(frame.aspectRatio),
   ]);
 }
 
@@ -202,17 +208,11 @@ export function formatSimulationData(
     "simulation"
   );
 
-  const quantizedSubjectsInfo = quantizeSubjectInfoForDataset(
-    data.subjectsInfo
-  );
-  const quantizedCameraFrames = quantizeCameraFramesForDataset(
-    data.cameraFrames
-  );
   const formattedData = [
     cinematographyRef,
     simulationRef,
-    compressFormatSubjectInfo(roundFloats(quantizedSubjectsInfo)),
-    compressCameraFrames(roundFloats(quantizedCameraFrames)),
+    compressFormatSubjectInfo(data.subjectsInfo),
+    compressCameraFrames(data.cameraFrames),
   ];
 
   return {

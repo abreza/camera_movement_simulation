@@ -143,7 +143,11 @@ const MovementSelection: FC = () => {
               </Box>
 
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Stack direction="row" alignItems="center" spacing={0.75}>
+                <Stack
+                  direction="row"
+                  spacing={0.75}
+                  sx={{ alignItems: "center" }}
+                >
                   <Typography
                     variant="caption"
                     sx={{ fontWeight: 600, color: "text.primary" }}

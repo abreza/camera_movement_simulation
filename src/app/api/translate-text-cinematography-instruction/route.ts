@@ -7,7 +7,7 @@ import {
   MovementSpeed,
 } from "@/service/simulation/instruction/types";
 import { createOpenAI } from "@ai-sdk/openai";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 import { normalizeCinematographyPrompt } from "@/service/simulation/instruction/high-level/rules";
 
@@ -85,15 +85,15 @@ export async function POST(req: Request) {
   try {
     const { prompt } = await req.json();
 
-    const { object } = await generateObject({
+    const { output } = await generateText({
       model: openai("gpt-4o-mini"),
-      system: systemPrompt,
+      instructions: systemPrompt,
       prompt,
-      schema: cinematographySchema,
+      output: Output.object({ schema: cinematographySchema }),
     });
 
     return Response.json({
-      cinematographyPrompt: normalizeCinematographyPrompt(object),
+      cinematographyPrompt: normalizeCinematographyPrompt(output),
     });
   } catch (error) {
     console.error("AI processing error:", error);

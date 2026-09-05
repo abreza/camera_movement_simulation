@@ -264,8 +264,7 @@ const CameraMovementSimulation: FC = () => {
           </Box>
           <Stack
             direction="row"
-            alignItems="center"
-            justifyContent="space-between"
+            sx={{ alignItems: "center", justifyContent: "space-between" }}
           >
             <Typography
               variant="caption"
@@ -279,7 +278,7 @@ const CameraMovementSimulation: FC = () => {
               {currentFrame + 1}{" "}
               <span style={{ opacity: 0.4 }}>/ {cameraFrames.length}</span>
             </Typography>
-            <Stack direction="row" alignItems="center" spacing={0.5}>
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
               <Tooltip title="Previous frame">
                 <IconButton
                   size="small"
@@ -335,7 +334,7 @@ const CameraMovementSimulation: FC = () => {
                 </IconButton>
               </Tooltip>
             </Stack>
-            <Stack direction="row" alignItems="center" spacing={1}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
               <Typography
                 variant="caption"
                 sx={{ color: "text.secondary", fontSize: "0.68rem" }}
@@ -346,7 +345,7 @@ const CameraMovementSimulation: FC = () => {
                 type="number"
                 value={fps}
                 onChange={(e) => dispatch(setFps(Number(e.target.value)))}
-                inputProps={{ min: 1, max: 60 }}
+                slotProps={{ htmlInput: { min: 1, max: 60 } }}
                 sx={{
                   width: 56,
                   "& .MuiOutlinedInput-root": {

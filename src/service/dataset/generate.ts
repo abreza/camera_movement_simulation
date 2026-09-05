@@ -1,4 +1,8 @@
-import JSZip from "jszip";
+import {
+  BlobWriter,
+  Uint8ArrayReader,
+  ZipWriter,
+} from "@zip.js/zip.js";
 import { pack } from "msgpackr";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -41,6 +45,8 @@ import {
 import { projectBoundingBox } from "../simulation/utils";
 import { isProjectedBoundsFullyVisible } from "../simulation/rule-based/setup/framing";
 
+export type DatasetProgressPhase = "generating" | "zipping";
+
 export interface GenerateDatasetConfig {
   simulationCount: number;
   subjectCount?: number;
@@ -50,7 +56,7 @@ export interface GenerateDatasetConfig {
   seed?: string | number;
   subjectClassProbabilities?: Partial<Record<ObjectClass, number>>;
   movementDistribution?: Record<string, number>;
-  onProgress?: (progress: number, phase: "generating" | "zipping") => void;
+  onProgress?: (progress: number, phase: DatasetProgressPhase) => void;
   chunkSize?: number;
   noiseConfig?: {
     applyNoise?: boolean;
@@ -58,6 +64,22 @@ export interface GenerateDatasetConfig {
     rotationAmplitude?: number;
     frequency?: number;
   };
+}
+
+export interface GenerateDatasetArchiveOptions {
+  /**
+   * When supplied, the ZIP is written incrementally instead of being retained
+   * in memory. FileSystemWritableFileStream is the intended browser sink.
+   */
+  writable?: WritableStream;
+  signal?: AbortSignal;
+}
+
+export interface GeneratedDatasetArchive {
+  datasetId: string;
+  filename: string;
+  /** Present only when no streaming destination was supplied. */
+  data?: Blob;
 }
 
 export const DATASET_SUBJECT_COUNT = 1;
@@ -81,6 +103,7 @@ const DATASET_MOVEMENT_TYPE_SET = new Set<string>(DATASET_MOVEMENT_TYPES);
 const DATASET_SUBJECT_CLASSES = Object.values(ObjectClass);
 const DATASET_SUBJECT_CLASS_SET = new Set<string>(DATASET_SUBJECT_CLASSES);
 const CHUNK_SIZE = 10000;
+const MAIN_THREAD_TIME_BUDGET_MS = 16;
 const MAX_OBSERVABLE_CAMERA_ATTEMPTS = 50;
 
 type EffectiveNoiseConfig = Required<
@@ -393,18 +416,60 @@ export function normalizeDatasetConfig(
   };
 }
 
-async function yieldIfNeeded(
-  operationCount: number,
-  chunkSize: number = CHUNK_SIZE
-): Promise<void> {
-  if (operationCount % chunkSize === 0) {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
+function getCurrentTime(): number {
+  return typeof performance === "undefined" ? Date.now() : performance.now();
 }
 
-export async function generateRandomDataset(
-  config: GenerateDatasetConfig
-): Promise<void> {
+function yieldToEventLoop(): Promise<void> {
+  // Use a scheduled task when available so repeated yields do not pay the
+  // browser's minimum delay for nested timers. Both paths allow cancellation.
+  if (typeof scheduler !== "undefined" && typeof scheduler.yield === "function") {
+    return scheduler.yield();
+  }
+  return new Promise<void>((resolve) => setTimeout(resolve, 0));
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+
+  if (signal.reason instanceof Error) {
+    throw signal.reason;
+  }
+
+  throw new DOMException("Dataset generation was cancelled.", "AbortError");
+}
+
+/**
+ * Yields after crossing a work threshold (rather than requiring an exact
+ * modulo hit) and whenever a task has occupied a full frame budget. The time
+ * check also covers expensive camera-solver attempts whose cost is difficult
+ * to represent with a simple operation counter.
+ */
+function createCooperativeYield(
+  chunkSize: number,
+  signal?: AbortSignal
+): (operationCount: number) => Promise<void> {
+  let nextYieldAt = chunkSize;
+  let deadline = getCurrentTime() + MAIN_THREAD_TIME_BUDGET_MS;
+
+  return async (operationCount: number) => {
+    throwIfAborted(signal);
+
+    if (operationCount < nextYieldAt && getCurrentTime() < deadline) {
+      return;
+    }
+
+    nextYieldAt = operationCount + chunkSize;
+    await yieldToEventLoop();
+    deadline = getCurrentTime() + MAIN_THREAD_TIME_BUDGET_MS;
+    throwIfAborted(signal);
+  };
+}
+
+export async function buildRandomDatasetArchive(
+  config: GenerateDatasetConfig,
+  options: GenerateDatasetArchiveOptions = {}
+): Promise<GeneratedDatasetArchive> {
   const normalizedConfig = normalizeDatasetConfig(config);
   const {
     simulationCount,
@@ -419,10 +484,14 @@ export async function generateRandomDataset(
     chunkSize,
     noiseConfig,
   } = normalizedConfig;
+  const { writable, signal } = options;
+  throwIfAborted(signal);
   const seed = String(configuredSeed ?? createRandomSeed());
   const random = createSeededRandom(seed);
   const paddingLength = Math.floor(Math.log10(simulationCount)) + 1;
   const datasetId = `lenscraft_sim_${uuidv4()}`;
+  const filename = `${datasetId}.zip`;
+  const generatedAt = new Date();
   const movementSchedule = createWeightedSchedule(
     DATASET_MOVEMENT_TYPES,
     movementDistribution,
@@ -464,26 +533,40 @@ export async function generateRandomDataset(
   let staticClassIndex = 0;
   let dynamicClassIndex = 0;
 
-  const zip = new JSZip();
-  const datasetDirectory = zip.folder(datasetId);
-  if (!datasetDirectory) {
-    throw new Error(`Unable to create archive directory ${datasetId}.`);
-  }
+  const memoryWriter = writable
+    ? undefined
+    : new BlobWriter("application/zip");
+  const zip = new ZipWriter<Blob>(
+    writable ?? memoryWriter!,
+    {
+      level: 0,
+      keepOrder: true,
+      bufferedWrite: false,
+      dataDescriptor: true,
+      extendedTimestamp: false,
+      useWebWorkers: false,
+      signal,
+    }
+  );
+  const zipEntryOptions = {
+    level: 0,
+    extendedTimestamp: false,
+    lastModDate: generatedAt,
+    signal,
+  } as const;
+  await zip.add(`${datasetId}/`, undefined, {
+    ...zipEntryOptions,
+    directory: true,
+  });
   let operationCount = 0;
+  const yieldIfNeeded = createCooperativeYield(chunkSize, signal);
 
   let parameterDictionary: ParameterDictionary =
     createParameterDictionary(datasetId);
 
-  const zipOptions: JSZip.JSZipFileOptions = {
-    compression: "STORE",
-    compressionOptions: {
-      level: 1,
-    },
-  };
-
   for (let s = 0; s < simulationCount; s++) {
     operationCount++;
-    await yieldIfNeeded(operationCount, chunkSize);
+    await yieldIfNeeded(operationCount);
 
     onProgress?.((s / simulationCount) * 100, "generating");
 
@@ -502,17 +585,17 @@ export async function generateRandomDataset(
       withRandomSource(random, () => createSubjectForClass(subjectClass)),
     ];
     operationCount += subjectCount;
-    await yieldIfNeeded(operationCount, chunkSize);
+    await yieldIfNeeded(operationCount);
 
     const subjectMovements: Record<string, DatasetMovementType> = {
       [subjects[0].id]: subjectMovement,
     };
 
     operationCount += subjects.length;
-    await yieldIfNeeded(operationCount, chunkSize);
+    await yieldIfNeeded(operationCount);
 
     operationCount++;
-    await yieldIfNeeded(operationCount, chunkSize);
+    await yieldIfNeeded(operationCount);
 
     const frameCount =
       Math.floor(random() * (maxFrameCount - minFrameCount + 1)) +
@@ -525,7 +608,7 @@ export async function generateRandomDataset(
       })
     );
     operationCount += subjects.length * totalFrameCount;
-    await yieldIfNeeded(operationCount, chunkSize);
+    await yieldIfNeeded(operationCount);
 
     const subjectsInfo: SubjectInfo[] = subjects.map((subject, index) => ({
       subject,
@@ -534,7 +617,7 @@ export async function generateRandomDataset(
     }));
     const exportedSubjectsInfo = quantizeSubjectInfoForDataset(subjectsInfo);
     operationCount += subjects.length;
-    await yieldIfNeeded(operationCount, chunkSize);
+    await yieldIfNeeded(operationCount);
 
     let prompt: CinematographyPrompt | undefined;
     let instruction: SimulationInstruction | undefined;
@@ -547,6 +630,8 @@ export async function generateRandomDataset(
       attempt < MAX_OBSERVABLE_CAMERA_ATTEMPTS;
       attempt++
     ) {
+      operationCount++;
+      await yieldIfNeeded(operationCount);
       const candidatePrompt = withRandomSource(random, () =>
         generateRandomCinematographyPrompt()
       );
@@ -568,6 +653,8 @@ export async function generateRandomDataset(
         const candidateCameraFrames = withRandomSource(random, () =>
           calculateCameraPositions([candidateInstruction], subjectsInfo)
         );
+        operationCount += candidateCameraFrames.length;
+        await yieldIfNeeded(operationCount);
         if (candidateCameraFrames.length !== frameCount) {
           throw new Error(
             `Camera solver returned ${candidateCameraFrames.length} frames; expected ${frameCount}.`
@@ -654,30 +741,33 @@ export async function generateRandomDataset(
     parameterDictionary = newParameterDictionary;
 
     const packedData = pack(formattedData);
-    datasetDirectory.file(
-      `simulation_${datasetId}_${s
+    await zip.add(
+      `${datasetId}/simulation_${datasetId}_${s
         .toString()
         .padStart(paddingLength, "0")}.msgpack`,
-      new Uint8Array(packedData),
-      zipOptions
+      new Uint8ArrayReader(new Uint8Array(packedData)),
+      zipEntryOptions
     );
 
     operationCount += frameCount;
-    await yieldIfNeeded(operationCount, chunkSize);
+    await yieldIfNeeded(operationCount);
   }
 
+  onProgress?.(100, "generating");
+  throwIfAborted(signal);
+
   const packedDictionary = pack(parameterDictionary);
-  datasetDirectory.file(
-    "parameter_dictionary.msgpack",
-    new Uint8Array(packedDictionary),
-    zipOptions
+  await zip.add(
+    `${datasetId}/parameter_dictionary.msgpack`,
+    new Uint8ArrayReader(new Uint8Array(packedDictionary)),
+    zipEntryOptions
   );
 
   const manifest = {
     schemaVersion: 2,
     generatorVersion: 2,
     datasetId,
-    generatedAt: new Date().toISOString(),
+    generatedAt: generatedAt.toISOString(),
     seed,
     contract: {
       subjectsPerSample: DATASET_SUBJECT_COUNT,
@@ -716,31 +806,57 @@ export async function generateRandomDataset(
       fixedPointScale: DATASET_FLOAT_FACTOR,
     },
   };
-  datasetDirectory.file(
-    "manifest.json",
-    JSON.stringify(manifest, null, 2),
-    zipOptions
+  await zip.add(
+    `${datasetId}/manifest.json`,
+    new Uint8ArrayReader(
+      new TextEncoder().encode(JSON.stringify(manifest, null, 2))
+    ),
+    zipEntryOptions
   );
 
-  const content = await zip.generateAsync(
-    {
-      type: "blob",
-      compression: "STORE",
-      compressionOptions: {
-        level: 1,
-      },
-    },
-    (metadata) => {
-      onProgress?.(metadata.percent, "zipping");
+  onProgress?.(0, "zipping");
+  let finalizationDeadline = getCurrentTime() + MAIN_THREAD_TIME_BUDGET_MS;
+  let finalizationOutputAborted = false;
+
+  const abortFinalizationOutput = async () => {
+    if (finalizationOutputAborted || !writable || writable.locked) return;
+
+    finalizationOutputAborted = true;
+    try {
+      await writable.abort(signal?.reason);
+    } catch {
+      // The worker/client cleanup path also retries stream abortion.
     }
-  );
+  };
 
-  const url = URL.createObjectURL(content);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${datasetId}.zip`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  const content = await zip.close(undefined, {
+    // A dataset can legitimately contain more than the classic ZIP limit of
+    // 65,535 entries. Force a ZIP64 central directory in that case.
+    zip64: simulationCount + 3 >= 0xffff,
+    onprogress: async (progress, total) => {
+      onProgress?.(total === 0 ? 100 : (progress / total) * 100, "zipping");
+
+      if (signal?.aborted) {
+        await abortFinalizationOutput();
+        return;
+      }
+
+      if (getCurrentTime() < finalizationDeadline) return;
+
+      // ZipWriter awaits this callback for every central-directory entry.
+      // Yielding here lets the worker receive cancellation messages even while
+      // finalizing very large ZIP64 archives.
+      await yieldToEventLoop();
+      finalizationDeadline = getCurrentTime() + MAIN_THREAD_TIME_BUDGET_MS;
+
+      if (signal?.aborted) await abortFinalizationOutput();
+    },
+  });
+  throwIfAborted(signal);
+
+  return {
+    datasetId,
+    filename,
+    ...(memoryWriter ? { data: content } : {}),
+  };
 }

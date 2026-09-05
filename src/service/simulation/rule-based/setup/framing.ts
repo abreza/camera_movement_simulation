@@ -15,6 +15,7 @@ const FRAME_MARGIN = 0.03;
 const MAX_FRAMING_ITERATIONS = 12;
 const THIRD_CENTER = 2 / 3;
 const MAX_CAMERA_DISTANCE_FROM_TARGET = 1000;
+const aimingCamera = new THREE.PerspectiveCamera();
 
 function positionAtDistanceAboveFloor(
   targetPosition: THREE.Vector3,
@@ -52,47 +53,34 @@ function getTargetCenter(
   bounds: ProjectedBounds,
   position: SubjectInFramePosition
 ): THREE.Vector2 {
-  const positions: Record<SubjectInFramePosition, THREE.Vector2> = {
-    [SubjectInFramePosition.Center]: new THREE.Vector2(0, 0),
-    [SubjectInFramePosition.Left]: new THREE.Vector2(-THIRD_CENTER, 0),
-    [SubjectInFramePosition.Right]: new THREE.Vector2(THIRD_CENTER, 0),
-    [SubjectInFramePosition.Top]: new THREE.Vector2(0, THIRD_CENTER),
-    [SubjectInFramePosition.Bottom]: new THREE.Vector2(0, -THIRD_CENTER),
-    [SubjectInFramePosition.TopLeft]: new THREE.Vector2(
-      -THIRD_CENTER,
-      THIRD_CENTER
-    ),
-    [SubjectInFramePosition.TopRight]: new THREE.Vector2(
-      THIRD_CENTER,
-      THIRD_CENTER
-    ),
-    [SubjectInFramePosition.BottomLeft]: new THREE.Vector2(
-      -THIRD_CENTER,
-      -THIRD_CENTER
-    ),
-    [SubjectInFramePosition.BottomRight]: new THREE.Vector2(
-      THIRD_CENTER,
-      -THIRD_CENTER
-    ),
-    [SubjectInFramePosition.OuterLeft]: new THREE.Vector2(
-      -1 - bounds.width / 4,
-      0
-    ),
-    [SubjectInFramePosition.OuterRight]: new THREE.Vector2(
-      1 + bounds.width / 4,
-      0
-    ),
-    [SubjectInFramePosition.OuterTop]: new THREE.Vector2(
-      0,
-      1 + bounds.height / 4
-    ),
-    [SubjectInFramePosition.OuterBottom]: new THREE.Vector2(
-      0,
-      -1 - bounds.height / 4
-    ),
-  };
-
-  return positions[position].clone();
+  switch (position) {
+    case SubjectInFramePosition.Center:
+      return new THREE.Vector2(0, 0);
+    case SubjectInFramePosition.Left:
+      return new THREE.Vector2(-THIRD_CENTER, 0);
+    case SubjectInFramePosition.Right:
+      return new THREE.Vector2(THIRD_CENTER, 0);
+    case SubjectInFramePosition.Top:
+      return new THREE.Vector2(0, THIRD_CENTER);
+    case SubjectInFramePosition.Bottom:
+      return new THREE.Vector2(0, -THIRD_CENTER);
+    case SubjectInFramePosition.TopLeft:
+      return new THREE.Vector2(-THIRD_CENTER, THIRD_CENTER);
+    case SubjectInFramePosition.TopRight:
+      return new THREE.Vector2(THIRD_CENTER, THIRD_CENTER);
+    case SubjectInFramePosition.BottomLeft:
+      return new THREE.Vector2(-THIRD_CENTER, -THIRD_CENTER);
+    case SubjectInFramePosition.BottomRight:
+      return new THREE.Vector2(THIRD_CENTER, -THIRD_CENTER);
+    case SubjectInFramePosition.OuterLeft:
+      return new THREE.Vector2(-1 - bounds.width / 4, 0);
+    case SubjectInFramePosition.OuterRight:
+      return new THREE.Vector2(1 + bounds.width / 4, 0);
+    case SubjectInFramePosition.OuterTop:
+      return new THREE.Vector2(0, 1 + bounds.height / 4);
+    case SubjectInFramePosition.OuterBottom:
+      return new THREE.Vector2(0, -1 - bounds.height / 4);
+  }
 }
 
 function getVisibilityCompatiblePosition(
@@ -201,22 +189,21 @@ function aimAtTarget(
   cameraParams: CameraParameters,
   targetPosition: THREE.Vector3
 ): void {
-  const camera = new THREE.PerspectiveCamera();
-  camera.position.copy(cameraParams.position);
+  aimingCamera.position.copy(cameraParams.position);
   const forward = targetPosition.clone().sub(cameraParams.position).normalize();
-  camera.up.set(0, 1, 0);
-  if (Math.abs(forward.dot(camera.up)) > 0.999) {
-    camera.up.set(0, 0, 1);
+  aimingCamera.up.set(0, 1, 0);
+  if (Math.abs(forward.dot(aimingCamera.up)) > 0.999) {
+    aimingCamera.up.set(0, 0, 1);
   }
-  camera.lookAt(targetPosition);
-  cameraParams.rotation.copy(camera.rotation);
+  aimingCamera.lookAt(targetPosition);
+  cameraParams.rotation.copy(aimingCamera.rotation);
 }
 
 function moveBackToFit(
   cameraParams: CameraParameters,
   targetPosition: THREE.Vector3,
   bounds: ProjectedBounds
-): void {
+): boolean {
   const availableWidth = Math.max(
     1e-6,
     2 * (1 - FRAME_MARGIN - Math.abs(bounds.center.x))
@@ -237,7 +224,7 @@ function moveBackToFit(
     bounds.allInFront ? 1 : 2
   );
 
-  if (fitRatio <= 1 + 1e-6) return;
+  if (fitRatio <= 1 + 1e-6) return false;
 
   let away = cameraParams.position.clone().sub(targetPosition);
   if (away.lengthSq() < 1e-8) {
@@ -252,6 +239,7 @@ function moveBackToFit(
     positionAtDistanceAboveFloor(targetPosition, away, nextDistance)
   );
   aimAtTarget(cameraParams, targetPosition);
+  return true;
 }
 
 function ensureBoundingSphereDistance(
@@ -365,13 +353,15 @@ export function fixSubjectInView(
     );
   }
 
+  // A projection stays valid until the camera pose changes, including across
+  // iterations and when the distance already fits the requested frame.
+  let bounds = projectBoundingBox(
+    subjectDimensions,
+    subjectPosition,
+    updated,
+    subjectRotation
+  );
   for (let iteration = 0; iteration < MAX_FRAMING_ITERATIONS; iteration++) {
-    let bounds = projectBoundingBox(
-      subjectDimensions,
-      subjectPosition,
-      updated,
-      subjectRotation
-    );
 
     const hasUsableProjection =
       bounds.allInFront &&
@@ -385,6 +375,12 @@ export function fixSubjectInView(
       } else {
         aimAtTarget(updated, subjectPosition);
       }
+      bounds = projectBoundingBox(
+        subjectDimensions,
+        subjectPosition,
+        updated,
+        subjectRotation
+      );
       continue;
     }
 
@@ -404,8 +400,11 @@ export function fixSubjectInView(
       updated,
       subjectRotation
     );
-    if (ensureFullyVisible && adjustDistance) {
-      moveBackToFit(updated, subjectPosition, bounds);
+    if (
+      ensureFullyVisible &&
+      adjustDistance &&
+      moveBackToFit(updated, subjectPosition, bounds)
+    ) {
       bounds = projectBoundingBox(
         subjectDimensions,
         subjectPosition,
@@ -433,13 +432,7 @@ export function fixSubjectInView(
   }
 
   if (ensureFullyVisible && adjustDistance) {
-    const finalBounds = projectBoundingBox(
-      subjectDimensions,
-      subjectPosition,
-      updated,
-      subjectRotation
-    );
-    if (!isProjectedBoundsFullyVisible(finalBounds)) {
+    if (!isProjectedBoundsFullyVisible(bounds)) {
       throw new Error(
         "Unable to fit the complete subject bounds inside the requested frame"
       );

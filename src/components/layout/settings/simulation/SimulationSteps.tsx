@@ -221,8 +221,8 @@ export const SimulationSteps: FC = () => {
       <Stack
         direction="row"
         spacing={1.5}
-        justifyContent="space-between"
         sx={{
+          justifyContent: "space-between",
           mt: 3,
           pt: 2,
           borderTop: `1px solid ${alpha("#FFFFFF", 0.06)}`,

@@ -128,7 +128,7 @@ export const LowLevelTab: FC = () => {
       </Button>
 
       {instructions.length > 0 && (
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton
             color="primary"
             onClick={handleDownload}
