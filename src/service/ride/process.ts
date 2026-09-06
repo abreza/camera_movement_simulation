@@ -10,7 +10,7 @@ import { DEFAULT_ASPECT_RATIO } from "@/service/simulation/constants";
 import { objectSizes } from "@/service/subjects/constants";
 import { translatePromptToSimulationInstruction } from "../simulation/instruction/high-level/translator";
 import { simulatedPrompts } from "./constant";
-import { optimizeCameraParameters } from "../simulation/optimization";
+import { generateCameraParameters } from "../simulation/rule-based/sequence";
 
 export enum RideDataSource {
   CSV = "csv",
@@ -315,7 +315,7 @@ function generateSimulatedCameraFrames(
         ? allCameraFrames[allCameraFrames.length - 1]
         : undefined;
 
-    const newFrames = optimizeCameraParameters(
+    const newFrames = generateCameraParameters(
       instruction,
       startCameraParameter,
       subjectInfoSegment

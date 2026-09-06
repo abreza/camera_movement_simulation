@@ -30,6 +30,12 @@ export const movementGenerators: Record<string, MovementGenerator> = {
 
 const COLLISION_MARGIN = 0.2;
 const POSITION_EPSILON = 1e-7;
+// Derive headings in clip time, independently of the export's frame count.
+// Sparse, linearly interpolated control points otherwise create brief turns
+// that become large sweeps when a camera follows at a distance.
+const HEADING_REFERENCE_FRAME_COUNT = 513;
+const TARGET_YAW_TRAVEL_PER_CLIP = 4 * Math.PI;
+const MINIMUM_LINEAR_TIME_SHARE = 0.1;
 const GROUND_MOVEMENT_TYPES = new Set([
   "linear",
   "circular",
@@ -83,7 +89,8 @@ function warpProgress(
 function resampleFrames(
   frames: SubjectFrame[],
   frameCount: number,
-  timing?: RandomizationSettings["timing"]
+  timing?: RandomizationSettings["timing"],
+  smoothPositions = false
 ): SubjectFrame[] {
   if (frames.length === 0 || frameCount <= 0) {
     return [];
@@ -114,10 +121,37 @@ function resampleFrames(
       upperFrame.rotation
     );
 
-    return {
-      position: lowerFrame.position
+    let position = lowerFrame.position
+      .clone()
+      .lerp(upperFrame.position, interpolation);
+    if (smoothPositions && lowerIndex !== upperIndex) {
+      // Cubic Hermite interpolation follows the authored control points while
+      // sharing a tangent across each boundary. Linear interpolation changes
+      // velocity instantaneously at every one of the 30 source frames.
+      const previousPosition = frames[Math.max(0, lowerIndex - 1)].position;
+      const nextPosition =
+        frames[Math.min(frames.length - 1, upperIndex + 1)].position;
+      const startTangent = upperFrame.position
         .clone()
-        .lerp(upperFrame.position, interpolation),
+        .sub(previousPosition)
+        .multiplyScalar(lowerIndex === 0 ? 1 : 0.5);
+      const endTangent = nextPosition
+        .clone()
+        .sub(lowerFrame.position)
+        .multiplyScalar(upperIndex === frames.length - 1 ? 1 : 0.5);
+      const t = interpolation;
+      const t2 = t * t;
+      const t3 = t2 * t;
+      position = lowerFrame.position
+        .clone()
+        .multiplyScalar(2 * t3 - 3 * t2 + 1)
+        .addScaledVector(startTangent, t3 - 2 * t2 + t)
+        .addScaledVector(upperFrame.position, -2 * t3 + 3 * t2)
+        .addScaledVector(endTangent, t3 - t2);
+    }
+
+    return {
+      position,
       rotation: new THREE.Euler().setFromQuaternion(
         lowerRotation.slerp(upperRotation, interpolation),
         lowerFrame.rotation.order
@@ -375,24 +409,32 @@ function movePathBeyondPriorBounds(
 }
 
 function orientAlongVelocity(frames: SubjectFrame[]): void {
-  let previousYaw: number | undefined;
-
-  frames.forEach((frame, frameIndex) => {
+  const yawAt = (frameIndex: number): number | undefined => {
     const previousFrame = frames[Math.max(0, frameIndex - 1)];
     const nextFrame = frames[Math.min(frames.length - 1, frameIndex + 1)];
     const deltaX = nextFrame.position.x - previousFrame.position.x;
     const deltaZ = nextFrame.position.z - previousFrame.position.z;
+    return deltaX * deltaX + deltaZ * deltaZ > POSITION_EPSILON ** 2
+      ? Math.atan2(-deltaX, -deltaZ)
+      : undefined;
+  };
+  // A stopped/slow start must inherit the first travel heading, rather than
+  // retaining an unrelated authored rotation until a displacement threshold
+  // is crossed (which previously produced near-180-degree first-frame turns).
+  let initialYaw: number | undefined;
+  for (let index = 0; index < frames.length && initialYaw === undefined; index++) {
+    initialYaw = yawAt(index);
+  }
+  if (initialYaw === undefined) return;
+  let previousYaw = initialYaw;
 
-    if (deltaX * deltaX + deltaZ * deltaZ <= POSITION_EPSILON) return;
-
+  frames.forEach((frame, frameIndex) => {
     // SubjectView defines the subject's front as local -Z. Rotate that axis
     // onto the direction of travel (using +Z here would make cars/bicycles
     // drive backwards while their trajectory itself looked valid).
-    let yaw = Math.atan2(-deltaX, -deltaZ);
-    if (previousYaw !== undefined) {
-      while (yaw - previousYaw > Math.PI) yaw -= Math.PI * 2;
-      while (yaw - previousYaw < -Math.PI) yaw += Math.PI * 2;
-    }
+    let yaw = yawAt(frameIndex) ?? previousYaw;
+    while (yaw - previousYaw > Math.PI) yaw -= Math.PI * 2;
+    while (yaw - previousYaw < -Math.PI) yaw += Math.PI * 2;
 
     // Ground-object motion has yaw only. Quaternion resampling across a ±π
     // yaw wrap may produce the equivalent Euler representation (π, y, π);
@@ -400,6 +442,63 @@ function orientAlongVelocity(frames: SubjectFrame[]): void {
     // after assigning the correct heading.
     frame.rotation.set(0, yaw, 0, frame.rotation.order);
     previousYaw = yaw;
+  });
+}
+
+/**
+ * Give tight corners more clip time while retaining the path and its travel
+ * heading. Capping yaw alone makes vehicles slide sideways through turns.
+ * A 4π/clip rate is at most 24.83 degrees per 30-frame interval. Paths with
+ * more total turning necessarily need a larger budget; reserve 10% of time
+ * for forward progress so straight sections cannot become instantaneous.
+ */
+function sampleTurnAwareFrames(
+  frames: SubjectFrame[],
+  frameCount: number
+): SubjectFrame[] {
+  if (frames.length < 2 || frameCount <= 1) {
+    return resampleFrames(frames, frameCount);
+  }
+  const cumulativeTurning = [0];
+  for (let index = 1; index < frames.length; index++) {
+    cumulativeTurning.push(
+      cumulativeTurning[index - 1] +
+        Math.abs(frames[index].rotation.y - frames[index - 1].rotation.y)
+    );
+  }
+  const totalTurning = cumulativeTurning[frames.length - 1];
+  const yawRate = Math.max(
+    TARGET_YAW_TRAVEL_PER_CLIP,
+    totalTurning / (1 - MINIMUM_LINEAR_TIME_SHARE)
+  );
+  const linearTimeShare = 1 - totalTurning / yawRate;
+  const times = cumulativeTurning.map(
+    (turning, index) =>
+      turning / yawRate + (linearTimeShare * index) / (frames.length - 1)
+  );
+  let upperIndex = 1;
+  return Array.from({ length: frameCount }, (_, index) => {
+    const time = index / (frameCount - 1);
+    while (upperIndex < frames.length - 1 && times[upperIndex] < time) {
+      upperIndex++;
+    }
+    const lowerIndex = upperIndex - 1;
+    const interpolation = clamp(
+      (time - times[lowerIndex]) / (times[upperIndex] - times[lowerIndex]),
+      0,
+      1
+    );
+    const lower = frames[lowerIndex];
+    const upper = frames[upperIndex];
+    return {
+      position: lower.position.clone().lerp(upper.position, interpolation),
+      rotation: new THREE.Euler(
+        0,
+        lower.rotation.y + (upper.rotation.y - lower.rotation.y) * interpolation,
+        0,
+        lower.rotation.order
+      ),
+    };
   });
 }
 
@@ -493,10 +592,13 @@ export function generateFrames(
       subjects.length,
       subjectRandomSettings
     );
+    const isVelocityOriented = VELOCITY_ORIENTED_MOVEMENT_TYPES.has(movementType);
+    const outputFrameCount = frameCount ?? generatedFrames.length;
     const baseFrames = resampleFrames(
       generatedFrames,
-      frameCount ?? generatedFrames.length,
-      subjectRandomSettings?.timing
+      isVelocityOriented ? HEADING_REFERENCE_FRAME_COUNT : outputFrameCount,
+      subjectRandomSettings?.timing,
+      isVelocityOriented
     );
 
     const isGroundedMovement = GROUND_MOVEMENT_TYPES.has(movementType);
@@ -515,7 +617,7 @@ export function generateFrames(
       : baseFrames;
     const minimumY = subject.dimensions.height / 2;
 
-    return positionNoisyFrames.map((frame) => ({
+    let frames = positionNoisyFrames.map((frame) => ({
       position: new THREE.Vector3(
         frame.position.x,
         isGroundedMovement
@@ -525,30 +627,25 @@ export function generateFrames(
       ),
       rotation: frame.rotation.clone(),
     }));
-  });
-
-  const collisionFreePaths = ensureCollisionFreeSubjectFrames(
-    paths,
-    subjects,
-    movements
-  );
-  return collisionFreePaths.map((frames, subjectIndex) => {
-    const movementType = movements[subjects[subjectIndex].id] || "circular";
     // Ground paths represent vehicles/ bicycles and face along their travel
     // direction.  Specialized paths already author their own orientation:
     // e.g. a pendulum remains smoothly oriented through a turnaround and a
     // bounce carries pitch. Replacing those rotations with instantaneous
     // velocity yaw caused a π flip whenever velocity crossed zero.
-    if (VELOCITY_ORIENTED_MOVEMENT_TYPES.has(movementType)) {
+    if (isVelocityOriented) {
       orientAlongVelocity(frames);
     }
-    if (!applyNoise || movementType === "static") return frames;
-
-    return addMovementNoise(frames, {
-      positionAmplitude: 0,
-      rotationAmplitude: noiseParams.rotationAmplitude,
-      frequency: noiseParams.frequency,
-      grounded: GROUND_MOVEMENT_TYPES.has(movementType),
-    });
+    if (applyNoise && movementType !== "static") {
+      frames = addMovementNoise(frames, {
+        positionAmplitude: 0,
+        rotationAmplitude: noiseParams.rotationAmplitude,
+        frequency: noiseParams.frequency,
+        grounded: isGroundedMovement,
+      });
+    }
+    return isVelocityOriented
+      ? sampleTurnAwareFrames(frames, outputFrameCount)
+      : frames;
   });
+  return ensureCollisionFreeSubjectFrames(paths, subjects, movements);
 }

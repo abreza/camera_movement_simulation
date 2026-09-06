@@ -3,7 +3,7 @@ import { RootState } from "../store";
 import { ObjectClass, SubjectInfo } from "@/service/subjects/types";
 import { generateSubjects } from "@/service/subjects/generateSubjects";
 import { generateFrames } from "@/service/subjects/movements";
-import { calculateCameraPositions } from "@/service/simulation/optimization";
+import { calculateCameraPositions } from "@/service/simulation/rule-based/sequence";
 import { handleDownloadSimulationData } from "@/utils/simulationUtils";
 import {
   setSubjects,
@@ -136,6 +136,7 @@ export const renderSimulationDataThunk = createAsyncThunk(
       const frames = calculateCameraPositions(instructions, subjectsInfo);
 
       dispatch(setCameraFrames(frames));
+      dispatch(setCurrentFrame(0));
       dispatch(setIsRendering(true));
 
       return frames;
@@ -157,6 +158,7 @@ export const downloadSimulationDataThunk = createAsyncThunk(
       const frames = calculateCameraPositions(instructions, subjectsInfo);
 
       dispatch(setCameraFrames(frames));
+      dispatch(setCurrentFrame(0));
 
       const simulationData = {
         subjectsInfo,

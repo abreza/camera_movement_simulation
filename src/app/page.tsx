@@ -104,11 +104,12 @@ const CameraMovementSimulation: FC = () => {
   const render = useCallback(() => {
     if (!rendererRef.current) return;
     const frame = cameraFrames[currentFrame];
+    if (!frame) return;
 
     const subjectFrameInfo: SubjectFrameInfo[] = subjectsInfo.map(
       ({ subject, frames }) => ({
         subject,
-        frame: frames?.[currentFrame],
+        frame: frames?.[Math.min(currentFrame, frames.length - 1)],
       })
     );
 

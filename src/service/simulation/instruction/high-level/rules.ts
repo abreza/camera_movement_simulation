@@ -2,6 +2,7 @@ import {
   CameraMovementType,
   CameraVerticalAngle,
   CinematographyPrompt,
+  MovementSpeed,
   ShotSize,
   SetupConfig,
   SubjectInFramePosition,
@@ -120,6 +121,19 @@ export function normalizeCinematographyPrompt(
     prompt.initial && !hasMeaningfulInitialSetup
       ? promptWithoutInitial
       : prompt;
+
+  if (promptWithNormalizedInitial.movement.type === CameraMovementType.Static) {
+    // A locked camera has zero velocity throughout the clip. Speed variation
+    // cannot be observed, so keep one canonical label/easing for generation
+    // and manually entered prompts alike.
+    promptWithNormalizedInitial = {
+      ...promptWithNormalizedInitial,
+      movement: {
+        ...promptWithNormalizedInitial.movement,
+        speed: MovementSpeed.Constant,
+      },
+    };
+  }
 
   if (promptWithNormalizedInitial.initial) {
     const movementType = promptWithNormalizedInitial.movement.type;

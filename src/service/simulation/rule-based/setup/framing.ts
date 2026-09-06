@@ -172,6 +172,39 @@ function aimAtNdcPosition(
     targetCenter.y * Math.tan(fov.vertical / 2),
     -1
   ).normalize();
+  const targetDirection = targetPosition
+    .clone()
+    .sub(cameraParams.position)
+    .normalize();
+  const pitchRadius = Math.hypot(localTargetRay.y, localTargetRay.z);
+  const pitchSine = targetDirection.y / pitchRadius;
+
+  // Solve R_y(yaw) R_x(pitch) * localTargetRay = targetDirection.
+  // Keeping roll at zero in this world-up basis prevents an off-center
+  // subject from tilting the horizon when the camera looks up or down.
+  if (
+    targetDirection.lengthSq() > 1e-12 &&
+    Math.abs(pitchSine) <= 1
+  ) {
+    const pitch = Math.asin(pitchSine) -
+      Math.atan2(localTargetRay.y, -localTargetRay.z);
+    if (Math.abs(pitch) < Math.PI / 2 - 1e-6) {
+      const pitchedRayZ = localTargetRay.y * Math.sin(pitch) +
+        localTargetRay.z * Math.cos(pitch);
+      const yaw = Math.atan2(targetDirection.x, targetDirection.z) -
+        Math.atan2(localTargetRay.x, pitchedRayZ);
+      cameraParams.rotation.setFromQuaternion(
+        new THREE.Quaternion().setFromEuler(
+          new THREE.Euler(pitch, yaw, 0, "YXZ")
+        )
+      );
+      return;
+    }
+  }
+
+  // Near a vertical view, the requested off-axis ray may have no solution
+  // with a level horizon. Preserve the established pole orientation and
+  // exact framing using the direct ray alignment in that case.
   const localForward = new THREE.Vector3(0, 0, -1);
   const framingRotation = new THREE.Quaternion().setFromUnitVectors(
     localTargetRay,

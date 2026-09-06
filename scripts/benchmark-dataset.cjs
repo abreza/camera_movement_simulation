@@ -111,7 +111,11 @@ async function main() {
   }, null, 2));
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+module.exports = { loadDatasetGenerator };
+
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

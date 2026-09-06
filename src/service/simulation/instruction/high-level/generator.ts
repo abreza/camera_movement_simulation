@@ -164,8 +164,10 @@ const formatInstruction = (
     } portion of the frame.`;
 
   text +=
-    `\nApply a ${cameraMovementTypeLabels[movement.type]} movement ` +
-    `with ${movementSpeedLabels[movement.speed]} speed.`;
+    movement.type === CameraMovementType.Static
+      ? "\nKeep the camera stationary."
+      : `\nApply a ${cameraMovementTypeLabels[movement.type]} movement ` +
+        `with ${movementSpeedLabels[movement.speed]} speed.`;
 
   const hasEndSetup = Object.keys(final).length > 0;
   if (hasEndSetup) {

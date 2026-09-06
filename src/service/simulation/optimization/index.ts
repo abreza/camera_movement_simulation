@@ -1,48 +1,6 @@
-import { CameraParameters, SimulationInstruction } from "../instruction/types";
-import { SubjectInfo } from "../../subjects/types";
-import { initCameraParameters } from "../rule-based";
-
-export const optimizeCameraParameters = (
-  instruction: SimulationInstruction,
-  startCameraParameter?: CameraParameters,
-  subjectInfo?: SubjectInfo
-): CameraParameters[] => {
-  if (!subjectInfo?.frames?.length) {
-    return [];
-  }
-
-  let frames = initCameraParameters(
-    instruction,
-    startCameraParameter,
-    subjectInfo
-  );
-
-  return frames;
-};
-
-export const calculateCameraPositions = (
-  instructions: SimulationInstruction[],
-  subjectsInfo: SubjectInfo[]
-): CameraParameters[] => {
-  let cameraFrames: CameraParameters[] = [];
-  let currentFrameNumber = 0;
-
-  instructions.forEach((instruction) => {
-    const subjectInfo = subjectsInfo[instruction.subjectIndex || 0];
-    const startCameraParameter =
-      cameraFrames.length > 0
-        ? cameraFrames[cameraFrames.length - 1]
-        : undefined;
-
-    const frames = optimizeCameraParameters(
-      instruction,
-      startCameraParameter,
-      subjectInfo
-    );
-
-    cameraFrames = [...cameraFrames, ...frames];
-    currentFrameNumber += frames.length;
-  });
-
-  return cameraFrames;
-};
+// Compatibility for older imports. All generation uses camera rules;
+// there is no optimization pass or numerical solver.
+export {
+  calculateCameraPositions,
+  generateCameraParameters as optimizeCameraParameters,
+} from "../rule-based/sequence";

@@ -192,12 +192,16 @@ export const initCameraParameters = (
         instruction.setup.kind === "init" ? startSubjectFrame : endSubjectFrame
       );
 
+    // A preceding shot supplies a start pose. Treating it as an end anchor
+    // runs a simple movement backwards first and jumps at the shot boundary.
+    // Continuity takes precedence over an end-only setup when chaining shots.
+    const movementKind = startCameraParameter ? "init" : instruction.setup.kind;
     frames = moveByEasing(
       startParams,
       instruction.dynamic,
       easedT,
       subjectFrames,
-      instruction.setup.kind,
+      movementKind,
       subjectInfo.subject,
       instruction.setup.config.shotSize
     );

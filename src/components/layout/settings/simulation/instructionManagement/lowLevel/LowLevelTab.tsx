@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import React, { FC, useState } from "react";
 import {
   Box,
   Button,
@@ -39,8 +39,21 @@ const isSetupConfigEmpty = (config: SetupConfig | undefined): boolean => {
   });
 };
 
+const getSimulationErrorMessage = (error: unknown, fallback: string): string => {
+  if (
+    error !== null &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+  return fallback;
+};
+
 export const LowLevelTab: FC = () => {
   const dispatch = useAppDispatch();
+  const [isPending, setIsPending] = useState(false);
   const instructions = useAppSelector(
     (state) => state.instructions.instructions
   );
@@ -88,13 +101,29 @@ export const LowLevelTab: FC = () => {
     );
   };
 
-  const handleRender = () => {
-    dispatch(renderSimulationDataThunk());
-    dispatch(setSidebarOpen(false));
+  const handleRender = async () => {
+    if (isPending) return;
+    setIsPending(true);
+    try {
+      await dispatch(renderSimulationDataThunk()).unwrap();
+      dispatch(setSidebarOpen(false));
+    } catch (error) {
+      toast.error(getSimulationErrorMessage(error, "Unable to render simulation."));
+    } finally {
+      setIsPending(false);
+    }
   };
 
-  const handleDownload = () => {
-    dispatch(downloadSimulationDataThunk());
+  const handleDownload = async () => {
+    if (isPending) return;
+    setIsPending(true);
+    try {
+      await dispatch(downloadSimulationDataThunk()).unwrap();
+    } catch (error) {
+      toast.error(getSimulationErrorMessage(error, "Unable to download simulation."));
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
@@ -121,6 +150,7 @@ export const LowLevelTab: FC = () => {
         color="primary"
         fullWidth
         onClick={handleAddOrUpdate}
+        disabled={isPending}
         sx={{ mb: 2 }}
         size="small"
       >
@@ -132,6 +162,7 @@ export const LowLevelTab: FC = () => {
           <IconButton
             color="primary"
             onClick={handleDownload}
+            disabled={isPending}
             size="small"
             aria-label="Download simulation data"
           >
@@ -141,6 +172,7 @@ export const LowLevelTab: FC = () => {
             variant="contained"
             color="warning"
             onClick={handleRender}
+            disabled={isPending}
             sx={{ flexGrow: 1 }}
             size="small"
           >

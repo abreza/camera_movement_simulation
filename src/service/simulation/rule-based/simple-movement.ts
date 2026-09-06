@@ -8,11 +8,8 @@ import {
 } from "../instruction/types";
 import { Subject, SubjectFrame } from "../../subjects/types";
 import { SCALE_FACTORS } from "../instruction/constants";
-import { sampleGaussian } from "../utils";
 import { MIN_CAMERA_HEIGHT } from "../constants";
 import { calculateRegionOfInterest } from "./setup/roi";
-
-const SCALE_STD_DEV_PERCENTAGE = 0.2;
 
 function positionAtDistanceAboveFloor(
   subjectPosition: THREE.Vector3,
@@ -64,12 +61,9 @@ export const moveByEasing = (
   subject?: Subject,
   shotSize?: ShotSize
 ): CameraParameters[] => {
-  const meanScaleFactor = SCALE_FACTORS[movement.scale];
-  const stdDev = meanScaleFactor * SCALE_STD_DEV_PERCENTAGE;
-  const scaleFactor = Math.max(
-    meanScaleFactor * 0.1,
-    sampleGaussian(meanScaleFactor, stdDev)
-  );
+  // The authored scale is stable across preview, render, and export.
+  // Dataset diversity comes from its seeded instruction/subject generation.
+  const scaleFactor = SCALE_FACTORS[movement.scale];
 
   const frames: CameraParameters[] = [];
 

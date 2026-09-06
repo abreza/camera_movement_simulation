@@ -20,7 +20,7 @@ import {
 import { ObjectClass, Subject, SubjectInfo } from "@/service/subjects/types";
 import { generateRandomCinematographyPrompt } from "../simulation/instruction/high-level/generator";
 import { generateFrames } from "@/service/subjects/movements";
-import { calculateCameraPositions } from "../simulation/optimization";
+import { calculateCameraPositions } from "../simulation/rule-based/sequence";
 import {
   DATASET_FLOAT_FACTOR,
   formatSimulationData,
@@ -44,6 +44,11 @@ import {
 } from "./finalSetup";
 import { projectBoundingBox } from "../simulation/utils";
 import { isProjectedBoundsFullyVisible } from "../simulation/rule-based/setup/framing";
+import {
+  DATASET_TRAJECTORY_QUALITY_POLICY,
+  DatasetTrajectoryQualityError,
+  validateDatasetTrajectory,
+} from "./quality";
 
 export type DatasetProgressPhase = "generating" | "zipping";
 
@@ -104,7 +109,7 @@ const DATASET_SUBJECT_CLASSES = Object.values(ObjectClass);
 const DATASET_SUBJECT_CLASS_SET = new Set<string>(DATASET_SUBJECT_CLASSES);
 const CHUNK_SIZE = 10000;
 const MAIN_THREAD_TIME_BUDGET_MS = 16;
-const MAX_OBSERVABLE_CAMERA_ATTEMPTS = 50;
+const MAX_DATASET_CAMERA_ATTEMPTS = 50;
 
 type EffectiveNoiseConfig = Required<
   NonNullable<GenerateDatasetConfig["noiseConfig"]>
@@ -530,6 +535,11 @@ export async function buildRandomDatasetArchive(
   const realizedSubjectClassCounts = Object.fromEntries(
     DATASET_SUBJECT_CLASSES.map((objectClass) => [objectClass, 0])
   ) as Record<ObjectClass, number>;
+  const realizedCameraMovementCounts: Partial<Record<CameraMovementType, number>> = {};
+  const rejectedCameraCandidates: Record<string, number> = {};
+  const recordRejectedCandidate = (reason: string) => {
+    rejectedCameraCandidates[reason] = (rejectedCameraCandidates[reason] ?? 0) + 1;
+  };
   let staticClassIndex = 0;
   let dynamicClassIndex = 0;
 
@@ -627,7 +637,7 @@ export async function buildRandomDatasetArchive(
     let labelingError: unknown;
     for (
       let attempt = 0;
-      attempt < MAX_OBSERVABLE_CAMERA_ATTEMPTS;
+      attempt < MAX_DATASET_CAMERA_ATTEMPTS;
       attempt++
     ) {
       operationCount++;
@@ -643,6 +653,7 @@ export async function buildRandomDatasetArchive(
         labelingError = new Error(
           `${candidatePrompt.movement.type} requires a moving subject`
         );
+        recordRejectedCandidate("tracking-requires-moving-subject");
         continue;
       }
       try {
@@ -668,6 +679,10 @@ export async function buildRandomDatasetArchive(
         if (!exportedSubjectFrames?.length) {
           throw new Error("Dataset subject has no exported frames.");
         }
+        // Gate the exact stored geometry and LensCraft's nearest 30 paired
+        // frames. Relative camera limits alone do not prevent a distant
+        // camera from whipping around when its subject turns.
+        validateDatasetTrajectory(exportedCameraFrames, exportedSubject);
         if (
           candidateInstruction.constraints?.allFramesVisibility &&
           !exportedCameraFrames.every((camera, index) => {
@@ -706,11 +721,16 @@ export async function buildRandomDatasetArchive(
         break;
       } catch (error) {
         labelingError = error;
+        recordRejectedCandidate(
+          error instanceof DatasetTrajectoryQualityError
+            ? error.reason
+            : "camera-solver-or-endpoint"
+        );
       }
     }
     if (!prompt || !instruction || !cameraFrames || !observedInitial || !observedFinal) {
       throw new Error(
-        `Unable to generate an observable camera endpoint for dataset sample ${s} after ${MAX_OBSERVABLE_CAMERA_ATTEMPTS} attempts (${subjectMovement} subject).`,
+        `Unable to generate a camera trajectory meeting dataset quality and endpoint requirements for sample ${s} after ${MAX_DATASET_CAMERA_ATTEMPTS} attempts (${subjectMovement} subject).`,
         { cause: labelingError }
       );
     }
@@ -719,6 +739,8 @@ export async function buildRandomDatasetArchive(
       observedInitial,
       observedFinal
     );
+    realizedCameraMovementCounts[trajectoryPrompt.movement.type] =
+      (realizedCameraMovementCounts[trajectoryPrompt.movement.type] ?? 0) + 1;
     const cinematographyPrompts: CinematographyPrompt[] = [trajectoryPrompt];
     const realizedSimulationInstructions: SimulationInstruction[] = [
       alignInstructionSetupsWithTrajectory(
@@ -765,7 +787,7 @@ export async function buildRandomDatasetArchive(
 
   const manifest = {
     schemaVersion: 2,
-    generatorVersion: 2,
+    generatorVersion: 3,
     datasetId,
     generatedAt: generatedAt.toISOString(),
     seed,
@@ -776,7 +798,12 @@ export async function buildRandomDatasetArchive(
       subjectIndexStoredAsParameter: false,
       parameterValueTypes: ["string", "number", "boolean"],
       movementSampling: "largest-remainder-marginal",
-      cameraPromptSampling: "rejection-sampled-for-observable-endpoints",
+      cameraPromptSampling: "rejection-sampled-for-trajectory-quality-and-observable-endpoints",
+      staticCameraSpeed: "constant-with-linear-easing",
+      endpointFraming: "inner-labels-require-in-frame-center-no-diagonal-offscreen-labels",
+      cameraTrajectoryValidation: "quantized-source-and-nearest-30-frame-world-space",
+      cameraCollisionValidation: "camera-point-outside-oriented-subject-box-with-clearance",
+      subjectHeadingSource: "513-frame-cubic-path-and-turn-aware-retiming",
       initialSetupSource: "derived-from-first-camera-frame",
       finalSetupSource: "derived-from-last-camera-frame",
       instructionSetupSource: "derived-from-corresponding-camera-endpoints",
@@ -797,7 +824,10 @@ export async function buildRandomDatasetArchive(
     realized: {
       movementCounts: realizedMovementCounts,
       subjectClassCounts: realizedSubjectClassCounts,
+      cameraMovementCounts: realizedCameraMovementCounts,
+      rejectedCameraCandidates,
     },
+    quality: DATASET_TRAJECTORY_QUALITY_POLICY,
     encoding: {
       archiveRootDirectory: datasetId,
       simulationFilePattern: `simulation_${datasetId}_*.msgpack`,

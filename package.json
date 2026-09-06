@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test:simulation": "node --test scripts/test-simulation.cjs scripts/test-subject-heading.cjs scripts/test-dataset-quality.cjs scripts/test-dataset.cjs",
     "benchmark:dataset": "node scripts/benchmark-dataset.cjs"
   },
   "dependencies": {

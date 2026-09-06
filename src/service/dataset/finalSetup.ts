@@ -28,7 +28,17 @@ const THIRD_CENTER = 2 / 3;
 const CAMERA_ANGLES = Object.values(CameraVerticalAngle);
 const SUBJECT_VIEWS = Object.values(SubjectView);
 const SHOT_SIZES = Object.values(ShotSize);
-const FRAME_POSITIONS = Object.values(SubjectInFramePosition);
+const INNER_FRAME_POSITIONS = [
+  SubjectInFramePosition.Left,
+  SubjectInFramePosition.Right,
+  SubjectInFramePosition.Top,
+  SubjectInFramePosition.Bottom,
+  SubjectInFramePosition.Center,
+  SubjectInFramePosition.TopLeft,
+  SubjectInFramePosition.TopRight,
+  SubjectInFramePosition.BottomLeft,
+  SubjectInFramePosition.BottomRight,
+] as const;
 
 // These are the target NDC occupancies used by calculateRegionOfInterest.
 // Keeping the inverse classifier next to the dataset contract makes it clear
@@ -84,50 +94,69 @@ function isUsableProjection(bounds: ProjectedBounds): boolean {
   );
 }
 
-function getFramingTarget(
-  bounds: ProjectedBounds,
-  position: SubjectInFramePosition
-): THREE.Vector2 {
-  const targets: Record<SubjectInFramePosition, THREE.Vector2> = {
-    [SubjectInFramePosition.Center]: new THREE.Vector2(0, 0),
-    [SubjectInFramePosition.Left]: new THREE.Vector2(-THIRD_CENTER, 0),
-    [SubjectInFramePosition.Right]: new THREE.Vector2(THIRD_CENTER, 0),
-    [SubjectInFramePosition.Top]: new THREE.Vector2(0, THIRD_CENTER),
-    [SubjectInFramePosition.Bottom]: new THREE.Vector2(0, -THIRD_CENTER),
-    [SubjectInFramePosition.TopLeft]: new THREE.Vector2(
-      -THIRD_CENTER,
-      THIRD_CENTER
-    ),
-    [SubjectInFramePosition.TopRight]: new THREE.Vector2(
-      THIRD_CENTER,
-      THIRD_CENTER
-    ),
-    [SubjectInFramePosition.BottomLeft]: new THREE.Vector2(
-      -THIRD_CENTER,
-      -THIRD_CENTER
-    ),
-    [SubjectInFramePosition.BottomRight]: new THREE.Vector2(
-      THIRD_CENTER,
-      -THIRD_CENTER
-    ),
-    [SubjectInFramePosition.OuterLeft]: new THREE.Vector2(
-      -1 - bounds.width / 4,
-      0
-    ),
-    [SubjectInFramePosition.OuterRight]: new THREE.Vector2(
-      1 + bounds.width / 4,
-      0
-    ),
-    [SubjectInFramePosition.OuterTop]: new THREE.Vector2(
-      0,
-      1 + bounds.height / 4
-    ),
-    [SubjectInFramePosition.OuterBottom]: new THREE.Vector2(
-      0,
-      -1 - bounds.height / 4
-    ),
-  };
-  return targets[position];
+const INNER_FRAMING_TARGETS: Record<
+  (typeof INNER_FRAME_POSITIONS)[number],
+  THREE.Vector2
+> = {
+  [SubjectInFramePosition.Center]: new THREE.Vector2(0, 0),
+  [SubjectInFramePosition.Left]: new THREE.Vector2(-THIRD_CENTER, 0),
+  [SubjectInFramePosition.Right]: new THREE.Vector2(THIRD_CENTER, 0),
+  [SubjectInFramePosition.Top]: new THREE.Vector2(0, THIRD_CENTER),
+  [SubjectInFramePosition.Bottom]: new THREE.Vector2(0, -THIRD_CENTER),
+  [SubjectInFramePosition.TopLeft]: new THREE.Vector2(
+    -THIRD_CENTER,
+    THIRD_CENTER
+  ),
+  [SubjectInFramePosition.TopRight]: new THREE.Vector2(
+    THIRD_CENTER,
+    THIRD_CENTER
+  ),
+  [SubjectInFramePosition.BottomLeft]: new THREE.Vector2(
+    -THIRD_CENTER,
+    -THIRD_CENTER
+  ),
+  [SubjectInFramePosition.BottomRight]: new THREE.Vector2(
+    THIRD_CENTER,
+    -THIRD_CENTER
+  ),
+};
+
+/**
+ * Inner framing describes a projected center inside the image. The existing
+ * vocabulary has only four cardinal outer labels, so a center beyond two
+ * image edges cannot be represented faithfully and must be resampled.
+ */
+export function deriveSubjectFramingFromBounds(
+  bounds: ProjectedBounds
+): SubjectInFramePosition {
+  if (!isUsableProjection(bounds)) {
+    throw new Error("Cannot derive framing from an invalid subject projection.");
+  }
+
+  const horizontalOuter =
+    bounds.center.x < -1
+      ? SubjectInFramePosition.OuterLeft
+      : bounds.center.x > 1
+      ? SubjectInFramePosition.OuterRight
+      : undefined;
+  const verticalOuter =
+    bounds.center.y < -1
+      ? SubjectInFramePosition.OuterBottom
+      : bounds.center.y > 1
+      ? SubjectInFramePosition.OuterTop
+      : undefined;
+
+  if (horizontalOuter && verticalOuter) {
+    throw new Error(
+      "Cannot label a diagonal offscreen subject using the cardinal outer framing vocabulary."
+    );
+  }
+  if (horizontalOuter) return horizontalOuter;
+  if (verticalOuter) return verticalOuter;
+
+  return nearestValue(INNER_FRAME_POSITIONS, (position) =>
+    bounds.center.distanceToSquared(INNER_FRAMING_TARGETS[position])
+  );
 }
 
 /**
@@ -196,11 +225,7 @@ export function deriveCinematographySetupFromPose(
     );
   }
 
-  const subjectFraming = nearestValue(FRAME_POSITIONS, (position) =>
-    selectedShot.bounds.center.distanceToSquared(
-      getFramingTarget(selectedShot.bounds, position)
-    )
-  );
+  const subjectFraming = deriveSubjectFramingFromBounds(selectedShot.bounds);
 
   return {
     cameraAngle,
