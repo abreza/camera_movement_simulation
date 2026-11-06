@@ -1,0 +1,17 @@
+export const movementDisplayNames: Record<string, string> = {
+  walk: "Walk",
+  run: "Run",
+  wander: "Wander",
+  stopStart: "Stop and start",
+  sidestep: "Sidestep",
+  backward: "Walk backward",
+  turnInPlace: "Turn in place",
+  idle: "Idle",
+  static: "Static",
+  circular: "Circular",
+  zigzag: "Zigzag",
+  linear: "Linear",
+  spiral: "Spiral",
+  figureEight: "Figure eight",
+  wave: "Wave",
+};

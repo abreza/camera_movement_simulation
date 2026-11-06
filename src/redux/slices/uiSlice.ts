@@ -2,6 +2,8 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   DATASET_INSTRUCTION_COUNT,
   DATASET_SUBJECT_COUNT,
+  DEFAULT_DATASET_MOVEMENT_DISTRIBUTION,
+  DEFAULT_DATASET_SUBJECT_CLASS_PROBABILITIES,
   GenerateDatasetConfig,
   MAX_DATASET_FRAME_COUNT,
   MIN_DATASET_FRAME_COUNT,
@@ -34,17 +36,15 @@ const initialState: UIState = {
     instructionCount: DATASET_INSTRUCTION_COUNT,
     minFrameCount: MIN_DATASET_FRAME_COUNT,
     maxFrameCount: MAX_DATASET_FRAME_COUNT,
+    framesPerSecond: 30,
+    subjectClassProbabilities: {
+      ...DEFAULT_DATASET_SUBJECT_CLASS_PROBABILITIES,
+    },
     movementDistribution: {
-      circular: 1,
-      zigzag: 1,
-      linear: 1,
-      spiral: 1,
-      static: 1,
-      figureEight: 1,
-      wave: 1,
+      ...DEFAULT_DATASET_MOVEMENT_DISTRIBUTION,
     },
     noiseConfig: {
-      applyNoise: false,
+      applyNoise: true,
       positionAmplitude: 0.1,
       rotationAmplitude: 0.02,
       frequency: 0.5,

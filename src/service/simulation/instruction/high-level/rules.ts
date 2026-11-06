@@ -2,14 +2,14 @@ import {
   CameraMovementType,
   CameraVerticalAngle,
   CinematographyPrompt,
+  CinematographySetup,
   MovementSpeed,
   ShotSize,
-  SetupConfig,
   SubjectInFramePosition,
   SubjectView,
 } from "@/service/simulation/instruction/types";
 
-export const FINAL_SETUP_FIELDS: (keyof SetupConfig)[] = [
+export const FINAL_SETUP_FIELDS: (keyof CinematographySetup)[] = [
   "cameraAngle",
   "shotSize",
   "subjectView",
@@ -27,7 +27,7 @@ function hasMeaningfulSetup(
 
 type HighLevelInstructionRule = {
   simpleMovement?: boolean;
-  disabledFinalSetup?: (keyof SetupConfig)[];
+  disabledFinalSetup?: (keyof CinematographySetup)[];
 };
 
 const SIMPLE_MOVEMENT_RULE: HighLevelInstructionRule = {

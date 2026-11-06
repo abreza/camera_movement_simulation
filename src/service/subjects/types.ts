@@ -9,6 +9,7 @@ export enum ObjectClass {
   // Building = "building",
   Car = "car",
   Bicycle = "bicycle",
+  Human = "human",
 }
 
 export type SubjectDimensions = {
@@ -52,6 +53,8 @@ export type MovementGenerator = (
 
 export interface RandomizationSettings {
   enabled: boolean;
+  /** Physical clip duration for movements that use speeds in metres/second. */
+  durationSeconds?: number;
   positionOffset?: {
     x?: number;
     y?: number;

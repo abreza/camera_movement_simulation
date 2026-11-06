@@ -2,7 +2,8 @@ import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import { STLLoader } from "three/addons/loaders/STLLoader.js";
 import { ObjectClass } from "../subjects/types";
-import { modelPaths } from "../subjects/constants";
+import { modelPaths, ModelPaths } from "../subjects/constants";
+import { createHumanModel } from "./HumanModel";
 import * as THREE from "three";
 
 class ObjectModelLoader {
@@ -12,9 +13,9 @@ class ObjectModelLoader {
   > = {};
 
   private async loadOBJModel(
-    objectClass: ObjectClass
+    objectClass: ObjectClass,
+    { obj, material }: ModelPaths
   ): Promise<THREE.Object3D> {
-    const { obj, material } = modelPaths[objectClass];
 
     if (material) {
       const mtlLoader = new MTLLoader();
@@ -50,9 +51,9 @@ class ObjectModelLoader {
   }
 
   private async loadSTLModel(
-    objectClass: ObjectClass
+    objectClass: ObjectClass,
+    { obj }: ModelPaths
   ): Promise<THREE.Object3D> {
-    const { obj } = modelPaths[objectClass];
     const stlLoader = new STLLoader();
 
     const geometry = await new Promise<THREE.BufferGeometry>(
@@ -74,17 +75,25 @@ class ObjectModelLoader {
   }
 
   private async loadModel(objectClass: ObjectClass): Promise<THREE.Object3D> {
-    const { materialType } = modelPaths[objectClass];
+    // The procedural human has no asset URL and never starts a network load.
+    if (objectClass === ObjectClass.Human) {
+      const model = createHumanModel();
+      this.loadedModels[objectClass] = model;
+      return model;
+    }
+    const paths = modelPaths[objectClass];
+    if (!paths) throw new Error(`No model is registered for ${objectClass}`);
+    const { materialType } = paths;
 
     try {
       let object: THREE.Object3D;
 
       switch (materialType) {
         case "mtl":
-          object = await this.loadOBJModel(objectClass);
+          object = await this.loadOBJModel(objectClass, paths);
           break;
         case "stl":
-          object = await this.loadSTLModel(objectClass);
+          object = await this.loadSTLModel(objectClass, paths);
           break;
         default:
           throw new Error(`Unsupported material type: ${materialType}`);

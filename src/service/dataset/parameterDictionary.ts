@@ -162,6 +162,87 @@ export function updateParameterDictionary(
   return dictionary;
 }
 
+const NEGATIVE_ZERO = Symbol("parameter-negative-zero");
+const indexedValue = (value: ParameterValue): ParameterValue | symbol =>
+  Object.is(value, -0) ? NEGATIVE_ZERO : value;
+
+/**
+ * Per-archive append-only writer. Input is validated/cloned once; appending
+ * visits only the new object. `dictionary` is a borrowed live view: callers
+ * must not mutate it. Use snapshot() for an independently owned export.
+ */
+export class IndexedParameterDictionary {
+  readonly dictionary: ParameterDictionary;
+  private readonly keyIndices = new Map<string, number>();
+  private readonly valueIndices: Map<ParameterValue | symbol, number>[] = [];
+
+  constructor(initial: ParameterDictionary = createParameterDictionary()) {
+    assertValidParameterDictionary(initial);
+    this.dictionary = {
+      schemaVersion: initial.schemaVersion ?? PARAMETER_DICTIONARY_SCHEMA_VERSION,
+      ...(initial.datasetId ? { datasetId: initial.datasetId } : {}),
+      keys: [...initial.keys],
+      values: initial.values.map((values) => [...values]),
+    };
+    this.dictionary.keys.forEach((key, index) => {
+      this.keyIndices.set(key, index);
+      const values = new Map<ParameterValue | symbol, number>();
+      this.dictionary.values[index].forEach((value, valueIndex) => {
+        const identity = indexedValue(value);
+        // Existing dictionaries may contain duplicate values; the immutable
+        // reference API always points to the first Object.is match.
+        if (!values.has(identity)) values.set(identity, valueIndex);
+      });
+      this.valueIndices.push(values);
+    });
+  }
+
+  appendReference(object: unknown, path: string = ""): number[][] {
+    const entries: [string, ParameterValue][] = [];
+    const visit = (value: unknown, currentPath: string): void => {
+      if (typeof value === "number" && !Number.isFinite(value)) {
+        throw new Error(`Parameter ${currentPath} must be a finite number.`);
+      }
+      if (isParameterValue(value) && shouldSerializePath(currentPath)) {
+        entries.push([currentPath, value]);
+      } else if (Array.isArray(value)) {
+        value.forEach((item) => visit(item, currentPath));
+      } else if (value && typeof value === "object" &&
+        !(value as { isVector3?: boolean }).isVector3 &&
+        !(value as { isEuler?: boolean }).isEuler) {
+        Object.entries(value).forEach(([key, child]) =>
+          visit(child, currentPath ? `${currentPath}__${key}` : key));
+      }
+    };
+    // Collect first so a nonfinite new value cannot partially mutate the writer.
+    visit(object, path);
+    return entries.map(([key, value]) => {
+      let keyIndex = this.keyIndices.get(key);
+      if (keyIndex === undefined) {
+        keyIndex = this.dictionary.keys.length;
+        this.keyIndices.set(key, keyIndex);
+        this.dictionary.keys.push(key);
+        this.dictionary.values.push([]);
+        this.valueIndices.push(new Map());
+      }
+      const indices = this.valueIndices[keyIndex];
+      const identity = indexedValue(value);
+      let valueIndex = indices.get(identity);
+      if (valueIndex === undefined) {
+        valueIndex = this.dictionary.values[keyIndex].length;
+        indices.set(identity, valueIndex);
+        this.dictionary.values[keyIndex].push(value);
+      }
+      return [keyIndex, valueIndex];
+    });
+  }
+
+  snapshot(): ParameterDictionary {
+    return { ...this.dictionary, keys: [...this.dictionary.keys],
+      values: this.dictionary.values.map((values) => [...values]) };
+  }
+}
+
 export function reconstructFromReference(
   reference: number[][] | string,
   dictionary: ParameterDictionary

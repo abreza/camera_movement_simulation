@@ -16,19 +16,22 @@ import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
 import PedalBikeIcon from "@mui/icons-material/PedalBike";
 import ChairIcon from "@mui/icons-material/Chair";
 import LockIcon from "@mui/icons-material/Lock";
+import PersonIcon from "@mui/icons-material/Person";
+import { DATASET_MOVEMENT_TYPES } from "@/service/dataset/generate";
+import { isMovementSupportedForSubject } from "@/service/subjects/movements";
+import { movementDisplayNames } from "../dataset/movementOptions";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { updateMovementsThunk } from "@/redux/thunks/simulationThunks";
 import { setSimulationStepIndex } from "@/redux/slices/uiSlice";
 
-const MOVEMENT_TYPES = {
-  circular: "Circular",
-  zigzag: "Zigzag",
-  linear: "Linear",
-  spiral: "Spiral",
-  static: "Static",
-};
+const MOVABLE_CLASSES = [ObjectClass.Human, ObjectClass.Car, ObjectClass.Bicycle];
 
-const MOVABLE_CLASSES = [ObjectClass.Car, ObjectClass.Bicycle];
+const defaultMovement = (subjectClass: ObjectClass): string =>
+  subjectClass === ObjectClass.Human
+    ? "walk"
+    : MOVABLE_CLASSES.includes(subjectClass)
+      ? "circular"
+      : "static";
 
 const MovementSelection: FC = () => {
   const dispatch = useAppDispatch();
@@ -37,17 +40,24 @@ const MovementSelection: FC = () => {
   const activeStep = useAppSelector((state) => state.ui.simulationStepIndex);
 
   useEffect(() => {
-    if (Object.keys(storeMovements).length !== subjectsInfo.length) {
-      const initialMovements = subjectsInfo.reduce(
-        (acc, { subject }) => ({
-          ...acc,
-          [subject.id]: MOVABLE_CLASSES.includes(subject.class)
-            ? "circular"
-            : "static",
-        }),
-        {} as Record<string, string>
-      );
-      dispatch(updateMovementsThunk(initialMovements));
+    const validMovements = Object.fromEntries(
+      subjectsInfo.map(({ subject }) => {
+        const current = storeMovements[subject.id];
+        return [
+          subject.id,
+          current && isMovementSupportedForSubject(current, subject.class)
+            ? current
+            : defaultMovement(subject.class),
+        ];
+      })
+    );
+    if (
+      Object.keys(storeMovements).length !== subjectsInfo.length ||
+      Object.entries(validMovements).some(
+        ([id, movement]) => storeMovements[id] !== movement
+      )
+    ) {
+      dispatch(updateMovementsThunk(validMovements));
     }
   }, [subjectsInfo, storeMovements, dispatch]);
 
@@ -55,7 +65,7 @@ const MovementSelection: FC = () => {
     (subjectId: string, subjectClass: ObjectClass) =>
       (event: SelectChangeEvent) => {
         const newMovement = event.target.value;
-        if (MOVABLE_CLASSES.includes(subjectClass) || newMovement === "static") {
+        if (isMovementSupportedForSubject(newMovement, subjectClass)) {
           dispatch(
             updateMovementsThunk({
               ...storeMovements,
@@ -72,6 +82,8 @@ const MovementSelection: FC = () => {
   const getSubjectIcon = (subjectClass: ObjectClass) => {
     const sx = { fontSize: 18 };
     switch (subjectClass) {
+      case ObjectClass.Human:
+        return <PersonIcon sx={sx} />;
       case ObjectClass.Car:
         return <DirectionsCarIcon sx={sx} />;
       case ObjectClass.Bicycle:
@@ -83,6 +95,8 @@ const MovementSelection: FC = () => {
 
   const getClassColor = (subjectClass: ObjectClass) => {
     switch (subjectClass) {
+      case ObjectClass.Human:
+        return "#B794F6";
       case ObjectClass.Car:
         return "#E8753A";
       case ObjectClass.Bicycle:
@@ -97,7 +111,8 @@ const MovementSelection: FC = () => {
   return (
     <Box>
       <Typography variant="caption" sx={{ color: "text.secondary", mb: 2, display: "block" }}>
-        Assign motion patterns to each subject. Only cars and bicycles support dynamic movement.
+        Choose a movement for each subject. Human motions are available for people;
+        cars and bicycles use path motions, and props stay still.
       </Typography>
 
       <Stack spacing={1}>
@@ -190,15 +205,19 @@ const MovementSelection: FC = () => {
                 sx={{ minWidth: 120 }}
               >
                 <Select
-                  value={storeMovements[subject.id] || "static"}
+                  value={
+                    isMovementSupportedForSubject(storeMovements[subject.id] ?? "", subject.class)
+                      ? storeMovements[subject.id]
+                      : defaultMovement(subject.class)
+                  }
                   onChange={handleMovementChange(subject.id, subject.class)}
                   sx={{ fontSize: "0.75rem" }}
                 >
-                  {Object.entries(MOVEMENT_TYPES).map(([value, label]) => {
-                    if (value === "static" || movable) {
+                  {DATASET_MOVEMENT_TYPES.map((value) => {
+                    if (isMovementSupportedForSubject(value, subject.class)) {
                       return (
                         <MenuItem key={value} value={value}>
-                          {label}
+                          {movementDisplayNames[value] ?? value}
                         </MenuItem>
                       );
                     }

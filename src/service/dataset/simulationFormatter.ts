@@ -6,6 +6,7 @@ import {
   updateParameterDictionary,
   createParameterReference,
   createParameterDictionary,
+  IndexedParameterDictionary,
 } from "./parameterDictionary";
 
 export const DATASET_FLOAT_FACTOR = 1000;
@@ -155,9 +156,11 @@ function compressCameraFrames(cameraFrames: CameraParameters[]): number[][] {
   ]);
 }
 
+/** An optional per-archive writer owns the dictionary; its returned view is live. */
 export function formatSimulationData(
   data: SimulationData,
-  existingParameters: ParameterDictionary = createParameterDictionary()
+  existingParameters: ParameterDictionary = createParameterDictionary(),
+  parameterWriter?: IndexedParameterDictionary
 ): {
   formattedData: any;
   parameterDictionary: ParameterDictionary;
@@ -185,28 +188,37 @@ export function formatSimulationData(
     );
   }
 
-  let parameterDictionary = updateParameterDictionary(
-    data.cinematographyPrompts,
-    existingParameters,
-    "cinematography"
-  );
-  parameterDictionary = updateParameterDictionary(
-    data.simulationInstructions,
-    parameterDictionary,
-    "simulation"
-  );
+  let parameterDictionary: ParameterDictionary;
+  let cinematographyRef: number[][];
+  let simulationRef: number[][];
+  if (parameterWriter) {
+    cinematographyRef = parameterWriter.appendReference(data.cinematographyPrompts, "cinematography");
+    simulationRef = parameterWriter.appendReference(data.simulationInstructions, "simulation");
+    parameterDictionary = parameterWriter.dictionary;
+  } else {
+    parameterDictionary = updateParameterDictionary(
+      data.cinematographyPrompts,
+      existingParameters,
+      "cinematography"
+    );
+    parameterDictionary = updateParameterDictionary(
+      data.simulationInstructions,
+      parameterDictionary,
+      "simulation"
+    );
 
-  const cinematographyRef = createParameterReference(
-    data.cinematographyPrompts,
-    parameterDictionary,
-    "cinematography"
-  );
+    cinematographyRef = createParameterReference(
+      data.cinematographyPrompts,
+      parameterDictionary,
+      "cinematography"
+    );
 
-  const simulationRef = createParameterReference(
-    data.simulationInstructions,
-    parameterDictionary,
-    "simulation"
-  );
+    simulationRef = createParameterReference(
+      data.simulationInstructions,
+      parameterDictionary,
+      "simulation"
+    );
+  }
 
   const formattedData = [
     cinematographyRef,

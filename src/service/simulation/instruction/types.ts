@@ -52,6 +52,10 @@ export type SubjectFraming = {
 };
 
 export type SetupConfig = {
+  /** Physical lens length in millimetres; omitted keeps the simulator default. */
+  focalLength?: number;
+  /** Optical image width / height; omitted keeps the simulator default. */
+  aspectRatio?: number;
   cameraAngle?: CameraVerticalAngle;
   shotSize?: ShotSize;
   subjectView?: SubjectView;
@@ -238,6 +242,8 @@ export type CinematographySetup = {
 };
 
 export type CinematographyPrompt = {
+  /** Optional observed mixed-motion caption for an explicitly declared observation policy. */
+  observedMotionText?: string;
   initial?: Partial<CinematographySetup>;
   movement: {
     type: CameraMovementType;

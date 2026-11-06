@@ -95,6 +95,15 @@ export const projectBoundingBox = (
   let minY = Infinity;
   let maxY = -Infinity;
   let allInFront = true;
+  // Dataset visibility is geometric, independent of a renderer's near clip.
+  // A fixed 0.1 near plane otherwise rejects an identically framed miniature
+  // scene. Account for floating-point error at the current scene coordinates.
+  const coordinateScale = Math.max(
+    Math.abs(dimensions.width), Math.abs(dimensions.height), Math.abs(dimensions.depth),
+    Math.abs(position.x), Math.abs(position.y), Math.abs(position.z),
+    Math.abs(cameraParams.position.x), Math.abs(cameraParams.position.y), Math.abs(cameraParams.position.z)
+  );
+  const depthEpsilon = 64 * Number.EPSILON * coordinateScale;
 
   for (let index = 0; index < 8; index++) {
     boundsCorner
@@ -106,7 +115,7 @@ export const projectBoundingBox = (
       .applyQuaternion(boundsSubjectQuaternion)
       .add(position)
       .applyMatrix4(boundsCamera.matrixWorldInverse);
-    allInFront = allInFront && boundsCorner.z < -boundsCamera.near;
+    allInFront = allInFront && boundsCorner.z < -depthEpsilon;
     boundsCorner.applyMatrix4(boundsCamera.projectionMatrix);
     minX = Math.min(minX, boundsCorner.x);
     maxX = Math.max(maxX, boundsCorner.x);

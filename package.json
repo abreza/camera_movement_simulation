@@ -11,8 +11,12 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test:simulation": "node --test scripts/test-simulation.cjs scripts/test-subject-heading.cjs scripts/test-dataset-quality.cjs scripts/test-dataset.cjs",
-    "benchmark:dataset": "node scripts/benchmark-dataset.cjs"
+    "test:simulation": "node --test scripts/test-simulation.cjs scripts/test-subject-heading.cjs scripts/test-human-subjects.cjs scripts/test-human-motion.cjs scripts/test-dataset-quality.cjs scripts/test-dataset.cjs",
+    "benchmark:dataset": "node scripts/benchmark-dataset.cjs",
+    "generate:dataset": "node scripts/generate-dataset.cjs",
+    "test:dataset-diversity": "node --test scripts/test-dataset-diversity.cjs scripts/test-dataset-optics.cjs scripts/test-dataset-movement-quality.cjs scripts/test-generate-dataset-cli.cjs scripts/test-indexed-dictionary.cjs",
+    "generate:et": "node scripts/generate-et-dataset.cjs",
+    "test:et-profile": "node --test scripts/test-et-training-profile.cjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.58",

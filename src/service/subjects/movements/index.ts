@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { Subject, SubjectFrame, RandomizationSettings } from "../types";
+import { Subject, SubjectFrame, RandomizationSettings, ObjectClass } from "../types";
+import { DEFAULT_FRAME_COUNT } from "../../simulation/constants";
 import { addMovementNoise } from "../utils";
 import { generateRandomSettings } from "../randomization";
 
@@ -14,6 +15,15 @@ import { generateWaveMotion } from "./wave";
 import { generatePendulumMotion } from "./pendulum";
 import { generateOrbitalMotion } from "./orbital";
 import { generateBounceMotion } from "./bounce";
+import {
+  generateHumanMotionFrames,
+  humanMovementGenerators,
+  isHumanMovement,
+  validateMotionDuration,
+} from "./human";
+
+export { HUMAN_MOVEMENT_TYPES, isHumanMovement } from "./human";
+export type { HumanMovementType } from "./human";
 
 export const movementGenerators: Record<string, MovementGenerator> = {
   circular: generateCircularMotion,
@@ -26,7 +36,16 @@ export const movementGenerators: Record<string, MovementGenerator> = {
   pendulum: generatePendulumMotion,
   orbital: generateOrbitalMotion,
   bounce: generateBounceMotion,
+  ...humanMovementGenerators,
 };
+
+export function isMovementSupportedForSubject(movement: string, objectClass: ObjectClass): boolean {
+  if (movement === "static") return true;
+  if (isHumanMovement(movement)) return objectClass === ObjectClass.Human;
+  if (objectClass === ObjectClass.Human) return VELOCITY_ORIENTED_MOVEMENT_TYPES.has(movement);
+  return Object.hasOwn(movementGenerators, movement) &&
+    (objectClass === ObjectClass.Car || objectClass === ObjectClass.Bicycle);
+}
 
 const COLLISION_MARGIN = 0.2;
 const POSITION_EPSILON = 1e-7;
@@ -165,6 +184,37 @@ function cloneFrames(frames: SubjectFrame[]): SubjectFrame[] {
     position: frame.position.clone(),
     rotation: frame.rotation.clone(),
   }));
+}
+
+function limitHumanGroundSpeed(frames: SubjectFrame[], durationSeconds: number): void {
+  const start = frames[0].position;
+  let peakSpeed = 0;
+  for (let i = 1; i < frames.length; i++) {
+    peakSpeed = Math.max(peakSpeed, Math.hypot(
+      frames[i].position.x - frames[i - 1].position.x,
+      frames[i].position.z - frames[i - 1].position.z
+    ) * (frames.length - 1) / durationSeconds);
+  }
+  const scale = peakSpeed > 1.8 ? 1.8 / peakSpeed : 1;
+  frames.forEach((frame) => {
+    frame.position.x = start.x + (frame.position.x - start.x) * scale;
+    frame.position.z = start.z + (frame.position.z - start.z) * scale;
+  });
+}
+
+/** Keep unwrapped upright yaw rather than converting it to Euler (π,y,π). */
+function resampleUprightFrames(frames: SubjectFrame[], frameCount: number): SubjectFrame[] {
+  return Array.from({ length: frameCount }, (_, i) => {
+    const source = i / Math.max(1, frameCount - 1) * (frames.length - 1);
+    const lower = Math.floor(source);
+    const upper = Math.min(lower + 1, frames.length - 1);
+    const fraction = source - lower;
+    return {
+      position: frames[lower].position.clone().lerp(frames[upper].position, fraction),
+      rotation: new THREE.Euler(0,
+        frames[lower].rotation.y + (frames[upper].rotation.y - frames[lower].rotation.y) * fraction, 0),
+    };
+  });
 }
 
 function subjectFootprintRadius(subject: Subject): number {
@@ -568,6 +618,7 @@ export function generateFrames(
     randomize?: boolean;
     randomSettings?: Partial<RandomizationSettings>;
     frameCount?: number;
+    durationSeconds?: number;
   }
 ): SubjectFrame[][] {
   const {
@@ -575,16 +626,33 @@ export function generateFrames(
     randomize = true,
     randomSettings = {},
     frameCount,
+    durationSeconds,
     ...noiseParams
   } = settings || {};
+  const motionDuration = validateMotionDuration(durationSeconds ?? randomSettings.durationSeconds);
 
   const paths = subjects.map((subject, index) => {
     const movementType = movements[subject.id] || "circular";
     const generator = movementGenerators[movementType] || generateStaticMotion;
 
+    if (isHumanMovement(movementType) && subject.class !== ObjectClass.Human) {
+      throw new Error(`Movement ${movementType} requires a Human subject`);
+    }
+    if (subject.class === ObjectClass.Human && ["pendulum", "orbital", "bounce"].includes(movementType)) {
+      throw new Error(`Movement ${movementType} is not an upright Human ground motion`);
+    }
+
     const subjectRandomSettings = randomize
-      ? generateRandomSettings(randomSettings)
+      ? generateRandomSettings({ ...randomSettings, durationSeconds: motionDuration })
       : undefined;
+
+    if (isHumanMovement(movementType)) {
+      // Human clips author speed, stops and body heading together in seconds.
+      // Vehicle time-warp/noise/heading recovery would change those semantics.
+      return generateHumanMotionFrames(subject, index, subjects.length, movementType,
+        subjectRandomSettings ?? { enabled: false, seed: 0, durationSeconds: motionDuration },
+        frameCount ?? DEFAULT_FRAME_COUNT);
+    }
 
     const generatedFrames = generator(
       subject,
@@ -592,6 +660,16 @@ export function generateFrames(
       subjects.length,
       subjectRandomSettings
     );
+    if (subject.class === ObjectClass.Human && movementType === "static") {
+      // Quaternion interpolation of identical authored yaws can still create
+      // tiny numeric variation and equivalent (π,y,π) Eulers. A static human
+      // is an exact freeze with an explicitly upright body representation.
+      return Array.from({ length: frameCount ?? generatedFrames.length }, () => ({
+        position: new THREE.Vector3(generatedFrames[0].position.x,
+          subject.dimensions.height / 2, generatedFrames[0].position.z),
+        rotation: new THREE.Euler(0, generatedFrames[0].rotation.y, 0),
+      }));
+    }
     const isVelocityOriented = VELOCITY_ORIENTED_MOVEMENT_TYPES.has(movementType);
     const outputFrameCount = frameCount ?? generatedFrames.length;
     const baseFrames = resampleFrames(
@@ -642,6 +720,14 @@ export function generateFrames(
         frequency: noiseParams.frequency,
         grounded: isGroundedMovement,
       });
+    }
+    if (subject.class === ObjectClass.Human && isVelocityOriented) {
+      // Existing curved path families retain their shape while their peak
+      // speed becomes walking-scale. Work on a fixed clock before exporting
+      // so FPS changes cannot alter the scale or heading of the same clip.
+      const humanFrames = sampleTurnAwareFrames(frames, HEADING_REFERENCE_FRAME_COUNT);
+      limitHumanGroundSpeed(humanFrames, motionDuration);
+      return resampleUprightFrames(humanFrames, outputFrameCount);
     }
     return isVelocityOriented
       ? sampleTurnAwareFrames(frames, outputFrameCount)

@@ -102,12 +102,28 @@ function segmentIntersectsBox(start: Vector3, end: Vector3, box: Box3): boolean 
  * checked at every stored pose and throughout straight camera/subject motion
  * between frames whose subject orientation is unchanged. Continuous rotating
  * box sweeps between stored poses are not certified by this discrete export.
+ *
+ * A whole-scene similarity may explicitly supply sceneScale. Linear clearance,
+ * travel and acceleration limits then use the same scene units as the geometry.
+ * Angular limits stay unchanged; packing-error tolerances remain absolute world
+ * units because MessagePack still rounds to the same 0.001-unit grid. The
+ * default preserves the original policy for ordinary legacy and ET exports.
  */
 export function validateDatasetTrajectory(
   cameraFrames: readonly CameraParameters[],
-  subjectInfo: SubjectInfo
+  subjectInfo: SubjectInfo,
+  sceneScale: number = 1
 ): DatasetTrajectoryQualityMetrics {
+  if (!Number.isFinite(sceneScale) || sceneScale <= 0) {
+    throw new RangeError("sceneScale must be finite and positive.");
+  }
   const policy = DATASET_TRAJECTORY_QUALITY_POLICY;
+  const clearance = policy.cameraClearanceSceneUnits * sceneScale;
+  const translationLimit = policy.maxTranslationPerTrainingStep * sceneScale;
+  const accelerationLimit = policy.maxAccelerationPerTrainingStepSquared * sceneScale;
+  if (![clearance, translationLimit, accelerationLimit].every(Number.isFinite)) {
+    throw new RangeError("sceneScale produces nonfinite trajectory limits.");
+  }
   const subjectFrames = subjectInfo.frames;
   if (
     cameraFrames.length < policy.referenceFrameCount ||
@@ -130,7 +146,7 @@ export function validateDatasetTrajectory(
 
   const { width, height, depth } = subjectInfo.subject.dimensions;
   const halfSize = new Vector3(width / 2, height / 2, depth / 2)
-    .addScalar(policy.cameraClearanceSceneUnits);
+    .addScalar(clearance);
   const localBox = new Box3(halfSize.clone().negate(), halfSize);
   const cameraRotations: Quaternion[] = [];
   let previousSubjectRotation: Quaternion | undefined;
@@ -166,7 +182,7 @@ export function validateDatasetTrajectory(
     ) {
       throw new DatasetTrajectoryQualityError(
         "camera-subject-collision",
-        `Camera intersects the subject's oriented box or ${policy.cameraClearanceSceneUnits}-unit clearance at frame ${index}.`,
+        `Camera intersects the subject's oriented box or ${clearance}-unit clearance at frame ${index}.`,
         index
       );
     }
@@ -191,7 +207,7 @@ export function validateDatasetTrajectory(
     metrics.maxSourceRotationPerTrainingStepRadians = Math.max(
       metrics.maxSourceRotationPerTrainingStepRadians, angle / sourceStepDuration
     );
-    if (distance > policy.maxTranslationPerTrainingStep * sourceStepDuration +
+    if (distance > translationLimit * sourceStepDuration +
         policy.translationQuantizationTolerance) {
       throw new DatasetTrajectoryQualityError(
         "source-translation", `Camera position jumps too far at frame ${index}.`, index
@@ -221,7 +237,7 @@ export function validateDatasetTrajectory(
     const angle = cameraRotations[index].angleTo(cameraRotations[previousIndex]);
     metrics.maxTrainingTranslation = Math.max(metrics.maxTrainingTranslation, distance);
     metrics.maxTrainingRotationRadians = Math.max(metrics.maxTrainingRotationRadians, angle);
-    if (distance > policy.maxTranslationPerTrainingStep + policy.translationQuantizationTolerance) {
+    if (distance > translationLimit + policy.translationQuantizationTolerance) {
       throw new DatasetTrajectoryQualityError(
         "training-translation", `Selected model step ${step} translates too far.`, index
       );
@@ -234,7 +250,7 @@ export function validateDatasetTrajectory(
     if (previousVelocity) {
       const acceleration = velocity.distanceTo(previousVelocity);
       metrics.maxTrainingAcceleration = Math.max(metrics.maxTrainingAcceleration, acceleration);
-      if (acceleration > policy.maxAccelerationPerTrainingStepSquared +
+      if (acceleration > accelerationLimit +
           policy.accelerationQuantizationTolerance) {
         throw new DatasetTrajectoryQualityError(
           "training-acceleration", `Selected model step ${step} changes velocity too sharply.`, index

@@ -11,15 +11,32 @@ import {
   CinematographyPrompt,
   CinematographySetup,
   SimulationInstruction,
+  DynamicMode,
+  MovementEasing,
+  ShotSize,
+  SubjectInFramePosition,
 } from "@/service/simulation/instruction/types";
 import { translatePromptToSimulationInstruction } from "@/service/simulation/instruction/high-level/translator";
+import { normalizeCinematographyPrompt } from "@/service/simulation/instruction/high-level/rules";
 import {
-  DEFAULT_SUBJECT_CLASS_WEIGHTS,
-  generateDimensions,
-} from "@/service/subjects/generateSubjects";
+  DATASET_SUBJECT_SCALE_RANGE,
+  generateDatasetSubjectDimensions,
+} from "./subjectDimensions";
 import { ObjectClass, Subject, SubjectInfo } from "@/service/subjects/types";
 import { generateRandomCinematographyPrompt } from "../simulation/instruction/high-level/generator";
-import { generateFrames } from "@/service/subjects/movements";
+import { generateFrames, isHumanMovement, isMovementSupportedForSubject } from "@/service/subjects/movements";
+import {
+  DATASET_MOVEMENT_TYPES,
+  DEFAULT_DATASET_MOVEMENT_DISTRIBUTION,
+  DEFAULT_DATASET_SUBJECT_CLASS_PROBABILITIES,
+  DatasetMovementType,
+} from "./subjectMotion";
+export {
+  DATASET_MOVEMENT_TYPES,
+  DEFAULT_DATASET_MOVEMENT_DISTRIBUTION,
+  DEFAULT_DATASET_SUBJECT_CLASS_PROBABILITIES,
+} from "./subjectMotion";
+export type { DatasetMovementType } from "./subjectMotion";
 import { calculateCameraPositions } from "../simulation/rule-based/sequence";
 import {
   DATASET_FLOAT_FACTOR,
@@ -29,6 +46,7 @@ import {
 } from "./simulationFormatter";
 import {
   createParameterDictionary,
+  IndexedParameterDictionary,
   ParameterDictionary,
 } from "./parameterDictionary";
 import {
@@ -49,6 +67,47 @@ import {
   DatasetTrajectoryQualityError,
   validateDatasetTrajectory,
 } from "./quality";
+import {
+  DatasetCameraMovementQualityError,
+  validateDatasetCameraMovement,
+} from "./movementQuality";
+import {
+  ET_MODEL_OBSERVATION,
+  generateETCameraCandidate,
+  intendedETClipMetrics,
+  measureETGeneratedClip,
+  normalizeETTrainingProfile,
+  prepareETSubjectFrames,
+  sampleETClipControls,
+  summarizeETGeneratedMetrics,
+  type ETGeneratedMetrics,
+  type ETSubjectRegime,
+  type ETTrainingProfile,
+  type NormalizedETTrainingProfile,
+} from "./etTrainingProfile";
+import {
+  applyDatasetOptics,
+  createDatasetDiversityPlan,
+  DATASET_CAMERA_MOVEMENT_TYPES,
+  DATASET_DIVERSITY_PROFILE,
+  normalizeDatasetDiversity,
+  scaleDatasetCameraFrames,
+  scaleDatasetInstruction,
+  scaleDatasetSubjects,
+  type DatasetDiversityAssignment,
+  type DatasetDiversityConfig,
+  type NormalizedDatasetDiversityConfig,
+} from "./diversity";
+export {
+  DATASET_CAMERA_MOVEMENT_TYPES,
+  DATASET_DIVERSITY_PROFILE,
+  DEFAULT_DATASET_DIVERSITY,
+} from "./diversity";
+export type { DatasetDiversityConfig } from "./diversity";
+import {
+  DATASET_SUBJECT_PATH_FRACTIONS,
+  windowDatasetSubjectFrames,
+} from "./subjectProgress";
 
 export type DatasetProgressPhase = "generating" | "zipping";
 
@@ -59,6 +118,12 @@ export interface GenerateDatasetConfig {
   minFrameCount?: number;
   maxFrameCount?: number;
   seed?: string | number;
+  /** Time between stored samples is 1 / framesPerSecond seconds. */
+  framesPerSecond?: number;
+  /** Aggregate ET TRAIN calibration; never native trajectory replay or evaluation fitting. */
+  etTrainingProfile?: ETTrainingProfile;
+  /** Standard rule-based diversity is enabled by default; false retains legacy sampling. */
+  diversity?: false | DatasetDiversityConfig;
   subjectClassProbabilities?: Partial<Record<ObjectClass, number>>;
   movementDistribution?: Record<string, number>;
   onProgress?: (progress: number, phase: DatasetProgressPhase) => void;
@@ -93,23 +158,13 @@ export const MIN_DATASET_FRAME_COUNT = 100;
 export const MAX_DATASET_FRAME_COUNT = 500;
 export const MAX_DATASET_ROTATION_NOISE_AMPLITUDE = 0.15;
 
-export const DATASET_MOVEMENT_TYPES = [
-  "linear",
-  "circular",
-  "spiral",
-  "figureEight",
-  "wave",
-  "zigzag",
-  "static",
-] as const;
-export type DatasetMovementType = (typeof DATASET_MOVEMENT_TYPES)[number];
-
 const DATASET_MOVEMENT_TYPE_SET = new Set<string>(DATASET_MOVEMENT_TYPES);
 const DATASET_SUBJECT_CLASSES = Object.values(ObjectClass);
 const DATASET_SUBJECT_CLASS_SET = new Set<string>(DATASET_SUBJECT_CLASSES);
 const CHUNK_SIZE = 10000;
 const MAIN_THREAD_TIME_BUDGET_MS = 16;
 const MAX_DATASET_CAMERA_ATTEMPTS = 50;
+const MAX_DIVERSE_DATASET_CAMERA_ATTEMPTS = 200;
 
 type EffectiveNoiseConfig = Required<
   NonNullable<GenerateDatasetConfig["noiseConfig"]>
@@ -126,24 +181,28 @@ export type NormalizedDatasetConfig = Omit<
   | "movementDistribution"
   | "chunkSize"
   | "noiseConfig"
+  | "framesPerSecond"
+  | "etTrainingProfile"
+  | "diversity"
 > & {
   simulationCount: number;
   subjectCount: typeof DATASET_SUBJECT_COUNT;
   instructionCount: typeof DATASET_INSTRUCTION_COUNT;
   minFrameCount: number;
   maxFrameCount: number;
+  framesPerSecond: number;
   subjectClassProbabilities: Record<ObjectClass, number>;
   movementDistribution: Record<DatasetMovementType, number>;
   chunkSize: number;
   noiseConfig: EffectiveNoiseConfig;
+  etTrainingProfile?: NormalizedETTrainingProfile;
+  diversity: false | NormalizedDatasetDiversityConfig;
 };
 
 function normalizeMovementDistribution(
   distribution?: Record<string, number>
 ): Record<DatasetMovementType, number> {
-  const supplied = distribution ?? Object.fromEntries(
-    DATASET_MOVEMENT_TYPES.map((movement) => [movement, 1])
-  );
+  const supplied = distribution ?? DEFAULT_DATASET_MOVEMENT_DISTRIBUTION;
   const unsupported = Object.keys(supplied).filter(
     (movement) => !DATASET_MOVEMENT_TYPE_SET.has(movement)
   );
@@ -169,8 +228,8 @@ function normalizeMovementDistribution(
     (sum, weight) => sum + weight,
     0
   );
-  if (totalWeight <= 0) {
-    throw new RangeError("At least one dataset movement weight must be positive.");
+  if (!Number.isFinite(totalWeight) || totalWeight <= 0) {
+    throw new RangeError("Dataset movement weights must have a finite positive total.");
   }
 
   return Object.fromEntries(
@@ -182,7 +241,8 @@ function normalizeMovementDistribution(
 }
 
 function normalizeSubjectClassProbabilities(
-  probabilities?: Partial<Record<ObjectClass, number>>
+  probabilities: Partial<Record<ObjectClass, number>> | undefined,
+  defaults: Record<ObjectClass, number>
 ): Record<ObjectClass, number> {
   const unsupported = Object.keys(probabilities ?? {}).filter(
     (objectClass) => !DATASET_SUBJECT_CLASS_SET.has(objectClass)
@@ -194,7 +254,7 @@ function normalizeSubjectClassProbabilities(
   }
 
   const weights: Record<ObjectClass, number> = {
-    ...DEFAULT_SUBJECT_CLASS_WEIGHTS,
+    ...defaults,
     ...probabilities,
   };
   for (const [objectClass, weight] of Object.entries(weights)) {
@@ -209,7 +269,7 @@ function normalizeSubjectClassProbabilities(
     (sum, weight) => sum + weight,
     0
   );
-  if (totalWeight <= 0) {
+  if (!Number.isFinite(totalWeight) || totalWeight <= 0) {
     throw new RangeError("At least one subject class weight must be positive.");
   }
 
@@ -225,7 +285,7 @@ function normalizeNoiseConfig(
   noiseConfig?: GenerateDatasetConfig["noiseConfig"]
 ): EffectiveNoiseConfig {
   const effective: EffectiveNoiseConfig = {
-    applyNoise: noiseConfig?.applyNoise ?? false,
+    applyNoise: noiseConfig?.applyNoise ?? true,
     positionAmplitude: noiseConfig?.positionAmplitude ?? 0.1,
     rotationAmplitude: noiseConfig?.rotationAmplitude ?? 0.02,
     frequency: noiseConfig?.frequency ?? 0.5,
@@ -336,7 +396,7 @@ function normalizeSubset<T extends string>(
 }
 
 function createSubjectForClass(objectClass: ObjectClass): Subject {
-  const dimensions = generateDimensions(objectClass);
+  const dimensions = generateDatasetSubjectDimensions(objectClass);
   return {
     id: `${objectClass}-0`,
     class: objectClass,
@@ -355,14 +415,41 @@ export function normalizeDatasetConfig(
   const subjectCount = config.subjectCount ?? DATASET_SUBJECT_COUNT;
   const instructionCount =
     config.instructionCount ?? DATASET_INSTRUCTION_COUNT;
-  const minFrameCount = config.minFrameCount ?? MIN_DATASET_FRAME_COUNT;
-  const maxFrameCount = config.maxFrameCount ?? MAX_DATASET_FRAME_COUNT;
+  const etTrainingProfile = config.etTrainingProfile
+    ? normalizeETTrainingProfile(config.etTrainingProfile)
+    : undefined;
+  if (etTrainingProfile && config.diversity !== undefined && config.diversity !== false) {
+    throw new RangeError("etTrainingProfile has its own explicit distribution and requires diversity: false.");
+  }
+  const diversity = etTrainingProfile ? false : normalizeDatasetDiversity(config.diversity);
+  const calibratedFrames = etTrainingProfile?.calibration.quantiles.frames;
+  const minFrameCount = calibratedFrames
+    ? Math.max(30, Math.floor(calibratedFrames[0] as number))
+    : config.minFrameCount ?? MIN_DATASET_FRAME_COUNT;
+  const maxFrameCount = calibratedFrames
+    ? Math.max(30, Math.min(500, Math.ceil(calibratedFrames.at(-1) as number)))
+    : config.maxFrameCount ?? MAX_DATASET_FRAME_COUNT;
   const chunkSize = config.chunkSize ?? CHUNK_SIZE;
+  const framesPerSecond = etTrainingProfile?.framesPerSecond ?? config.framesPerSecond ?? 30;
+  if (!Number.isFinite(framesPerSecond) || framesPerSecond < 10 || framesPerSecond > 120) {
+    throw new RangeError("framesPerSecond must be a finite number between 10 and 120.");
+  }
+  const profileMovementWeights: Record<string, number> = {};
+  if (etTrainingProfile) {
+    for (const regime of etTrainingProfile.calibration.regimes) {
+      if (regime.key === "exact_static") profileMovementWeights.static = regime.weight;
+      else if (regime.key === "near_static") profileMovementWeights.idle = regime.weight;
+      else for (const movement of ["walk", "wander", "sidestep", "backward"]) profileMovementWeights[movement] = regime.weight / 4;
+    }
+  }
   const movementDistribution = normalizeMovementDistribution(
-    config.movementDistribution
+    etTrainingProfile ? profileMovementWeights : config.movementDistribution
   );
   const subjectClassProbabilities = normalizeSubjectClassProbabilities(
-    config.subjectClassProbabilities
+    etTrainingProfile
+      ? Object.fromEntries(DATASET_SUBJECT_CLASSES.map((objectClass) => [objectClass, objectClass === ObjectClass.Human ? 1 : 0]))
+      : config.subjectClassProbabilities,
+    DEFAULT_DATASET_SUBJECT_CLASS_PROBABILITIES
   );
 
   if (!Number.isInteger(simulationCount) || simulationCount < 1) {
@@ -381,30 +468,27 @@ export function normalizeDatasetConfig(
   if (
     !Number.isInteger(minFrameCount) ||
     !Number.isInteger(maxFrameCount) ||
-    minFrameCount < MIN_DATASET_FRAME_COUNT ||
+    minFrameCount < (etTrainingProfile ? 30 : MIN_DATASET_FRAME_COUNT) ||
     maxFrameCount > MAX_DATASET_FRAME_COUNT ||
     minFrameCount > maxFrameCount
   ) {
     throw new RangeError(
-      `Frame counts must be integers in the inclusive range ${MIN_DATASET_FRAME_COUNT}-${MAX_DATASET_FRAME_COUNT}, with minFrameCount <= maxFrameCount.`
+      `Frame counts must be integers in the inclusive range ${etTrainingProfile ? 30 : MIN_DATASET_FRAME_COUNT}-${MAX_DATASET_FRAME_COUNT}, with minFrameCount <= maxFrameCount.`
     );
   }
   if (!Number.isInteger(chunkSize) || chunkSize < 1) {
     throw new RangeError("chunkSize must be a positive integer.");
   }
-  const hasDynamicMovement = DATASET_MOVEMENT_TYPES.some(
-    (movement) =>
-      movement !== "static" && movementDistribution[movement] > 0
-  );
-  if (
-    hasDynamicMovement &&
-    subjectClassProbabilities[ObjectClass.Car] +
-      subjectClassProbabilities[ObjectClass.Bicycle] <=
-      0
-  ) {
-    throw new RangeError(
-      "A positive dynamic movement weight requires a positive Car or Bicycle subject class weight."
+  for (const movement of DATASET_MOVEMENT_TYPES) {
+    if (movementDistribution[movement] <= 0) continue;
+    const supported = DATASET_SUBJECT_CLASSES.filter(
+      (objectClass) => isMovementSupportedForSubject(movement, objectClass)
     );
+    if (!supported.some((objectClass) => subjectClassProbabilities[objectClass] > 0)) {
+      throw new RangeError(
+        `Movement ${movement} needs a positive weight for a supported subject class: ${supported.join(", ")}.`
+      );
+    }
   }
 
   return {
@@ -414,10 +498,13 @@ export function normalizeDatasetConfig(
     instructionCount: DATASET_INSTRUCTION_COUNT,
     minFrameCount,
     maxFrameCount,
+    framesPerSecond,
     chunkSize,
     subjectClassProbabilities,
     movementDistribution,
     noiseConfig: normalizeNoiseConfig(config.noiseConfig),
+    etTrainingProfile,
+    diversity,
   };
 }
 
@@ -482,12 +569,15 @@ export async function buildRandomDatasetArchive(
     instructionCount,
     minFrameCount,
     maxFrameCount,
+    framesPerSecond,
     seed: configuredSeed,
     subjectClassProbabilities,
     movementDistribution,
     onProgress,
     chunkSize,
     noiseConfig,
+    etTrainingProfile,
+    diversity,
   } = normalizedConfig;
   const { writable, signal } = options;
   throwIfAborted(signal);
@@ -507,41 +597,78 @@ export async function buildRandomDatasetArchive(
     DATASET_MOVEMENT_TYPES,
     movementSchedule
   );
-  const staticSampleCount = realizedMovementCounts.static;
-  const dynamicSampleCount = simulationCount - staticSampleCount;
-  const staticClassSchedule = createWeightedSchedule(
-    DATASET_SUBJECT_CLASSES,
-    subjectClassProbabilities,
-    staticSampleCount,
-    random
-  );
-  const vehicleClasses = [ObjectClass.Car, ObjectClass.Bicycle] as const;
-  const dynamicSubjectClassProbabilities =
-    dynamicSampleCount > 0
-      ? normalizeSubset(vehicleClasses, subjectClassProbabilities)
-      : {
-          [ObjectClass.Car]: 0,
-          [ObjectClass.Bicycle]: 0,
-        };
-  const dynamicClassSchedule =
-    dynamicSampleCount > 0
-      ? createWeightedSchedule(
-          vehicleClasses,
-          dynamicSubjectClassProbabilities,
-          dynamicSampleCount,
-          random
-        )
-      : [];
+  const diversityPlan = diversity
+    ? createDatasetDiversityPlan(diversity, movementSchedule, random)
+    : undefined;
+  const summarizeDiversity = (assignments: readonly DatasetDiversityAssignment[]) => {
+    const cameraMovementCounts = Object.fromEntries(DATASET_CAMERA_MOVEMENT_TYPES.map((movement) => [movement, 0]));
+    const sceneScaleStratumCounts = { base: 0, smaller: 0, larger: 0 };
+    const aspectRatioCounts: Record<string, number> = {};
+    let scaleMinimum = Infinity, scaleMaximum = -Infinity, focalMinimum = Infinity, focalMaximum = -Infinity;
+    let scaleTotal = 0, focalTotal = 0;
+    for (const assignment of assignments) {
+      cameraMovementCounts[assignment.cameraMovement]++;
+      sceneScaleStratumCounts[assignment.sceneScaleStratum]++;
+      aspectRatioCounts[String(assignment.aspectRatio)] = (aspectRatioCounts[String(assignment.aspectRatio)] ?? 0) + 1;
+      scaleMinimum = Math.min(scaleMinimum, assignment.sceneScale);
+      scaleMaximum = Math.max(scaleMaximum, assignment.sceneScale);
+      focalMinimum = Math.min(focalMinimum, assignment.focalLength);
+      focalMaximum = Math.max(focalMaximum, assignment.focalLength);
+      scaleTotal += assignment.sceneScale;
+      focalTotal += assignment.focalLength;
+    }
+    return { sampleCount: assignments.length, cameraMovementCounts, sceneScaleStratumCounts, aspectRatioCounts,
+      sceneScale: assignments.length ? { min: scaleMinimum, max: scaleMaximum, mean: scaleTotal / assignments.length } : null,
+      focalLength: assignments.length ? { min: focalMinimum, max: focalMaximum, mean: focalTotal / assignments.length } : null,
+    };
+  };
+  const acceptedDiversityAssignments: DatasetDiversityAssignment[] = [];
+  const diversityReceipts: Array<DatasetDiversityAssignment & {
+    sampleIndex: number; baseSubjectDimensions: Subject["dimensions"]; subjectPathSeed: string;
+    subjectPathDraw: number; cameraAttempts: number; frameCount: number; centeredFullShotProposals: number;
+    storedOptics: { focalLength: number; aspectRatio: number };
+    subjectPathFraction: number; subjectPathStart: number;
+  }> = [];
+  const diversityRejectedCandidates: Record<string, Record<string, number>> = {};
+  const diversityRejectedByPathFraction: Record<string, Record<string, number>> = {};
+  const realizedSubjectPathFractionCounts: Record<string, number> = {};
+  // Preserve motion quotas while conditioning class allocation on what can
+  // perform that motion: a prop never walks, and a car never sidesteps.
+  const subjectClassProbabilitiesByMovement: Partial<Record<DatasetMovementType, Partial<Record<ObjectClass, number>>>> = {};
+  const classSchedules = {} as Record<DatasetMovementType, ObjectClass[]>;
+  const classIndices = {} as Record<DatasetMovementType, number>;
+  for (const movement of DATASET_MOVEMENT_TYPES) {
+    classIndices[movement] = 0;
+    const supported = DATASET_SUBJECT_CLASSES.filter(
+      (objectClass) => isMovementSupportedForSubject(movement, objectClass)
+    );
+    if (realizedMovementCounts[movement] === 0) {
+      classSchedules[movement] = [];
+      continue;
+    }
+    const weights = normalizeSubset(supported, subjectClassProbabilities);
+    subjectClassProbabilitiesByMovement[movement] = weights;
+    classSchedules[movement] = createWeightedSchedule(
+      supported, weights, realizedMovementCounts[movement], random
+    );
+  }
   const realizedSubjectClassCounts = Object.fromEntries(
     DATASET_SUBJECT_CLASSES.map((objectClass) => [objectClass, 0])
   ) as Record<ObjectClass, number>;
   const realizedCameraMovementCounts: Partial<Record<CameraMovementType, number>> = {};
   const rejectedCameraCandidates: Record<string, number> = {};
+  const subjectClassMovementCounts: Record<string, Record<string, number>> = {};
+  const etIntendedMetrics: ETGeneratedMetrics[] = [];
+  const etRealizedMetrics: ETGeneratedMetrics[] = [];
+  const etMetricsByRegime: Partial<Record<ETSubjectRegime, ETGeneratedMetrics[]>> = {};
+  const etRejectedByRegime: Partial<Record<ETSubjectRegime, Record<string, number>>> = {};
+  const etRejectedControlMetrics: ETGeneratedMetrics[] = [];
+  const etResampledControlsByRegime: Partial<Record<ETSubjectRegime, number>> = {};
+  let etShortClipCount = 0;
+  const etPlausibilityAdjustments: Record<string, number> = {};
   const recordRejectedCandidate = (reason: string) => {
     rejectedCameraCandidates[reason] = (rejectedCameraCandidates[reason] ?? 0) + 1;
   };
-  let staticClassIndex = 0;
-  let dynamicClassIndex = 0;
 
   const memoryWriter = writable
     ? undefined
@@ -573,6 +700,9 @@ export async function buildRandomDatasetArchive(
 
   let parameterDictionary: ParameterDictionary =
     createParameterDictionary(datasetId);
+  const parameterWriter = diversity
+    ? new IndexedParameterDictionary(parameterDictionary)
+    : undefined;
 
   for (let s = 0; s < simulationCount; s++) {
     operationCount++;
@@ -581,16 +711,24 @@ export async function buildRandomDatasetArchive(
     onProgress?.((s / simulationCount) * 100, "generating");
 
     const subjectMovement = movementSchedule[s];
-    const subjectClass =
-      subjectMovement === "static"
-        ? staticClassSchedule[staticClassIndex++]
-        : dynamicClassSchedule[dynamicClassIndex++];
+    const diversityAssignment = diversityPlan?.[s];
+    const sceneScale = diversityAssignment?.sceneScale ?? 1;
+    let subjectPathDraw = 0;
+    let subjectPathSeed = `${seed}:diversity:sample:${s}:subject:${subjectPathDraw}`;
+    let subjectPathFraction = 1;
+    let subjectPathStart = 0;
+    let cameraAttempts = 0;
+    let centeredFullShotProposals = 0;
+    const cameraAttemptLimit = diversityAssignment ? MAX_DIVERSE_DATASET_CAMERA_ATTEMPTS : MAX_DATASET_CAMERA_ATTEMPTS;
+    const subjectClass = classSchedules[subjectMovement][classIndices[subjectMovement]++];
     if (!subjectClass) {
       throw new Error(
         `Subject class schedule was exhausted for ${subjectMovement} at sample ${s}.`
       );
     }
     realizedSubjectClassCounts[subjectClass]++;
+    const classMovementCounts = subjectClassMovementCounts[subjectClass] ??= {};
+    classMovementCounts[subjectMovement] = (classMovementCounts[subjectMovement] ?? 0) + 1;
     const subjects = [
       withRandomSource(random, () => createSubjectForClass(subjectClass)),
     ];
@@ -607,25 +745,31 @@ export async function buildRandomDatasetArchive(
     operationCount++;
     await yieldIfNeeded(operationCount);
 
-    const frameCount =
-      Math.floor(random() * (maxFrameCount - minFrameCount + 1)) +
-      minFrameCount;
-    const totalFrameCount = frameCount;
-    const subjectFrames = withRandomSource(random, () =>
-      generateFrames(subjects, subjectMovements, {
-        ...noiseConfig,
-        frameCount: totalFrameCount,
-      })
-    );
-    operationCount += subjects.length * totalFrameCount;
+    const etRegime: ETSubjectRegime = subjectMovement === "static" ? "exact_static"
+      : subjectMovement === "idle" ? "near_static" : "moving";
+    let etControls = etTrainingProfile
+      ? sampleETClipControls(etTrainingProfile, etRegime, random)
+      : undefined;
+    let frameCount = etControls?.frameCount ??
+      Math.floor(random() * (maxFrameCount - minFrameCount + 1)) + minFrameCount;
+    const rebuildCurrentSubjectsInfo = (): SubjectInfo[] => {
+      const subjectRandom = diversityAssignment ? createSeededRandom(subjectPathSeed) : random;
+      const authoredSubjectFrames = withRandomSource(subjectRandom, () => generateFrames(subjects, subjectMovements, {
+        ...noiseConfig, frameCount, durationSeconds: (frameCount - 1) / framesPerSecond,
+      }));
+      const subjectFrames = etTrainingProfile && etControls
+        ? authoredSubjectFrames.map((frames) => prepareETSubjectFrames(etTrainingProfile, etControls!, frames))
+        : diversityAssignment
+        ? authoredSubjectFrames.map((frames) => windowDatasetSubjectFrames(frames, subjectPathStart, subjectPathFraction))
+        : authoredSubjectFrames;
+      return subjects.map((subject, index) => ({ subject, frames: subjectFrames[index], movementType: subjectMovements[subject.id] }));
+    };
+    let subjectsInfo = rebuildCurrentSubjectsInfo();
+    operationCount += subjects.length * frameCount;
     await yieldIfNeeded(operationCount);
-
-    const subjectsInfo: SubjectInfo[] = subjects.map((subject, index) => ({
-      subject,
-      frames: subjectFrames[index],
-      movementType: subjectMovements[subject.id],
-    }));
-    const exportedSubjectsInfo = quantizeSubjectInfoForDataset(subjectsInfo);
+    let exportedSubjectsInfo = quantizeSubjectInfoForDataset(
+      diversityAssignment ? scaleDatasetSubjects(subjectsInfo, sceneScale) : subjectsInfo
+    );
     operationCount += subjects.length;
     await yieldIfNeeded(operationCount);
 
@@ -637,16 +781,56 @@ export async function buildRandomDatasetArchive(
     let labelingError: unknown;
     for (
       let attempt = 0;
-      attempt < MAX_DATASET_CAMERA_ATTEMPTS;
+      attempt < cameraAttemptLimit;
       attempt++
     ) {
       operationCount++;
       await yieldIfNeeded(operationCount);
-      const candidatePrompt = withRandomSource(random, () =>
-        generateRandomCinematographyPrompt()
-      );
+      cameraAttempts++;
+      if (diversityAssignment && attempt > 0 && attempt % 5 === 0) {
+        // Retry only the path realization. The assigned class, dimensions,
+        // motion family, duration, camera quota, scale and optics remain fixed.
+        subjectPathDraw++;
+        subjectPathSeed = `${seed}:diversity:sample:${s}:subject:${subjectPathDraw}`;
+        subjectPathFraction = isHumanMovement(subjectMovement) || subjectMovement === "static"
+          ? 1
+          : DATASET_SUBJECT_PATH_FRACTIONS[subjectPathDraw % DATASET_SUBJECT_PATH_FRACTIONS.length];
+        subjectPathStart = createSeededRandom(`${subjectPathSeed}:window`)() * (1 - subjectPathFraction);
+        subjectsInfo = rebuildCurrentSubjectsInfo();
+        exportedSubjectsInfo = quantizeSubjectInfoForDataset(scaleDatasetSubjects(subjectsInfo, sceneScale));
+        operationCount += subjects.length * frameCount;
+      }
+      if (etTrainingProfile && etControls && attempt > 0 && attempt % 5 === 0) {
+        // A fixed high-excursion path can be infeasible for every camera axis.
+        // Resample within the assigned regime, preserving quotas and every quality
+        // requirement. Keep the discarded intended distribution visible in receipts.
+        etRejectedControlMetrics.push(intendedETClipMetrics(etControls));
+        etResampledControlsByRegime[etRegime] = (etResampledControlsByRegime[etRegime] ?? 0) + 1;
+        etControls = sampleETClipControls(etTrainingProfile, etRegime, random);
+        frameCount = etControls.frameCount;
+        subjectsInfo = rebuildCurrentSubjectsInfo();
+        exportedSubjectsInfo = quantizeSubjectInfoForDataset(subjectsInfo);
+        operationCount += subjects.length * frameCount;
+      }
+      const etCandidate = etTrainingProfile && etControls
+        ? generateETCameraCandidate(etTrainingProfile, etControls, subjectsInfo[0], random)
+        : undefined;
+      const candidateRandom = diversityAssignment
+        ? createSeededRandom(`${seed}:diversity:sample:${s}:camera:${attempt}`)
+        : random;
+      let candidatePrompt = etCandidate?.prompt ?? withRandomSource(candidateRandom, () =>
+        generateRandomCinematographyPrompt(diversityAssignment?.cameraMovement));
+      if (diversityAssignment && attempt > 0 && attempt % 5 === 4) {
+        // Offer a feasible, close visible setup among otherwise random setups.
+        // This remains a prompt for the same rule solver, never a substitute path.
+        centeredFullShotProposals++;
+        candidatePrompt = normalizeCinematographyPrompt({ ...candidatePrompt,
+          initial: { ...candidatePrompt.initial, shotSize: ShotSize.FullShot,
+            subjectFraming: SubjectInFramePosition.Center },
+        });
+      }
       if (
-        subjectMovement === "static" &&
+        ["static", "idle", "turnInPlace"].includes(subjectMovement) &&
         (candidatePrompt.movement.type === CameraMovementType.Follow ||
           candidatePrompt.movement.type === CameraMovementType.Track)
       ) {
@@ -657,13 +841,17 @@ export async function buildRandomDatasetArchive(
         continue;
       }
       try {
-        const candidateInstruction = translatePromptToSimulationInstruction(
-          candidatePrompt,
-          { frameCount, subjectIndex: 0 }
-        );
-        const candidateCameraFrames = withRandomSource(random, () =>
-          calculateCameraPositions([candidateInstruction], subjectsInfo)
-        );
+        // This diagnostic instruction is unavailable to the model under the
+        // explicit profile. Numeric poses, not SIM primitive locks, are authoritative.
+        let candidateInstruction: SimulationInstruction = etCandidate
+          ? { setup: { config: {}, kind: "init" }, dynamic: {
+              type: DynamicMode.Interpolation, easing: MovementEasing.Linear,
+              complementSetup: {}, subjectAwareInterpolation: false,
+            }, frameCount, subjectIndex: 0 }
+          : translatePromptToSimulationInstruction(candidatePrompt, { frameCount, subjectIndex: 0 });
+        if (diversityAssignment) candidateInstruction = applyDatasetOptics(candidateInstruction, diversityAssignment);
+        const candidateCameraFrames = etCandidate?.cameraFrames ?? withRandomSource(candidateRandom, () =>
+          calculateCameraPositions([candidateInstruction], subjectsInfo));
         operationCount += candidateCameraFrames.length;
         await yieldIfNeeded(operationCount);
         if (candidateCameraFrames.length !== frameCount) {
@@ -672,7 +860,7 @@ export async function buildRandomDatasetArchive(
           );
         }
         const exportedCameraFrames = quantizeCameraFramesForDataset(
-          candidateCameraFrames
+          diversityAssignment ? scaleDatasetCameraFrames(candidateCameraFrames, sceneScale) : candidateCameraFrames
         );
         const exportedSubject = exportedSubjectsInfo[0];
         const exportedSubjectFrames = exportedSubject.frames;
@@ -682,7 +870,10 @@ export async function buildRandomDatasetArchive(
         // Gate the exact stored geometry and LensCraft's nearest 30 paired
         // frames. Relative camera limits alone do not prevent a distant
         // camera from whipping around when its subject turns.
-        validateDatasetTrajectory(exportedCameraFrames, exportedSubject);
+        validateDatasetTrajectory(exportedCameraFrames, exportedSubject, sceneScale);
+        if (diversityAssignment) {
+          validateDatasetCameraMovement(exportedCameraFrames, exportedSubject, diversityAssignment.cameraMovement);
+        }
         if (
           candidateInstruction.constraints?.allFramesVisibility &&
           !exportedCameraFrames.every((camera, index) => {
@@ -705,49 +896,72 @@ export async function buildRandomDatasetArchive(
           );
         }
         const finalFrameIndex = exportedCameraFrames.length - 1;
-        observedInitial = deriveCinematographySetupFromPose(
-          exportedCameraFrames[0],
-          exportedSubject.subject,
-          exportedSubjectFrames[0]
-        );
-        observedFinal = deriveCinematographySetupFromPose(
-          exportedCameraFrames[finalFrameIndex],
-          exportedSubject.subject,
-          exportedSubjectFrames[finalFrameIndex]
-        );
+        if (!etCandidate) {
+          observedInitial = deriveCinematographySetupFromPose(exportedCameraFrames[0], exportedSubject.subject, exportedSubjectFrames[0]);
+          observedFinal = deriveCinematographySetupFromPose(exportedCameraFrames[finalFrameIndex], exportedSubject.subject, exportedSubjectFrames[finalFrameIndex]);
+        }
         prompt = candidatePrompt;
-        instruction = candidateInstruction;
+        instruction = diversityAssignment
+          ? applyDatasetOptics(scaleDatasetInstruction(candidateInstruction, sceneScale), {
+            focalLength: exportedCameraFrames[0].focalLength,
+            aspectRatio: exportedCameraFrames[0].aspectRatio,
+          })
+          : candidateInstruction;
         cameraFrames = exportedCameraFrames;
         break;
       } catch (error) {
         labelingError = error;
-        recordRejectedCandidate(
-          error instanceof DatasetTrajectoryQualityError
-            ? error.reason
-            : "camera-solver-or-endpoint"
-        );
+        const reason = error instanceof DatasetTrajectoryQualityError ? error.reason
+          : error instanceof DatasetCameraMovementQualityError ? `movement-${error.reason}`
+          : "camera-solver-or-endpoint";
+        recordRejectedCandidate(reason);
+        if (diversityAssignment) {
+          const key = `${diversityAssignment.cameraMovement}|${diversityAssignment.sceneScaleStratum}|${diversityAssignment.aspectRatio}`;
+          const rejected = diversityRejectedCandidates[key] ??= {};
+          rejected[reason] = (rejected[reason] ?? 0) + 1;
+          const rejectedAtFraction = diversityRejectedByPathFraction[String(subjectPathFraction)] ??= {};
+          rejectedAtFraction[reason] = (rejectedAtFraction[reason] ?? 0) + 1;
+        }
+        if (etTrainingProfile) {
+          const rejected = etRejectedByRegime[etRegime] ??= {};
+          rejected[reason] = (rejected[reason] ?? 0) + 1;
+        }
       }
     }
-    if (!prompt || !instruction || !cameraFrames || !observedInitial || !observedFinal) {
+    if (!prompt || !instruction || !cameraFrames || (!etTrainingProfile && (!observedInitial || !observedFinal))) {
       throw new Error(
-        `Unable to generate a camera trajectory meeting dataset quality and endpoint requirements for sample ${s} after ${MAX_DATASET_CAMERA_ATTEMPTS} attempts (${subjectMovement} subject).`,
+        `Unable to generate a camera trajectory meeting dataset quality${etTrainingProfile ? "" : " and endpoint"} requirements for sample ${s} after ${cameraAttemptLimit} attempts (${subjectClass}/${subjectMovement} subject${diversityAssignment ? `, assigned ${diversityAssignment.cameraMovement}, sceneScale ${sceneScale}, focalLength ${diversityAssignment.focalLength}, aspectRatio ${diversityAssignment.aspectRatio}` : ""}). Last failure: ${labelingError instanceof Error ? labelingError.message : String(labelingError)}.`,
         { cause: labelingError }
       );
     }
-    const trajectoryPrompt = createTrajectoryPrompt(
-      prompt,
-      observedInitial,
-      observedFinal
-    );
+    const trajectoryPrompt = etTrainingProfile ? prompt : createTrajectoryPrompt(prompt, observedInitial!, observedFinal!);
+    if (diversityAssignment) {
+      if (trajectoryPrompt.movement.type !== diversityAssignment.cameraMovement) {
+        throw new Error(`Camera quota changed at sample ${s}: assigned ${diversityAssignment.cameraMovement}, realized ${trajectoryPrompt.movement.type}.`);
+      }
+      const storedOptics = { focalLength: cameraFrames[0].focalLength, aspectRatio: cameraFrames[0].aspectRatio };
+      acceptedDiversityAssignments.push({ ...diversityAssignment, ...storedOptics });
+      realizedSubjectPathFractionCounts[String(subjectPathFraction)] =
+        (realizedSubjectPathFractionCounts[String(subjectPathFraction)] ?? 0) + 1;
+      diversityReceipts.push({ ...diversityAssignment, sampleIndex: s,
+        baseSubjectDimensions: { ...subjects[0].dimensions }, subjectPathSeed,
+        subjectPathDraw, cameraAttempts, frameCount, centeredFullShotProposals, storedOptics,
+        subjectPathFraction, subjectPathStart,
+      });
+    }
+    if (etTrainingProfile && etControls) {
+      const realized = measureETGeneratedClip(cameraFrames, exportedSubjectsInfo[0].frames!);
+      for (const adjustment of etControls.plausibilityAdjustments) etPlausibilityAdjustments[adjustment] = (etPlausibilityAdjustments[adjustment] ?? 0) + 1;
+      etRealizedMetrics.push(realized);
+      (etMetricsByRegime[etRegime] ??= []).push(realized);
+      etIntendedMetrics.push(intendedETClipMetrics(etControls));
+      if (etControls.nativeFrameCount < 30) etShortClipCount++;
+    }
     realizedCameraMovementCounts[trajectoryPrompt.movement.type] =
       (realizedCameraMovementCounts[trajectoryPrompt.movement.type] ?? 0) + 1;
     const cinematographyPrompts: CinematographyPrompt[] = [trajectoryPrompt];
     const realizedSimulationInstructions: SimulationInstruction[] = [
-      alignInstructionSetupsWithTrajectory(
-        instruction,
-        observedInitial,
-        observedFinal
-      ),
+      etTrainingProfile ? instruction : alignInstructionSetupsWithTrajectory(instruction, observedInitial!, observedFinal!),
     ];
 
     const simulationData = {
@@ -758,7 +972,7 @@ export async function buildRandomDatasetArchive(
     };
 
     const { formattedData, parameterDictionary: newParameterDictionary } =
-      formatSimulationData(simulationData, parameterDictionary);
+      formatSimulationData(simulationData, parameterDictionary, parameterWriter);
 
     parameterDictionary = newParameterDictionary;
 
@@ -778,6 +992,7 @@ export async function buildRandomDatasetArchive(
   onProgress?.(100, "generating");
   throwIfAborted(signal);
 
+  parameterDictionary = parameterWriter?.snapshot() ?? parameterDictionary;
   const packedDictionary = pack(parameterDictionary);
   await zip.add(
     `${datasetId}/parameter_dictionary.msgpack`,
@@ -786,11 +1001,68 @@ export async function buildRandomDatasetArchive(
   );
 
   const manifest = {
-    schemaVersion: 2,
-    generatorVersion: 3,
+    schemaVersion: diversity ? 3 : 2,
+    generatorVersion: etTrainingProfile ? 7 : diversity ? 8 : 5,
+    generationProfile: etTrainingProfile ? "et-training-calibration" : diversity ? DATASET_DIVERSITY_PROFILE : "legacy-rule-based",
     datasetId,
     generatedAt: generatedAt.toISOString(),
     seed,
+    ...(diversity && diversityPlan ? {
+      diversity: {
+        profile: DATASET_DIVERSITY_PROFILE,
+        config: diversity,
+        cameraSolver: "existing-rule-based-camera-trajectory-solver; no-separate-analytic-camera-path",
+        cameraQuotaPolicy: "uniform-largest-remainder; follow-and-track-limited-to-moving-subject-count; remaining-quota-balanced-across-compatible-movements; assigned-type-retained-on-retry",
+        sceneScaleInterpretation: "whole-scene-physical-similarity-transform; scales-subject-dimensions-subject-positions-camera-positions-and-linear-limits-together; does-not-add-independent-relative-framing",
+        scaleSampling: "largest-remainder-base-smaller-larger-strata; base=1; log-uniform-within-smaller-and-larger-intervals; no-post-transform-human-dimension-clamp",
+        opticsSampling: "per-clip-uniform-focal-millimetres; largest-remainder-aspect-ratios; same-optics-throughout-clip",
+        realizedOptics: "exact-quantized-stored-camera-optics; planned-draws-and-storedOptics-both-in-sample-receipts",
+        retryPolicy: "200-camera-attempts; same-camera-movement-class-dimensions-motion-family-duration-scale-optics; subject-path-realization-resampled-after-each-five-failed-camera-attempts; every-fifth-proposal-offers-normalized-centered-FullShot-initial-setup; fail-on-exhaustion",
+        subjectPathSampling: {
+          fractions: DATASET_SUBJECT_PATH_FRACTIONS,
+          policy: "full-authored-curve-at-first-draw; legacy-geometric-families-cycle-declared-fractions-on-path-retry-with-seeded-contiguous-start; named-human-movements-and-static-always-retain-full-fraction=1,start=0; position-linear-and-body-rotation-quaternion-SLERP; same-stored-frame-count-and-clip-duration",
+          interpretation: "feasibility-conditioned-motion-extent-and-speed-diversity; partial-curves-retain-the-authored-family-and-body-headings; not-an-unbiased-distribution-of-complete-source-curves",
+          realizedFractionCounts: realizedSubjectPathFractionCounts,
+          rejectedCandidatesByFraction: diversityRejectedByPathFraction,
+        },
+        reconstruction: "baseSubjectDimensions-and-frameCount-in-sample-receipts; subjectPathSeed-uses-createSeededRandom; camera-attempt-seed=seed+:diversity:sample:+sampleIndex+:camera:+zero-based-attempt; final-attempt=cameraAttempts-1; generatorVersion-and-config-required",
+        planned: summarizeDiversity(diversityPlan),
+        realized: summarizeDiversity(acceptedDiversityAssignments),
+        rejectedCandidatesByCameraScaleAspect: diversityRejectedCandidates,
+        sampleReceipts: diversityReceipts,
+      },
+    } : {}),
+    ...(etTrainingProfile ? {
+      modelObservation: ET_MODEL_OBSERVATION,
+      etTrainingProfile: {
+        ...etTrainingProfile,
+        fit: "regime-conditional-quantiles; comonotonic-ranks-within-subject-netXZ/XZ/XYZ/path-and-camera-excursion/path-and-angular-excursion/path-and-H/V-lens-proxies; independent-between-groups; no-native-path-replay",
+        dependenceAssumption: {
+          sharedQuantileRanks: [
+            ["subjectNetXZOverMedianRange", "subjectXZExcursionOverMedianRange", "subjectXYZExcursionOverMedianRange", "subjectPath30OverMedianRange"],
+            ["cameraExcursionOverMedianRange", "cameraPath30OverMedianRange"],
+            ["cameraAngularExcursionDeg", "cameraAngularPath30Deg"],
+            ...(etTrainingProfile.useCenteredPrincipalPointFovProxy ? [["horizontalFovCenteredPrincipalPointDeg", "verticalFovCenteredPrincipalPointDeg"]] : []),
+          ],
+          interpretation: "comonotonic copula assumption within physically ordered groups; empirical joint correlations are not recovered",
+        },
+        sceneScale: "authored-scene-units; ET native units are not calibrated metres",
+        framing: etTrainingProfile.useCenteredPrincipalPointFovProxy
+          ? "camera-ray-proxy; paired-K-derived-H/V-FOV-assumes-centered-principal-point; effective-optical-aspect-is-tan(H/2)/tan(V/2), not measured image aspect"
+          : "camera-ray-proxy; authored-FOV-and-aspect; native-subject-bbox-unknown",
+        limitations: [
+          "Aggregate quantiles do not recover the joint distribution or real subject articulation.",
+          "Quantile draws use the central probability range; extreme reconstruction tails are not interpolated by default.",
+          "Shared marginal ranks preserve physical order and TRAIN marginal quantiles; their comonotonic dependence is assumed, not fitted as the native joint distribution.",
+          "Subject center paths use a controlled radial trajectory along the authored travel axis, with exact horizontal endpoint and bounded reversals; full authored curved paths are not preserved.",
+          "Authored body headings remain physical truth, but the subject movement-type token is diagnostic after center-path matching.",
+          "Scalar center paths fit excursion, net horizontal displacement, cumulative travel and pauses; infeasible path/pause combinations are counted explicitly. Actual median range and quantization can change realized ratios.",
+          "Synthetic local-axis camera translations and independent yaw/pitch fit excursion and travel; finite sample limits and quality rejection can underfit extreme ratios.",
+          "Source frame counts are floored to 30; short native durations are extended at the declared source FPS. FPS is provenance, not a model input.",
+          "Quality rejection can bias rotation/position distributions; rejected candidates are reported by regime.",
+        ],
+      },
+    } : {}),
     contract: {
       subjectsPerSample: DATASET_SUBJECT_COUNT,
       instructionsPerSample: DATASET_INSTRUCTION_COUNT,
@@ -798,17 +1070,31 @@ export async function buildRandomDatasetArchive(
       subjectIndexStoredAsParameter: false,
       parameterValueTypes: ["string", "number", "boolean"],
       movementSampling: "largest-remainder-marginal",
-      cameraPromptSampling: "rejection-sampled-for-trajectory-quality-and-observable-endpoints",
-      staticCameraSpeed: "constant-with-linear-easing",
-      endpointFraming: "inner-labels-require-in-frame-center-no-diagonal-offscreen-labels",
+      cameraPromptSampling: etTrainingProfile ? "ET-train-aggregate-local-translation-and-independent-rotation; quality-rejection" : diversity ? "planned-compatible-camera-movement-quotas; same-type-rejection-sampled-setups-for-quality-and-observable-endpoints" : "rejection-sampled-for-trajectory-quality-and-observable-endpoints",
+      staticCameraSpeed: etTrainingProfile ? "position-static-can-rotate; fully-static-requires-exactly-frozen-pose" : "constant-with-linear-easing",
+      endpointFraming: etTrainingProfile ? "not-conditioned; initial-camera-rays-fit-as-proxies; native-subject-bounds-unavailable" : "inner-labels-require-in-frame-center-no-diagonal-offscreen-labels",
+      ...(etTrainingProfile ? {
+        primaryMovementEnum: "diagnostic-primary-component; exact-observedMotionText-is-authoritative",
+        subjectMovementEnum: "diagnostic-authored-family; controlled-center-path-may-include-reversals-and-vertical-variation",
+        movementSpeedToken: "diagnostic-placeholder-unused-by-motion-only-model-caption; actual-path-speed-varies",
+        minimumStoredFrameCount: 30,
+      } : {}),
       cameraTrajectoryValidation: "quantized-source-and-nearest-30-frame-world-space",
+      ...(diversity ? {
+        linearQualityLimits: "base-policy-translation-acceleration-and-collision-clearance-multiplied-by-sample-sceneScale; angular-limits-and-absolute-packing-tolerances-unchanged",
+      } : {}),
       cameraCollisionValidation: "camera-point-outside-oriented-subject-box-with-clearance",
-      subjectHeadingSource: "513-frame-cubic-path-and-turn-aware-retiming",
-      initialSetupSource: "derived-from-first-camera-frame",
-      finalSetupSource: "derived-from-last-camera-frame",
-      instructionSetupSource: "derived-from-corresponding-camera-endpoints",
+      subjectHeadingSource: "authored-human-body-heading-or-513-frame-velocity-path",
+      subjectRepresentation: "rigid-body-bounding-box-center-xyz-and-XYZ-Euler; canonical-front=-Z",
+      ...(etTrainingProfile ? { worldReference: "first-subject-position-zero; coherent-translation-before-camera-generation; authored-body-and-camera-orientation-preserved" } : {}),
+      humanMotion: "procedural-root-trajectories-not-articulated-motion-capture",
+      subjectClassSampling: "largest-remainder-per-compatible-movement",
+      subjectDimensionSampling: diversity ? "class-shape-variation-and-bounded-base-proxy; then-whole-scene-scale-without-human-bound-clamp" : "class-shape-variation-with-uniform-scale-restricted-to-human-bounds",
+      initialSetupSource: etTrainingProfile ? "unavailable; motion-only caption" : "derived-from-first-camera-frame",
+      finalSetupSource: etTrainingProfile ? "unavailable; motion-only caption" : "derived-from-last-camera-frame",
+      instructionSetupSource: etTrainingProfile ? "diagnostic-only-unavailable-to-model; numeric poses authoritative" : "derived-from-corresponding-camera-endpoints",
       noiseApplication:
-        "dynamic-position-before-heading-and-rotation-after-heading",
+        "legacy-dynamic-position-before-heading-and-rotation-after-heading; named-human-motions-use-authored-variation",
     },
     config: {
       simulationCount,
@@ -816,18 +1102,43 @@ export async function buildRandomDatasetArchive(
       instructionCount,
       minFrameCount,
       maxFrameCount,
+      framesPerSecond,
       subjectClassProbabilities,
       movementDistribution,
-      dynamicSubjectClassProbabilities,
+      subjectClassProbabilitiesByMovement,
+      subjectScaleRange: DATASET_SUBJECT_SCALE_RANGE,
+      diversity,
       noiseConfig,
     },
     realized: {
       movementCounts: realizedMovementCounts,
       subjectClassCounts: realizedSubjectClassCounts,
+      subjectClassMovementCounts,
       cameraMovementCounts: realizedCameraMovementCounts,
       rejectedCameraCandidates,
+      ...(etTrainingProfile ? {
+        etCompatibility: {
+          sourceFrameCountsFlooredTo30: etShortClipCount,
+          physicalPlausibilityAdjustments: etPlausibilityAdjustments,
+          intendedQuantiles: summarizeETGeneratedMetrics(etIntendedMetrics, etTrainingProfile.calibration.quantileProbabilities),
+          realizedQuantiles: summarizeETGeneratedMetrics(etRealizedMetrics, etTrainingProfile.calibration.quantileProbabilities),
+          realizedQuantilesByRegime: Object.fromEntries(Object.entries(etMetricsByRegime).map(([regime, rows]) =>
+            [regime, summarizeETGeneratedMetrics(rows!, etTrainingProfile.calibration.quantileProbabilities)])),
+          rejectedCameraCandidatesByRegime: etRejectedByRegime,
+          resampledControlSetsByRegime: etResampledControlsByRegime,
+          rejectedControlSetsIntendedQuantiles: summarizeETGeneratedMetrics(etRejectedControlMetrics, etTrainingProfile.calibration.quantileProbabilities),
+          controlResamplingPolicy: "at-most-ten-regime-preserving-control-draws; five-camera-orientation-candidates-per-control-set; no-quality-weakening",
+        },
+      } : {}),
     },
     quality: DATASET_TRAJECTORY_QUALITY_POLICY,
+    time: {
+      framesPerSecond,
+      timestampSeconds: "frameIndex / framesPerSecond",
+      durationSeconds: "(storedFrameCount - 1) / framesPerSecond",
+      durationRangeSeconds: [(minFrameCount - 1) / framesPerSecond, (maxFrameCount - 1) / framesPerSecond],
+      trainingResampling: "LensCraft currently selects 30 paired poses; timestamps are not model inputs",
+    },
     encoding: {
       archiveRootDirectory: datasetId,
       simulationFilePattern: `simulation_${datasetId}_*.msgpack`,

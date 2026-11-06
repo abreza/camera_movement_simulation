@@ -108,8 +108,6 @@ const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        "@import":
-          "url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap')",
         body: {
           background: `linear-gradient(145deg, #0F0F1A 0%, #161628 50%, #0F0F1A 100%)`,
           scrollbarWidth: "thin",

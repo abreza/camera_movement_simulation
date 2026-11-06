@@ -16,6 +16,15 @@ export const getCameraBySetup = (
   subject: Subject,
   frame: SubjectFrame
 ): CameraParameters => {
+  const optics = {
+    focalLength: setup.focalLength ?? DEFAULT_FOCAL_LENGTH,
+    aspectRatio: setup.aspectRatio ?? DEFAULT_ASPECT_RATIO,
+  };
+  for (const [name, value] of Object.entries(optics)) {
+    if (!Number.isFinite(value) || value <= 0) {
+      throw new Error(`Camera ${name} must be a positive finite number`);
+    }
+  }
   const position = calculatePositionByAngles(setup, frame);
 
   const { scale = 1, regionOfInterest } = calculateRegionOfInterest(
@@ -23,14 +32,18 @@ export const getCameraBySetup = (
     subject,
     frame
   );
-  const updatedPosition = applyCameraDistance(scale, regionOfInterest, position);
+  const updatedPosition = applyCameraDistance(
+    scale,
+    regionOfInterest,
+    position,
+    optics
+  );
   updatedPosition.y = Math.max(MIN_CAMERA_HEIGHT, updatedPosition.y);
 
   const camera = {
     position: updatedPosition,
     rotation: getLookAtAngle(updatedPosition, regionOfInterest.position),
-    focalLength: DEFAULT_FOCAL_LENGTH,
-    aspectRatio: DEFAULT_ASPECT_RATIO,
+    ...optics,
   };
 
   return fixSubjectInView(

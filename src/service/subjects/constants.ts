@@ -2,10 +2,21 @@ import { ObjectClass } from "./types";
 
 import * as THREE from "three";
 
+/** Modelling bounds in metres for a standing, whole-body adult proxy. */
+export const HUMAN_DIMENSION_BOUNDS = {
+  width: { min: 0.38, max: 0.72 },
+  height: { min: 1.5, max: 2.05 },
+  depth: { min: 0.22, max: 0.44 },
+} as const;
+
 export const objectSizes: Record<
   ObjectClass,
   { mean: THREE.Vector3; std: THREE.Vector3 }
 > = {
+  [ObjectClass.Human]: {
+    mean: new THREE.Vector3(0.5, 1.75, 0.29),
+    std: new THREE.Vector3(0.05, 0.13, 0.035),
+  },
   [ObjectClass.Chair]: {
     mean: new THREE.Vector3(0.5, 1, 0.5),
     std: new THREE.Vector3(0.1, 0.1, 0.1),
@@ -46,7 +57,8 @@ export interface ModelPaths {
   materialType: "mtl" | "stl";
 }
 
-export const modelPaths: Record<ObjectClass, ModelPaths> = {
+// Humans are built procedurally; only external assets need a path.
+export const modelPaths: Partial<Record<ObjectClass, ModelPaths>> = {
   [ObjectClass.Chair]: {
     obj: "/models/chair.obj",
     material: "/models/chair.mtl",

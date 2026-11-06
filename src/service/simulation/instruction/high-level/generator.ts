@@ -81,16 +81,16 @@ const generateInitialSetup = (): CinematographySetup => {
   };
 };
 
-const GENERATED_MOVEMENT_TYPES = Object.values(CameraMovementType).filter(
+const GENERATED_MOVEMENT_TYPES: CameraMovementType[] = Object.values(CameraMovementType).filter(
   (movementType) =>
     movementType !== CameraMovementType.DutchLeft &&
     movementType !== CameraMovementType.DutchRight
 );
 
-const generateMovement = () => {
+const generateMovement = (forcedMovement?: CameraMovementType) => {
   return {
     type:
-      GENERATED_MOVEMENT_TYPES[
+      forcedMovement ?? GENERATED_MOVEMENT_TYPES[
         Math.floor(randomValue() * GENERATED_MOVEMENT_TYPES.length)
       ],
     speed: getRandomEnumValue(MovementSpeed),
@@ -202,9 +202,15 @@ const formatInstruction = (
 };
 
 export const generateRandomCinematographyPrompt =
-  (): GeneratedCinematographyPrompt => {
+  (forcedMovement?: CameraMovementType): GeneratedCinematographyPrompt => {
+    if (
+      forcedMovement !== undefined &&
+      !GENERATED_MOVEMENT_TYPES.includes(forcedMovement)
+    ) {
+      throw new Error(`Unsupported generated camera movement: ${forcedMovement}`);
+    }
     const initial = generateInitialSetup();
-    const movement = generateMovement();
+    const movement = generateMovement(forcedMovement);
     if (
       (movement.type === CameraMovementType.CraneDown ||
         movement.type === CameraMovementType.PedestalDown) &&

@@ -18,11 +18,11 @@ import {
   Park as TreeIcon,
   DirectionsCar as CarIcon,
   PedalBike as BikeIcon,
+  Person as HumanIcon,
   Add as AddIcon,
   Delete as DeleteIcon,
   Place as PlaceIcon,
   Close as CancelIcon,
-  MyLocation as RepositionIcon,
 } from "@mui/icons-material";
 import { ObjectClass, Subject } from "@/service/subjects/types";
 import { toast } from "react-toastify";
@@ -39,6 +39,12 @@ const CLASS_META: Record<
   ObjectClass,
   { icon: React.ReactNode; label: string; color: string; movable?: boolean }
 > = {
+  [ObjectClass.Human]: {
+    icon: <HumanIcon sx={{ fontSize: 20 }} />,
+    label: "Human",
+    color: "#B794F6",
+    movable: true,
+  },
   [ObjectClass.Chair]: {
     icon: <ChairIcon sx={{ fontSize: 20 }} />,
     label: "Chair",
@@ -85,7 +91,7 @@ export const SubjectGeneration: FC = () => {
     (state) => state.subjects.placingSubject
   );
   const [selectedClass, setSelectedClass] = useState<ObjectClass>(
-    ObjectClass.Car
+    ObjectClass.Human
   );
 
   const isPlacing = !!placingSubject;
